@@ -3,6 +3,7 @@ import { defaultData } from '../utils/defaultData'
 
 const STORAGE_KEY = 'funeral-brochure-data'
 const BROCHURES_KEY = 'funeral-brochures-list'
+const ACTIVE_KEY = 'funeral-brochure-active-id'
 
 function loadFromStorage(id) {
   try {
@@ -10,6 +11,26 @@ function loadFromStorage(id) {
     if (raw) return JSON.parse(raw)
   } catch { /* ignore */ }
   return null
+}
+
+function getActiveId() {
+  try { return localStorage.getItem(ACTIVE_KEY) } catch { return null }
+}
+
+function setActiveId(id) {
+  try {
+    if (id) localStorage.setItem(ACTIVE_KEY, id)
+    else localStorage.removeItem(ACTIVE_KEY)
+  } catch { /* ignore */ }
+}
+
+function loadInitialState() {
+  const activeId = getActiveId()
+  if (activeId) {
+    const data = loadFromStorage(activeId)
+    if (data) return { ...data, currentId: activeId }
+  }
+  return {}
 }
 
 function saveToStorage(id, data) {
@@ -35,10 +56,13 @@ function saveBrochuresList(list) {
 const MAX_HISTORY = 30
 const MAX_SNAPSHOTS = 5
 
+const _initial = loadInitialState()
+
 export const useBrochureStore = create((set, get) => ({
-  // Current brochure data
+  // Current brochure data (restored from localStorage if available)
   ...defaultData,
-  currentId: null,
+  ..._initial,
+  currentId: _initial.currentId || null,
   isDirty: false,
 
   // History for undo/redo
@@ -324,6 +348,7 @@ export const useBrochureStore = create((set, get) => ({
     }
     const data = extractData(state)
     saveToStorage(id, data)
+    setActiveId(id)
 
     const list = loadBrochuresList()
     const existing = list.findIndex((b) => b.id === id)
@@ -345,6 +370,7 @@ export const useBrochureStore = create((set, get) => ({
   loadBrochure: (id) => {
     const data = loadFromStorage(id)
     if (data) {
+      setActiveId(id)
       set({ ...data, currentId: id, isDirty: false, history: [], historyIndex: -1 })
     }
   },
@@ -357,6 +383,7 @@ export const useBrochureStore = create((set, get) => ({
   },
 
   newBrochure: () => {
+    setActiveId(null)
     set({
       ...defaultData,
       currentId: null,
