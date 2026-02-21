@@ -63,6 +63,7 @@ function extractPdfData() {
     galleryPhotos: state.galleryPhotos,
     acknowledgements: state.acknowledgements,
     familySignature: state.familySignature,
+    backCoverPhoto: state.backCoverPhoto,
     backCoverVerse: state.backCoverVerse,
     backCoverPhrase: state.backCoverPhrase,
     backCoverSubtext: state.backCoverSubtext,
