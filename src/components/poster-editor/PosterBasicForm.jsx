@@ -1,7 +1,11 @@
+import { useState } from 'react'
 import { usePosterStore } from '../../stores/posterStore'
+import { posterTemplates } from '../../utils/posterDefaultData'
+import { BookOpen, ChevronDown } from 'lucide-react'
 
 export default function PosterBasicForm() {
   const store = usePosterStore()
+  const [templateOpen, setTemplateOpen] = useState(false)
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0]
@@ -11,10 +15,45 @@ export default function PosterBasicForm() {
     reader.readAsDataURL(file)
   }
 
+  const handleApplyTemplate = (key) => {
+    const template = posterTemplates[key]
+    if (!template) return
+    store.loadTemplate(template.data)
+    setTemplateOpen(false)
+  }
+
   const inputClass = 'w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/60'
 
   return (
     <div className="space-y-4">
+      {/* Template selector */}
+      <div className="relative">
+        <button
+          onClick={() => setTemplateOpen(!templateOpen)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] bg-muted border border-input rounded-md text-card-foreground hover:text-foreground hover:border-input transition-colors"
+        >
+          <BookOpen size={12} />
+          Start from a template...
+          <ChevronDown size={10} className={`transition-transform ${templateOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {templateOpen && (
+          <div className="absolute top-full left-0 mt-1 z-20 w-72 bg-card border border-input rounded-lg shadow-xl overflow-hidden">
+            {Object.entries(posterTemplates).map(([key, tpl]) => (
+              <button
+                key={key}
+                onClick={() => handleApplyTemplate(key)}
+                className="w-full text-left px-3 py-2.5 text-xs hover:bg-muted transition-colors border-b border-border last:border-b-0"
+              >
+                <span className="text-foreground font-medium">{tpl.name}</span>
+                <span className="block text-[10px] text-muted-foreground mt-0.5">
+                  {tpl.description}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Header Title */}
       <div>
         <label className="block text-xs text-muted-foreground mb-1">Banner Title</label>

@@ -69,6 +69,81 @@ export function getPosterTheme(key) {
   return posterThemes[key] || posterThemes.royalBlue
 }
 
+export const posterTemplates = {
+  classicObituary: {
+    name: 'Classic Obituary',
+    description: 'Traditional Ghanaian obituary poster with full arrangements',
+    icon: 'BookOpen',
+    data: {
+      posterTheme: 'royalBlue',
+      headerTitle: 'CALLED TO GLORY',
+      announcementText: 'The family of the late deceased announces with deep sorrow but in humble submission to the will of Almighty God, the death of their beloved, which sad event occurred on the date stated below. The burial and funeral arrangements are as follows:',
+      funeralArrangements: [
+        { label: 'THERE WILL BE NO WAKE', value: '' },
+        { label: 'BURIAL SERVICE', value: '' },
+        { label: 'INTERNMENT', value: '' },
+        { label: 'FINAL FUNERAL RITES', value: '' },
+      ],
+      invitationText: 'ALL FRIENDS & SYMPATHIZERS ARE CORDIALLY INVITED',
+      dressCode: 'BLACK & WHITE',
+    },
+  },
+  celebrationOfLife: {
+    name: 'Celebration of Life',
+    description: 'Uplifting, joyful tone celebrating a life well lived',
+    icon: 'Heart',
+    data: {
+      posterTheme: 'burgundyIvory',
+      headerTitle: 'A LIFE WELL LIVED',
+      announcementText: 'With grateful hearts for a life beautifully lived, the family announces the passing of their beloved. We celebrate a remarkable life of love, faith, and service. Join us as we honour their memory with the arrangements below:',
+      funeralArrangements: [
+        { label: 'THANKSGIVING SERVICE', value: '' },
+        { label: 'CELEBRATION OF LIFE', value: '' },
+        { label: 'PRIVATE BURIAL', value: '' },
+        { label: 'RECEPTION', value: '' },
+      ],
+      invitationText: 'ALL ARE WARMLY INVITED TO CELEBRATE A LIFE WELL LIVED',
+      dressCode: 'WHITE & GOLD',
+    },
+  },
+  militaryService: {
+    name: 'Military / Service',
+    description: 'For armed forces, police, fire service, or public servants',
+    icon: 'Shield',
+    data: {
+      posterTheme: 'forestGreen',
+      headerTitle: 'IN HONOUR & SERVICE',
+      announcementText: 'The family and colleagues announce with profound sadness the passing of their beloved, who served with distinction, honour, and unwavering dedication to duty. The funeral and burial arrangements are as follows:',
+      funeralArrangements: [
+        { label: 'LYING IN STATE', value: '' },
+        { label: 'REGIMENTAL SERVICE', value: '' },
+        { label: 'BURIAL WITH HONOURS', value: '' },
+        { label: 'FINAL FUNERAL RITES', value: '' },
+      ],
+      invitationText: 'ALL FRIENDS, COLLEAGUES & SYMPATHIZERS ARE CORDIALLY INVITED',
+      dressCode: 'BLACK & REGIMENTAL',
+    },
+  },
+  churchMemorial: {
+    name: 'Church Memorial',
+    description: 'Focused on faith and church community',
+    icon: 'Church',
+    data: {
+      posterTheme: 'midnightBlack',
+      headerTitle: 'WITH CHRIST WHICH IS FAR BETTER',
+      announcementText: 'In the blessed hope of the resurrection, the family and church announce the home-going of their beloved, a faithful servant of God. The funeral and thanksgiving service arrangements are as follows:',
+      funeralArrangements: [
+        { label: 'PRE-BURIAL SERVICE', value: '' },
+        { label: 'BURIAL & COMMITTAL', value: '' },
+        { label: 'THANKSGIVING SERVICE', value: '' },
+        { label: 'FINAL FUNERAL RITES', value: '' },
+      ],
+      invitationText: 'ALL BRETHREN, FRIENDS & SYMPATHIZERS ARE CORDIALLY INVITED',
+      dressCode: 'BLACK & WHITE',
+    },
+  },
+}
+
 export const posterDefaultData = {
   posterTheme: 'royalBlue',
   headerTitle: 'CALLED TO GLORY',

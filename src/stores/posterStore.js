@@ -226,6 +226,19 @@ export const usePosterStore = create((set, get) => ({
     })
   },
 
+  loadTemplate: (data) => {
+    set({
+      ...posterDefaultData,
+      ...data,
+      currentId: null,
+      isDirty: false,
+      history: [],
+      historyIndex: -1,
+      editCountSinceLastSave: 0,
+      lastAutoSaveAt: null,
+    })
+  },
+
   // Export/Import JSON
   exportJSON: () => {
     const data = extractData(get())
@@ -253,7 +266,7 @@ function extractData(state) {
     _pushHistory, updateField, updateNested,
     updateFuneralArrangement, addFuneralArrangement, removeFuneralArrangement,
     undo, redo, canUndo, canRedo,
-    savePoster, loadPoster, deletePoster, newPoster,
+    savePoster, loadPoster, deletePoster, newPoster, loadTemplate,
     exportJSON, importJSON, applyImport,
     createSnapshot, restoreSnapshot, deleteSnapshot,
     getSmartFilename,
