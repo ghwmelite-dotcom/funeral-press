@@ -1,10 +1,26 @@
 import { useBrochureStore } from '../../stores/brochureStore'
+import ImageUploader from './ImageUploader'
 
 export default function BackCoverForm() {
   const store = useBrochureStore()
 
   return (
     <div className="space-y-4">
+      {/* Back cover photo */}
+      <div>
+        <label className="block text-xs text-muted-foreground mb-2">Back Cover Photo (optional)</label>
+        <p className="text-[10px] text-muted-foreground/60 mb-2">Upload a different photo for the back cover, or leave empty to use the front cover photo.</p>
+        <div className="max-w-[200px]">
+          <ImageUploader
+            value={store.backCoverPhoto}
+            onChange={(v) => store.updateField('backCoverPhoto', v)}
+            label="Back Cover Photo"
+            aspectRatio="3/4"
+            recommendedText="Recommended: Portrait orientation"
+          />
+        </div>
+      </div>
+
       <div>
         <label className="block text-xs text-muted-foreground mb-1">Back Cover Bible Verse</label>
         <textarea

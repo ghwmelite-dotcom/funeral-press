@@ -172,6 +172,7 @@ export const defaultData = {
   acknowledgements: defaultAcknowledgements,
   familySignature: 'The Family',
   backCoverVerse: '"I have fought the good fight, I have finished the race, I have kept the faith. Henceforth there is laid up for me the crown of righteousness, which the Lord, the righteous judge, will award to me on that day."\n— 2 Timothy 4:7-8',
+  backCoverPhoto: null,
   backCoverPhrase: 'DAMIRIFA DUE!',
   backCoverSubtext: 'Rest in Perfect Peace',
   designerCredit: '',

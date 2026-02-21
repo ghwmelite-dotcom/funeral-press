@@ -31,8 +31,8 @@ export default function BackCoverPage({ data, theme }) {
             overflow: 'hidden', marginVertical: 12,
             borderWidth: 2, borderColor: theme.border, borderStyle: 'solid',
           }}>
-            {data.coverPhoto ? (
-              <Image src={data.coverPhoto} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
+            {(data.backCoverPhoto || data.coverPhoto) ? (
+              <Image src={data.backCoverPhoto || data.coverPhoto} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
             ) : (
               <View style={[s.photoPlaceholder, { width: '100%', height: '100%', borderWidth: 0.01, borderRadius: 0.01 }]}>
                 <CrossSymbol theme={theme} size={24} />
