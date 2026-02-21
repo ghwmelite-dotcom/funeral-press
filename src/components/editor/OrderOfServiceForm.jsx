@@ -60,8 +60,8 @@ function ServiceSection({ title, subtitle, items, section, store, onBrowseHymns 
   return (
     <div>
       <div className="mb-3">
-        <h4 className="text-xs font-medium text-amber-500 uppercase tracking-wider">{title}</h4>
-        {subtitle && <p className="text-[10px] text-zinc-500">{subtitle}</p>}
+        <h4 className="text-xs font-medium text-primary uppercase tracking-wider">{title}</h4>
+        {subtitle && <p className="text-[10px] text-muted-foreground">{subtitle}</p>}
       </div>
 
       <div className="space-y-1">
@@ -71,7 +71,7 @@ function ServiceSection({ title, subtitle, items, section, store, onBrowseHymns 
               <button
                 onClick={() => i > 0 && store.moveServiceItem(section, i, i - 1)}
                 disabled={i === 0}
-                className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-zinc-600 hover:text-zinc-400 disabled:opacity-20 transition-colors"
+                className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-muted-foreground/60 hover:text-muted-foreground disabled:opacity-20 transition-colors"
                 aria-label="Move item up"
               >
                 <ChevronUp size={12} />
@@ -79,7 +79,7 @@ function ServiceSection({ title, subtitle, items, section, store, onBrowseHymns 
               <button
                 onClick={() => i < items.length - 1 && store.moveServiceItem(section, i, i + 1)}
                 disabled={i === items.length - 1}
-                className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-zinc-600 hover:text-zinc-400 disabled:opacity-20 transition-colors"
+                className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center text-muted-foreground/60 hover:text-muted-foreground disabled:opacity-20 transition-colors"
                 aria-label="Move item down"
               >
                 <ChevronDown size={12} />
@@ -91,19 +91,19 @@ function ServiceSection({ title, subtitle, items, section, store, onBrowseHymns 
                 value={item.time}
                 onChange={(e) => store.updateServiceItem(section, i, 'time', e.target.value)}
                 placeholder="Time"
-                className="w-full sm:w-24 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-600"
+                className="w-full sm:w-24 bg-card border border-input rounded px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
               />
               <input
                 type="text"
                 value={item.description}
                 onChange={(e) => store.updateServiceItem(section, i, 'description', e.target.value)}
                 placeholder="Description"
-                className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-600"
+                className="flex-1 bg-card border border-input rounded px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
             <button
               onClick={() => store.removeServiceItem(section, i)}
-              className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center p-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+              className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center p-1 text-muted-foreground/60 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
               aria-label="Remove item"
             >
               <Trash2 size={12} />
@@ -115,13 +115,13 @@ function ServiceSection({ title, subtitle, items, section, store, onBrowseHymns 
       <div className="flex gap-3 mt-2">
         <button
           onClick={() => store.addServiceItem(section)}
-          className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-500 transition-colors"
+          className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/90 transition-colors"
         >
           <Plus size={14} /> Add Item
         </button>
         <button
           onClick={() => onBrowseHymns(section)}
-          className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-500 transition-colors"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
         >
           <Music size={14} /> Browse Hymns
         </button>

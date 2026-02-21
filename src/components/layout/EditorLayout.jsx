@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
-import { Download, ChevronDown, ChevronRight, Check, Eye } from 'lucide-react'
+import { Download, ChevronDown, ChevronRight, Check, Eye, Share2, Globe } from 'lucide-react'
 import { useBrochureStore } from '../../stores/brochureStore'
 import { useAutoSave } from '../../hooks/useAutoSave'
 import { useSectionComplete, useOverallProgress } from '../../hooks/useValidation'
@@ -9,6 +9,8 @@ import { BackupReminder } from '../ui/backup-reminder'
 import { Skeleton } from '../ui/skeleton'
 import { Dialog, DialogContent } from '../ui/dialog'
 import BrochureDocument from '../pdf/BrochureDocument'
+import ShareWhatsAppDialog from '../editor/ShareWhatsAppDialog'
+import PublishMemorialDialog from '../editor/PublishMemorialDialog'
 
 import BasicInfoForm from '../editor/BasicInfoForm'
 import CoverForm from '../editor/CoverForm'
@@ -65,6 +67,8 @@ function extractPdfData() {
     backCoverPhrase: state.backCoverPhrase,
     backCoverSubtext: state.backCoverSubtext,
     designerCredit: state.designerCredit,
+    memorialId: state.memorialId,
+    memorialQrCode: state.memorialQrCode,
   }
 }
 
@@ -81,7 +85,7 @@ function SectionBadge({ sectionKey, icon }) {
   }
 
   return (
-    <span className="w-5 h-5 rounded-full bg-amber-600/20 text-amber-500 text-[10px] font-bold flex items-center justify-center shrink-0">
+    <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">
       {icon}
     </span>
   )
@@ -94,12 +98,12 @@ function ProgressBar() {
   return (
     <div className="mb-3">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-zinc-400">Progress</span>
-        <span className="text-xs text-amber-500 font-medium">{completed}/{total} sections</span>
+        <span className="text-xs text-muted-foreground">Progress</span>
+        <span className="text-xs text-primary font-medium">{completed}/{total} sections</span>
       </div>
-      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div
-          className="h-full bg-amber-600 rounded-full transition-all duration-500"
+          className="h-full bg-primary rounded-full transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -119,7 +123,7 @@ function PdfSkeleton() {
           <Skeleton className="w-3/4 h-3 mx-auto" />
           <Skeleton className="w-1/2 h-3 mx-auto" />
         </div>
-        <p className="text-xs text-zinc-500 text-center mt-3">Loading PDF preview...</p>
+        <p className="text-xs text-muted-foreground text-center mt-3">Loading PDF preview...</p>
       </div>
     </div>
   )
@@ -131,6 +135,8 @@ export default function EditorLayout() {
   const [pdfData, setPdfData] = useState(() => extractPdfData())
   const [pdfReady, setPdfReady] = useState(false)
   const [showMobilePreview, setShowMobilePreview] = useState(false)
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false)
   const timerRef = useRef(null)
   const isMobile = useMediaQuery('(max-width: 1023px)')
 
@@ -163,9 +169,9 @@ export default function EditorLayout() {
   return (
     <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
       {/* Left Panel - Form Editor */}
-      <div className="w-full lg:w-[420px] xl:w-[460px] border-r border-zinc-800 overflow-y-auto bg-zinc-950">
+      <div className="w-full lg:w-[420px] xl:w-[460px] border-r border-border overflow-y-auto bg-background">
         <div className="p-4">
-          <h2 className="text-xs text-zinc-500 uppercase tracking-wider mb-3 font-medium">Brochure Editor</h2>
+          <h2 className="text-xs text-muted-foreground uppercase tracking-wider mb-3 font-medium">Brochure Editor</h2>
 
           <ProgressBar />
           <BackupReminder />
@@ -174,16 +180,16 @@ export default function EditorLayout() {
             {sections.map(({ key, title, icon, component: Component }) => {
               const isOpen = openSections.includes(key)
               return (
-                <div key={key} className="border border-zinc-800 rounded-lg overflow-hidden">
+                <div key={key} className="border border-border rounded-lg overflow-hidden">
                   <button
                     onClick={() => toggleSection(key)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-zinc-900/50 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-card/50 transition-colors"
                   >
                     <SectionBadge sectionKey={key} icon={icon} />
-                    <span className="text-sm text-zinc-300 flex-1">{title}</span>
+                    <span className="text-sm text-card-foreground flex-1">{title}</span>
                     {isOpen
-                      ? <ChevronDown size={14} className="text-zinc-500" />
-                      : <ChevronRight size={14} className="text-zinc-500" />
+                      ? <ChevronDown size={14} className="text-muted-foreground" />
+                      : <ChevronRight size={14} className="text-muted-foreground" />
                     }
                   </button>
                   <div
@@ -192,7 +198,7 @@ export default function EditorLayout() {
                     }`}
                   >
                     <div className="overflow-hidden">
-                      <div className="px-3 pb-4 pt-2 border-t border-zinc-800/50">
+                      <div className="px-3 pb-4 pt-2 border-t border-border/50">
                         <Component />
                       </div>
                     </div>
@@ -206,10 +212,22 @@ export default function EditorLayout() {
 
       {/* Right Panel - PDF Preview (desktop only) */}
       {!isMobile && (
-        <div className="flex-1 flex flex-col bg-zinc-900 min-h-0">
+        <div className="flex-1 flex flex-col bg-card min-h-0">
           {/* Preview header */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-950 shrink-0">
-            <span className="text-xs text-zinc-500 uppercase tracking-wider">Live Preview</span>
+          <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background shrink-0">
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">Live Preview</span>
+            <button
+              onClick={() => setPublishDialogOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-input rounded-md transition-colors"
+            >
+              <Globe size={14} /> Publish
+            </button>
+            <button
+              onClick={() => setShareDialogOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-input rounded-md transition-colors"
+            >
+              <Share2 size={14} /> Share
+            </button>
             <PDFDownloadLink
               document={<BrochureDocument data={pdfData} />}
               fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Memorial'}-Funeral-Brochure.pdf`}
@@ -217,7 +235,7 @@ export default function EditorLayout() {
               {({ loading }) => (
                 <button
                   disabled={loading}
-                  className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 text-white text-xs font-medium rounded-md transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-white text-xs font-medium rounded-md transition-colors"
                 >
                   <Download size={14} />
                   {loading ? 'Preparing...' : 'Download PDF'}
@@ -249,7 +267,7 @@ export default function EditorLayout() {
         <>
           <button
             onClick={() => setShowMobilePreview(true)}
-            className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium rounded-full shadow-lg transition-colors lg:hidden"
+            className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-full shadow-lg transition-colors lg:hidden"
             aria-label="Preview PDF"
           >
             <Eye size={18} /> Preview
@@ -258,8 +276,8 @@ export default function EditorLayout() {
           <Dialog open={showMobilePreview} onOpenChange={setShowMobilePreview}>
             <DialogContent className="max-w-full w-full h-[90vh] p-0">
               <div className="flex flex-col h-full">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-                  <span className="text-sm text-zinc-300 font-medium">PDF Preview</span>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                  <span className="text-sm text-card-foreground font-medium">PDF Preview</span>
                   <PDFDownloadLink
                     document={<BrochureDocument data={pdfData} />}
                     fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Memorial'}-Funeral-Brochure.pdf`}
@@ -267,7 +285,7 @@ export default function EditorLayout() {
                     {({ loading }) => (
                       <button
                         disabled={loading}
-                        className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 text-white text-xs font-medium rounded-md transition-colors"
+                        className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-white text-xs font-medium rounded-md transition-colors"
                       >
                         <Download size={14} />
                         {loading ? 'Preparing...' : 'Download PDF'}
@@ -287,6 +305,9 @@ export default function EditorLayout() {
           </Dialog>
         </>
       )}
+
+      <ShareWhatsAppDialog open={shareDialogOpen} onOpenChange={setShareDialogOpen} />
+      <PublishMemorialDialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen} />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { Upload, X, Crop, Loader2 } from 'lucide-react'
+import { Upload, X, Crop, Loader2, Sparkles } from 'lucide-react'
 import { compressImage, formatFileSize } from '../../utils/imageUtils'
 
 export default function ImageUploader({
@@ -10,6 +10,7 @@ export default function ImageUploader({
   aspectRatio = '3/4',
   recommendedText = '',
   onCropRequest,
+  onEnhanceRequest,
 }) {
   const inputRef = useRef(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -82,11 +83,11 @@ export default function ImageUploader({
     <div className={className}>
       {isCompressing ? (
         <div
-          className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed border-amber-500/50 bg-amber-500/5"
+          className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed border-primary/50 bg-primary/5"
           style={{ aspectRatio }}
         >
-          <Loader2 size={24} className="text-amber-500 animate-spin" />
-          <span className="text-xs text-amber-500">Compressing image...</span>
+          <Loader2 size={24} className="text-primary animate-spin" />
+          <span className="text-xs text-primary">Compressing image...</span>
         </div>
       ) : value ? (
         <div>
@@ -94,22 +95,31 @@ export default function ImageUploader({
             <img
               src={value}
               alt="Uploaded"
-              className="w-full h-full object-cover rounded-lg border border-zinc-700"
+              className="w-full h-full object-cover rounded-lg border border-input"
             />
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-content-center gap-2">
               <button
                 onClick={() => inputRef.current?.click()}
-                className="absolute bottom-2 left-2 px-3 py-1.5 bg-zinc-800 text-zinc-300 text-xs rounded-md hover:bg-zinc-700 transition-colors"
+                className="absolute bottom-2 left-2 px-3 py-1.5 bg-muted text-card-foreground text-xs rounded-md hover:bg-accent transition-colors"
               >
                 Change
               </button>
               {onCropRequest && (
                 <button
                   onClick={onCropRequest}
-                  className="absolute bottom-2 left-[5.5rem] px-3 py-1.5 bg-zinc-800 text-zinc-300 text-xs rounded-md hover:bg-zinc-700 transition-colors flex items-center gap-1"
+                  className="absolute bottom-2 left-[5.5rem] px-3 py-1.5 bg-muted text-card-foreground text-xs rounded-md hover:bg-accent transition-colors flex items-center gap-1"
                 >
                   <Crop size={12} />
                   Crop
+                </button>
+              )}
+              {onEnhanceRequest && (
+                <button
+                  onClick={onEnhanceRequest}
+                  className="absolute bottom-2 right-12 px-3 py-1.5 bg-muted text-card-foreground text-xs rounded-md hover:bg-accent transition-colors flex items-center gap-1"
+                >
+                  <Sparkles size={12} />
+                  Enhance
                 </button>
               )}
               <button
@@ -122,7 +132,7 @@ export default function ImageUploader({
           </div>
           {/* Compression stats */}
           {compressionStats && (
-            <p className="text-[10px] text-zinc-500 mt-1">
+            <p className="text-[10px] text-muted-foreground mt-1">
               {formatFileSize(compressionStats.originalSize)} → {formatFileSize(compressionStats.compressedSize)}
             </p>
           )}
@@ -141,22 +151,22 @@ export default function ImageUploader({
             className={`
               flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed cursor-pointer transition-colors
               ${isDragging
-                ? 'border-amber-500 bg-amber-500/10'
-                : 'border-zinc-700 bg-zinc-900/50 hover:border-zinc-500 hover:bg-zinc-800/50'
+                ? 'border-primary bg-primary/10'
+                : 'border-input bg-card/50 hover:border-input hover:bg-muted/50'
               }
-              focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-1 focus:ring-offset-zinc-900
+              focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 focus:ring-offset-background
             `}
             style={{ aspectRatio }}
           >
-            <Upload size={24} className="text-zinc-500" />
-            <span className="text-xs text-zinc-500 text-center">{label}</span>
-            <span className="text-[10px] text-zinc-600">Drag & drop or click</span>
+            <Upload size={24} className="text-muted-foreground" />
+            <span className="text-xs text-muted-foreground text-center">{label}</span>
+            <span className="text-[10px] text-muted-foreground/60">Drag & drop or click</span>
           </div>
           {recommendedText && (
-            <p className="text-[10px] text-zinc-600 mt-1">{recommendedText}</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-1">{recommendedText}</p>
           )}
           {sizeWarning && (
-            <p className="text-[10px] text-amber-500 mt-1">
+            <p className="text-[10px] text-primary mt-1">
               Warning: File is larger than 5 MB and will be compressed.
             </p>
           )}

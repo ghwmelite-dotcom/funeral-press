@@ -35,7 +35,7 @@ export default function PosterEditorPage() {
   }, [])
 
   return (
-    <div className="h-screen flex flex-col bg-zinc-950">
+    <div className="h-screen flex flex-col bg-background">
       <PosterNavbar />
       <PosterEditorLayout />
     </div>

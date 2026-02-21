@@ -24,6 +24,28 @@
     --input: 0 0% 14.9%;
     --ring: 38 65% 53%;
     --radius: 0.5rem;
+    color-scheme: dark;
+  }
+
+  [data-theme="light"] {
+    --background: 40 20% 99%;
+    --foreground: 20 14% 10%;
+    --card: 40 25% 97%;
+    --card-foreground: 20 10% 20%;
+    --primary: 38 80% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 15% 93%;
+    --secondary-foreground: 20 14% 10%;
+    --muted: 30 12% 91%;
+    --muted-foreground: 20 6% 40%;
+    --accent: 30 12% 88%;
+    --accent-foreground: 20 14% 10%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 10% 88%;
+    --input: 30 10% 85%;
+    --ring: 38 80% 45%;
+    color-scheme: light;
   }
 
   * {
@@ -57,21 +79,21 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(0 0% 25%);
+    background: hsl(var(--muted));
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(0 0% 35%);
+    background: hsl(var(--accent));
   }
 
-  /* Date/time input styling for dark theme */
+  /* Date/time input color-scheme follows theme */
   input[type="date"],
   input[type="time"] {
-    color-scheme: dark;
+    color-scheme: inherit;
   }
 
   select {
-    color-scheme: dark;
+    color-scheme: inherit;
   }
 }
 
@@ -101,7 +123,52 @@
   to { opacity: 0; transform: translateX(100%); }
 }
 
+/* Ken Burns zoom effect for slideshow */
+@keyframes ken-burns-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
+}
+
+/* Crossfade for slideshow transitions */
+@keyframes crossfade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes crossfade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Countdown flip digit animation */
+@keyframes flip-digit {
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(-90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
 .animate-shimmer { animation: shimmer 2s infinite linear; }
 .animate-fade-in { animation: fade-in 0.2s ease-out; }
 .animate-slide-down { animation: slide-down 0.2s ease-out; }
 .animate-notification-in { animation: notification-slide-in 0.3s ease-out; }
+.animate-ken-burns { animation: ken-burns-zoom 8s ease-out forwards; }
+.animate-crossfade-in { animation: crossfade-in 0.6s ease-out; }
+.animate-crossfade-out { animation: crossfade-out 0.6s ease-out; }
+
+/* Range input styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: hsl(var(--muted));
+  border-radius: 2px;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  cursor: pointer;
+}

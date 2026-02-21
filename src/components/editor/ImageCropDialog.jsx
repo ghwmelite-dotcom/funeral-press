@@ -172,14 +172,14 @@ export default function ImageCropDialog({ open, onOpenChange, imageSrc, aspectRa
     return () => window.removeEventListener('keydown', handler)
   }, [open, onOpenChange])
 
-  const handleStyle = 'w-4 h-4 bg-amber-500 border-2 border-white rounded-full absolute z-10 touch-none'
+  const handleStyle = 'w-4 h-4 bg-primary border-2 border-white rounded-full absolute z-10 touch-none'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl w-[95vw] bg-zinc-900 border-zinc-700 p-0 gap-0">
+      <DialogContent className="max-w-2xl w-[95vw] bg-card border-input p-0 gap-0">
         <DialogHeader className="p-4 pb-2">
-          <DialogTitle className="text-zinc-200">Crop Image</DialogTitle>
-          <DialogDescription className="text-zinc-500 text-sm">
+          <DialogTitle className="text-foreground">Crop Image</DialogTitle>
+          <DialogDescription className="text-muted-foreground text-sm">
             Drag the crop area or resize using corner handles. Aspect ratio is locked.
           </DialogDescription>
         </DialogHeader>
@@ -209,7 +209,7 @@ export default function ImageCropDialog({ open, onOpenChange, imageSrc, aspectRa
             />
             {/* Clear crop window */}
             <div
-              className="absolute border-2 border-amber-500 cursor-move touch-none"
+              className="absolute border-2 border-primary cursor-move touch-none"
               style={{
                 left: `${cropRegion.x}%`,
                 top: `${cropRegion.y}%`,
@@ -258,17 +258,17 @@ export default function ImageCropDialog({ open, onOpenChange, imageSrc, aspectRa
         </div>
 
         {/* Footer with actions */}
-        <div className="flex items-center justify-end gap-2 p-4 pt-2 border-t border-zinc-800">
+        <div className="flex items-center justify-end gap-2 p-4 pt-2 border-t border-border">
           <button
             onClick={handleCancel}
-            className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 rounded-md transition-colors"
+            className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-md transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleApply}
             disabled={isApplying}
-            className="px-4 py-2 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isApplying ? 'Applying...' : 'Apply Crop'}
           </button>

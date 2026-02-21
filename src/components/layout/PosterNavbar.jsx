@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
-import { FileText, Undo2, Redo2, Save, Download, Upload, History } from 'lucide-react'
+import { FileText, Undo2, Redo2, Save, Download, Upload, History, Sun, Moon } from 'lucide-react'
 import { usePosterStore } from '../../stores/posterStore'
+import { useThemeStore } from '../../stores/themeStore'
 import { useNotification } from '../ui/notification'
 import { useRef, useState, useEffect } from 'react'
 import PosterVersionsDialog from './PosterVersionsDialog'
@@ -9,6 +10,7 @@ import ImportConfirmDialog from './ImportConfirmDialog'
 export default function PosterNavbar() {
   const location = useLocation()
   const store = usePosterStore()
+  const { theme, toggleTheme } = useThemeStore()
   const { notify } = useNotification()
   const fileInputRef = useRef(null)
   const isEditor = location.pathname.startsWith('/poster')
@@ -78,9 +80,9 @@ export default function PosterNavbar() {
 
   return (
     <>
-      <nav className="h-12 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between px-4 shrink-0" role="navigation" aria-label="Main navigation">
-        <Link to="/" className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors" aria-label="Go to home page">
-          <FileText size={18} className="text-amber-500" />
+      <nav className="h-12 bg-background border-b border-border flex items-center justify-between px-4 shrink-0" role="navigation" aria-label="Main navigation">
+        <Link to="/" className="flex items-center gap-2 text-card-foreground hover:text-foreground transition-colors" aria-label="Go to home page">
+          <FileText size={18} className="text-primary" />
           <span className="text-sm font-semibold tracking-wide">Poster Builder</span>
         </Link>
 
@@ -89,7 +91,7 @@ export default function PosterNavbar() {
             <button
               onClick={() => store.undo()}
               disabled={!store.canUndo()}
-              className="p-2 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 transition-colors"
+              className="p-2 text-muted-foreground hover:text-card-foreground disabled:opacity-30 transition-colors"
               title="Undo"
               aria-label="Undo last change"
             >
@@ -98,18 +100,18 @@ export default function PosterNavbar() {
             <button
               onClick={() => store.redo()}
               disabled={!store.canRedo()}
-              className="p-2 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 transition-colors"
+              className="p-2 text-muted-foreground hover:text-card-foreground disabled:opacity-30 transition-colors"
               title="Redo"
               aria-label="Redo last change"
             >
               <Redo2 size={15} />
             </button>
 
-            <div className="w-px h-5 bg-zinc-700 mx-2" />
+            <div className="w-px h-5 bg-accent mx-2" />
 
             <button
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               title="Save"
               aria-label="Save poster"
             >
@@ -119,7 +121,7 @@ export default function PosterNavbar() {
 
             <button
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               title="Export JSON"
               aria-label="Export poster as JSON"
             >
@@ -129,7 +131,7 @@ export default function PosterNavbar() {
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               title="Import JSON"
               aria-label="Import poster from JSON file"
             >
@@ -139,7 +141,7 @@ export default function PosterNavbar() {
 
             <button
               onClick={() => setVersionsOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               title="Version History"
               aria-label="Open version history"
             >
@@ -160,10 +162,19 @@ export default function PosterNavbar() {
             {showSaved ? (
               <span className="text-[10px] text-emerald-500 ml-2 animate-fade-in">Saved</span>
             ) : store.isDirty ? (
-              <span className="text-[10px] text-amber-600 ml-2">Unsaved</span>
+              <span className="text-[10px] text-primary ml-2">Unsaved</span>
             ) : null}
+
           </div>
         )}
+
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
       </nav>
 
       {/* Dialogs */}

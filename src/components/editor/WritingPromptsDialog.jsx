@@ -18,7 +18,7 @@ export default function WritingPromptsDialog({ open, onOpenChange, guide, onInse
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Lightbulb size={18} className="text-amber-500" />
+            <Lightbulb size={18} className="text-primary" />
             {guide.title}
           </DialogTitle>
           <DialogDescription>
@@ -32,28 +32,28 @@ export default function WritingPromptsDialog({ open, onOpenChange, guide, onInse
             <div
               key={i}
               className={`border rounded-lg overflow-hidden transition-colors ${
-                i === activeStage ? 'border-amber-600/50 bg-zinc-900' : 'border-zinc-800'
+                i === activeStage ? 'border-primary/30 bg-card' : 'border-border'
               }`}
             >
               <button
                 onClick={() => setActiveStage(i)}
                 className="w-full flex items-center gap-2 px-3 py-2 text-left"
               >
-                <span className="w-5 h-5 rounded-full bg-amber-600/20 text-amber-500 text-[10px] font-bold flex items-center justify-center shrink-0">
+                <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">
                   {i + 1}
                 </span>
-                <span className="text-sm text-zinc-300 flex-1">{stage.name}</span>
+                <span className="text-sm text-card-foreground flex-1">{stage.name}</span>
                 <ChevronRight
                   size={14}
-                  className={`text-zinc-500 transition-transform ${
+                  className={`text-muted-foreground transition-transform ${
                     i === activeStage ? 'rotate-90' : ''
                   }`}
                 />
               </button>
               {i === activeStage && (
                 <div className="px-3 pb-3 space-y-2">
-                  <p className="text-xs text-amber-400">{stage.prompt}</p>
-                  <div className="p-2 bg-zinc-800/50 rounded text-xs text-zinc-400 italic leading-relaxed">
+                  <p className="text-xs text-primary">{stage.prompt}</p>
+                  <div className="p-2 bg-muted/50 rounded text-xs text-muted-foreground italic leading-relaxed">
                     &quot;{stage.example}&quot;
                   </div>
                 </div>
@@ -64,7 +64,7 @@ export default function WritingPromptsDialog({ open, onOpenChange, guide, onInse
 
         <button
           onClick={handleInsertAll}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium rounded-md transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-md transition-colors"
         >
           <FileText size={14} /> Insert template text
         </button>

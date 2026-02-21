@@ -1,14 +1,17 @@
 import { Link, useLocation } from 'react-router-dom'
-import { BookOpen, Undo2, Redo2, Save, Download, Upload, History } from 'lucide-react'
+import { BookOpen, Undo2, Redo2, Save, Download, Upload, History, CalendarCheck, Share2, Sun, Moon } from 'lucide-react'
 import { useBrochureStore } from '../../stores/brochureStore'
+import { useThemeStore } from '../../stores/themeStore'
 import { useNotification } from '../ui/notification'
 import { useRef, useState, useEffect } from 'react'
 import VersionsDialog from './VersionsDialog'
 import ImportConfirmDialog from './ImportConfirmDialog'
+import ShareOnlineDialog from './ShareOnlineDialog'
 
 export default function Navbar() {
   const location = useLocation()
   const store = useBrochureStore()
+  const { theme, toggleTheme } = useThemeStore()
   const { notify } = useNotification()
   const fileInputRef = useRef(null)
   const isEditor = location.pathname.startsWith('/editor')
@@ -20,6 +23,7 @@ export default function Navbar() {
   // Dialog states
   const [versionsOpen, setVersionsOpen] = useState(false)
   const [importConfirmOpen, setImportConfirmOpen] = useState(false)
+  const [shareOnlineOpen, setShareOnlineOpen] = useState(false)
   const pendingImportData = useRef(null)
 
   const handleSave = () => {
@@ -78,9 +82,9 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="h-12 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between px-4 shrink-0" role="navigation" aria-label="Main navigation">
-        <Link to="/" className="flex items-center gap-2 text-zinc-300 hover:text-white transition-colors" aria-label="Go to home page">
-          <BookOpen size={18} className="text-amber-500" />
+      <nav className="h-12 bg-background border-b border-border flex items-center justify-between px-4 shrink-0" role="navigation" aria-label="Main navigation">
+        <Link to="/" className="flex items-center gap-2 text-card-foreground hover:text-foreground transition-colors" aria-label="Go to home page">
+          <BookOpen size={18} className="text-primary" />
           <span className="text-sm font-semibold tracking-wide">Brochure Builder</span>
         </Link>
 
@@ -89,7 +93,7 @@ export default function Navbar() {
             <button
               onClick={() => store.undo()}
               disabled={!store.canUndo()}
-              className="p-2 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 transition-colors"
+              className="p-2 text-muted-foreground hover:text-card-foreground disabled:opacity-30 transition-colors"
               title="Undo"
               aria-label="Undo last change"
             >
@@ -98,18 +102,18 @@ export default function Navbar() {
             <button
               onClick={() => store.redo()}
               disabled={!store.canRedo()}
-              className="p-2 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 transition-colors"
+              className="p-2 text-muted-foreground hover:text-card-foreground disabled:opacity-30 transition-colors"
               title="Redo"
               aria-label="Redo last change"
             >
               <Redo2 size={15} />
             </button>
 
-            <div className="w-px h-5 bg-zinc-700 mx-2" />
+            <div className="w-px h-5 bg-accent mx-2" />
 
             <button
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               title="Save"
               aria-label="Save brochure"
             >
@@ -119,7 +123,7 @@ export default function Navbar() {
 
             <button
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               title="Export JSON"
               aria-label="Export brochure as JSON"
             >
@@ -129,7 +133,7 @@ export default function Navbar() {
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               title="Import JSON"
               aria-label="Import brochure from JSON file"
             >
@@ -139,12 +143,34 @@ export default function Navbar() {
 
             <button
               onClick={() => setVersionsOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               title="Version History"
               aria-label="Open version history"
             >
               <History size={14} />
               <span className="hidden sm:inline">Versions</span>
+            </button>
+
+            <div className="w-px h-5 bg-accent mx-1" />
+
+            <Link
+              to="/programme"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              title="Day-of Programme"
+              aria-label="Open day-of programme"
+            >
+              <CalendarCheck size={14} />
+              <span className="hidden sm:inline">Day-of</span>
+            </Link>
+
+            <button
+              onClick={() => setShareOnlineOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              title="Share Online"
+              aria-label="Share brochure online"
+            >
+              <Share2 size={14} />
+              <span className="hidden sm:inline">Share</span>
             </button>
 
             <input
@@ -160,15 +186,25 @@ export default function Navbar() {
             {showSaved ? (
               <span className="text-[10px] text-emerald-500 ml-2 animate-fade-in">Saved</span>
             ) : store.isDirty ? (
-              <span className="text-[10px] text-amber-600 ml-2">Unsaved</span>
+              <span className="text-[10px] text-primary ml-2">Unsaved</span>
             ) : null}
+
           </div>
         )}
+
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
       </nav>
 
       {/* Dialogs */}
       <VersionsDialog open={versionsOpen} onOpenChange={setVersionsOpen} />
       <ImportConfirmDialog open={importConfirmOpen} onOpenChange={setImportConfirmOpen} onConfirm={handleImportConfirm} />
+      <ShareOnlineDialog open={shareOnlineOpen} onOpenChange={setShareOnlineOpen} />
     </>
   )
 }

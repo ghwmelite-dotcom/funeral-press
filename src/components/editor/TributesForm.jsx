@@ -1,10 +1,11 @@
 import { useBrochureStore } from '../../stores/brochureStore'
-import { Plus, Trash2, ChevronDown, ChevronRight, Lightbulb, BookOpen } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronRight, Lightbulb, BookOpen, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { tributeTemplates } from '../../utils/templates'
 import { tributeWritingGuides } from '../../utils/writingPrompts'
 import WordCountIndicator from './WordCountIndicator'
 import WritingPromptsDialog from './WritingPromptsDialog'
+import AIWriterDialog from './AIWriterDialog'
 
 export default function TributesForm() {
   const store = useBrochureStore()
@@ -13,6 +14,8 @@ export default function TributesForm() {
   const [writingGuideOpen, setWritingGuideOpen] = useState(false)
   const [activeGuide, setActiveGuide] = useState(null)
   const [activeGuideIndex, setActiveGuideIndex] = useState(-1)
+  const [aiDialogOpen, setAiDialogOpen] = useState(false)
+  const [aiDialogIndex, setAiDialogIndex] = useState(-1)
 
   const handleApplyTemplate = (index, templateKey) => {
     const template = tributeTemplates[templateKey]
@@ -47,19 +50,19 @@ export default function TributesForm() {
   return (
     <div className="space-y-2">
       {store.tributes.map((tribute, i) => (
-        <div key={tribute.id} className="border border-zinc-700 rounded-lg overflow-hidden">
+        <div key={tribute.id} className="border border-input rounded-lg overflow-hidden">
           {/* Accordion header */}
           <button
             onClick={() => setExpandedIndex(expandedIndex === i ? -1 : i)}
-            className="w-full flex items-center justify-between px-3 py-2.5 bg-zinc-900 hover:bg-zinc-800 transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2.5 bg-card hover:bg-muted transition-colors"
           >
             <div className="flex items-center gap-2">
               {expandedIndex === i ? (
-                <ChevronDown size={14} className="text-zinc-500" />
+                <ChevronDown size={14} className="text-muted-foreground" />
               ) : (
-                <ChevronRight size={14} className="text-zinc-500" />
+                <ChevronRight size={14} className="text-muted-foreground" />
               )}
-              <span className="text-sm text-zinc-300">
+              <span className="text-sm text-card-foreground">
                 {tribute.title || `Tribute ${i + 1}`}
               </span>
             </div>
@@ -68,7 +71,7 @@ export default function TributesForm() {
                 e.stopPropagation()
                 if (confirm('Remove this tribute section?')) store.removeTribute(i)
               }}
-              className="p-1 text-zinc-600 hover:text-red-400 transition-colors"
+              className="p-1 text-muted-foreground/60 hover:text-red-400 transition-colors"
               aria-label="Remove tribute"
             >
               <Trash2 size={12} />
@@ -77,7 +80,7 @@ export default function TributesForm() {
 
           {/* Accordion content */}
           {expandedIndex === i && (
-            <div className="p-3 space-y-3 bg-zinc-900/50">
+            <div className="p-3 space-y-3 bg-card/50">
               {/* Template and writing guide buttons */}
               <div className="flex gap-2 flex-wrap">
                 <div className="relative">
@@ -85,21 +88,21 @@ export default function TributesForm() {
                     onClick={() =>
                       setTemplateDropdownIndex(templateDropdownIndex === i ? -1 : i)
                     }
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] bg-zinc-800 border border-zinc-700 rounded-md text-zinc-300 hover:text-zinc-100 hover:border-zinc-600 transition-colors"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] bg-muted border border-input rounded-md text-card-foreground hover:text-foreground hover:border-input transition-colors"
                   >
                     <BookOpen size={12} />
                     Browse tribute templates...
                   </button>
                   {templateDropdownIndex === i && (
-                    <div className="absolute top-full left-0 mt-1 z-20 w-64 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl overflow-hidden">
+                    <div className="absolute top-full left-0 mt-1 z-20 w-64 bg-card border border-input rounded-lg shadow-xl overflow-hidden">
                       {Object.entries(tributeTemplates).map(([key, tpl]) => (
                         <button
                           key={key}
                           onClick={() => handleApplyTemplate(i, key)}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-zinc-800 transition-colors border-b border-zinc-800 last:border-b-0"
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors border-b border-border last:border-b-0"
                         >
-                          <span className="text-zinc-200">{tpl.title}</span>
-                          <span className="block text-[10px] text-zinc-500 mt-0.5">
+                          <span className="text-foreground">{tpl.title}</span>
+                          <span className="block text-[10px] text-muted-foreground mt-0.5">
                             {tpl.subtitle}
                           </span>
                         </button>
@@ -109,66 +112,73 @@ export default function TributesForm() {
                 </div>
                 <button
                   onClick={() => handleOpenWritingGuide(i)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] bg-zinc-800 border border-zinc-700 rounded-md text-amber-400 hover:text-amber-300 hover:border-amber-600/50 transition-colors"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] bg-muted border border-input rounded-md text-primary hover:text-primary/90 hover:border-primary/30 transition-colors"
                 >
                   <Lightbulb size={12} />
                   Help me write
                 </button>
+                <button
+                  onClick={() => { setAiDialogIndex(i); setAiDialogOpen(true) }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] bg-primary/10 border border-primary/30 rounded-md text-primary hover:text-primary/90 hover:bg-primary/20 transition-colors"
+                >
+                  <Sparkles size={12} />
+                  AI Write
+                </button>
               </div>
 
               <div>
-                <label className="block text-xs text-zinc-400 mb-1">Tribute Title</label>
+                <label className="block text-xs text-muted-foreground mb-1">Tribute Title</label>
                 <input
                   type="text"
                   value={tribute.title}
                   onChange={(e) => store.updateTribute(i, 'title', e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-600"
+                  className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-zinc-400 mb-1">Subtitle</label>
+                <label className="block text-xs text-muted-foreground mb-1">Subtitle</label>
                 <input
                   type="text"
                   value={tribute.subtitle}
                   onChange={(e) => store.updateTribute(i, 'subtitle', e.target.value)}
                   placeholder="e.g. To Our Beloved Mother"
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-600"
+                  className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-zinc-400 mb-1">Opening Verse</label>
+                <label className="block text-xs text-muted-foreground mb-1">Opening Verse</label>
                 <textarea
                   value={tribute.openingVerse}
                   onChange={(e) => store.updateTribute(i, 'openingVerse', e.target.value)}
                   rows={2}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-600 resize-none"
+                  className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring resize-none"
                   placeholder={`"Her children arise and call her blessed." — Proverbs 31:28`}
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs text-zinc-400">Tribute Body</label>
+                  <label className="text-xs text-muted-foreground">Tribute Body</label>
                   <WordCountIndicator text={tribute.body} min={150} max={300} />
                 </div>
                 <textarea
                   value={tribute.body}
                   onChange={(e) => store.updateTribute(i, 'body', e.target.value)}
                   rows={8}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-600 resize-none leading-relaxed"
+                  className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none leading-relaxed"
                   placeholder="Write the tribute text..."
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-zinc-400 mb-1">Closing Line</label>
+                <label className="block text-xs text-muted-foreground mb-1">Closing Line</label>
                 <input
                   type="text"
                   value={tribute.closingLine}
                   onChange={(e) => store.updateTribute(i, 'closingLine', e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-600"
+                  className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
             </div>
@@ -178,7 +188,7 @@ export default function TributesForm() {
 
       <button
         onClick={() => store.addTribute()}
-        className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-500 transition-colors mt-2"
+        className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/90 transition-colors mt-2"
       >
         <Plus size={14} /> Add Tribute Section
       </button>
@@ -189,6 +199,16 @@ export default function TributesForm() {
         onOpenChange={setWritingGuideOpen}
         guide={activeGuide}
         onInsert={handleInsertGuideText}
+      />
+
+      <AIWriterDialog
+        open={aiDialogOpen}
+        onOpenChange={setAiDialogOpen}
+        type="tribute"
+        deceasedName={`${store.title} ${store.fullName}`}
+        onInsert={(text) => {
+          if (aiDialogIndex >= 0) store.updateTribute(aiDialogIndex, 'body', text)
+        }}
       />
     </div>
   )

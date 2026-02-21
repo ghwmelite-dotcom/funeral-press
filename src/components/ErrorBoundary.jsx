@@ -18,20 +18,22 @@ export default class ErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <div style={{
-          minHeight: '100vh', background: '#09090b', color: '#e4e4e7',
+          minHeight: '100vh',
+          background: 'hsl(var(--background))',
+          color: 'hsl(var(--foreground))',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontFamily: 'system-ui, sans-serif',
         }}>
           <div style={{ textAlign: 'center', maxWidth: 400, padding: 24 }}>
-            <div style={{ fontSize: 32, marginBottom: 16, color: '#d97706' }}>✝</div>
+            <div style={{ fontSize: 32, marginBottom: 16, color: 'hsl(var(--primary))' }}>&#10013;</div>
             <h2 style={{ fontSize: 18, marginBottom: 8 }}>Something went wrong</h2>
-            <p style={{ fontSize: 13, color: '#71717a', marginBottom: 16, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 16, lineHeight: 1.6 }}>
               {this.state.error?.message || 'An unexpected error occurred.'}
             </p>
             <button
               onClick={() => window.location.reload()}
               style={{
-                padding: '8px 24px', background: '#d97706', color: 'white',
+                padding: '8px 24px', background: 'hsl(var(--primary))', color: 'white',
                 border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13,
               }}
             >

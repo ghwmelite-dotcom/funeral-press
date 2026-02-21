@@ -15,7 +15,7 @@ function RequiredBadge() {
 
 function OptionalBadge() {
   return (
-    <span className="ml-1.5 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide bg-zinc-800 text-zinc-500 rounded">
+    <span className="ml-1.5 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide bg-muted text-muted-foreground rounded">
       Optional
     </span>
   )
@@ -40,8 +40,8 @@ export default function BasicInfoForm() {
   const funeralDateValidation = getValidation('funeralDate')
   const funeralVenueValidation = getValidation('funeralVenue')
 
-  const inputBase = 'w-full bg-zinc-900 border rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-600'
-  const borderNormal = 'border-zinc-700'
+  const inputBase = 'w-full bg-card border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring'
+  const borderNormal = 'border-input'
   const borderError = 'border-red-500'
 
   return (
@@ -49,21 +49,21 @@ export default function BasicInfoForm() {
       {/* Title + Name */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="w-full sm:w-28">
-          <label className="block text-xs text-zinc-400 mb-1">
+          <label className="block text-xs text-muted-foreground mb-1">
             Title
             <OptionalBadge />
           </label>
           <select
             value={store.title}
             onChange={(e) => store.updateField('title', e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-600"
+            className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="">--</option>
             {TITLES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
         <div className="flex-1">
-          <label className="block text-xs text-zinc-400 mb-1">
+          <label className="block text-xs text-muted-foreground mb-1">
             Full Name of Deceased
             <RequiredBadge />
           </label>
@@ -73,7 +73,7 @@ export default function BasicInfoForm() {
             onChange={(e) => store.updateField('fullName', e.target.value)}
             onBlur={() => handleBlur('fullName')}
             placeholder="e.g. Josephine Worla Ameovi-Hodges"
-            className={`${inputBase} ${!fullNameValidation.valid ? borderError : borderNormal} placeholder:text-zinc-600`}
+            className={`${inputBase} ${!fullNameValidation.valid ? borderError : borderNormal} placeholder:text-muted-foreground/60`}
           />
           {!fullNameValidation.valid && (
             <p className="text-[11px] text-red-400 mt-1">{fullNameValidation.error}</p>
@@ -84,7 +84,7 @@ export default function BasicInfoForm() {
       {/* Dates */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs text-zinc-400 mb-1">
+          <label className="block text-xs text-muted-foreground mb-1">
             Date of Birth
             <RequiredBadge />
           </label>
@@ -100,7 +100,7 @@ export default function BasicInfoForm() {
           )}
         </div>
         <div>
-          <label className="block text-xs text-zinc-400 mb-1">
+          <label className="block text-xs text-muted-foreground mb-1">
             Date of Death
             <RequiredBadge />
           </label>
@@ -116,7 +116,7 @@ export default function BasicInfoForm() {
           )}
         </div>
         <div>
-          <label className="block text-xs text-zinc-400 mb-1">
+          <label className="block text-xs text-muted-foreground mb-1">
             Funeral Date
             <RequiredBadge />
           </label>
@@ -135,7 +135,7 @@ export default function BasicInfoForm() {
 
       {/* Time */}
       <div>
-        <label className="block text-xs text-zinc-400 mb-1">
+        <label className="block text-xs text-muted-foreground mb-1">
           Funeral Start Time
           <OptionalBadge />
         </label>
@@ -143,13 +143,13 @@ export default function BasicInfoForm() {
           type="time"
           value={store.funeralTime}
           onChange={(e) => store.updateField('funeralTime', e.target.value)}
-          className="w-44 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-600"
+          className="w-44 bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
         />
       </div>
 
       {/* Venue */}
       <div>
-        <label className="block text-xs text-zinc-400 mb-1">
+        <label className="block text-xs text-muted-foreground mb-1">
           Funeral Venue
           <RequiredBadge />
         </label>
@@ -158,7 +158,7 @@ export default function BasicInfoForm() {
           value={store.funeralVenue}
           onChange={(e) => store.updateField('funeralVenue', e.target.value)}
           onBlur={() => handleBlur('funeralVenue')}
-          className={`${inputBase} ${!funeralVenueValidation.valid ? borderError : borderNormal} placeholder:text-zinc-600`}
+          className={`${inputBase} ${!funeralVenueValidation.valid ? borderError : borderNormal} placeholder:text-muted-foreground/60`}
         />
         {!funeralVenueValidation.valid && (
           <p className="text-[11px] text-red-400 mt-1">{funeralVenueValidation.error}</p>
@@ -167,7 +167,7 @@ export default function BasicInfoForm() {
 
       {/* Burial Location */}
       <div>
-        <label className="block text-xs text-zinc-400 mb-1">
+        <label className="block text-xs text-muted-foreground mb-1">
           Burial Location
           <OptionalBadge />
         </label>
@@ -176,13 +176,13 @@ export default function BasicInfoForm() {
           value={store.burialLocation}
           onChange={(e) => store.updateField('burialLocation', e.target.value)}
           placeholder="e.g. Anloga, Volta Region"
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-600"
+          className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
         />
       </div>
 
       {/* Theme Selector */}
       <div>
-        <label className="block text-xs text-zinc-400 mb-2">Brochure Theme</label>
+        <label className="block text-xs text-muted-foreground mb-2">Brochure Theme</label>
         <div className="grid grid-cols-3 gap-2">
           {Object.entries(themes).map(([key, t]) => (
             <button
@@ -191,8 +191,8 @@ export default function BasicInfoForm() {
               className={`
                 p-3 rounded-lg border text-left transition-all
                 ${store.theme === key
-                  ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/30'
-                  : 'border-zinc-700 bg-zinc-900 hover:border-zinc-500'
+                  ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
+                  : 'border-input bg-card hover:border-input'
                 }
               `}
             >
@@ -201,8 +201,8 @@ export default function BasicInfoForm() {
                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: t.heading }} />
                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: t.border }} />
               </div>
-              <div className="text-xs font-medium text-zinc-300">{t.name}</div>
-              <div className="text-[10px] text-zinc-500">{t.description}</div>
+              <div className="text-xs font-medium text-card-foreground">{t.name}</div>
+              <div className="text-[10px] text-muted-foreground">{t.description}</div>
             </button>
           ))}
         </div>

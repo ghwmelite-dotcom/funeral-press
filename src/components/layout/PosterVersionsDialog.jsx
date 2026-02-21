@@ -15,20 +15,20 @@ export default function PosterVersionsDialog({ open, onOpenChange }) {
           <DialogDescription>Restore a previous version of your poster.</DialogDescription>
         </DialogHeader>
         {(!snapshots || snapshots.length === 0) ? (
-          <p className="text-sm text-zinc-500 text-center py-4">No saved versions yet. Versions are created automatically before imports.</p>
+          <p className="text-sm text-muted-foreground text-center py-4">No saved versions yet. Versions are created automatically before imports.</p>
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {snapshots.map((snap) => (
-              <div key={snap.id} className="flex items-center justify-between p-3 bg-zinc-900 border border-zinc-800 rounded-lg">
+              <div key={snap.id} className="flex items-center justify-between p-3 bg-card border border-border rounded-lg">
                 <div>
-                  <p className="text-sm text-zinc-300">{snap.label}</p>
-                  <p className="text-[10px] text-zinc-500">{new Date(snap.timestamp).toLocaleString()}</p>
+                  <p className="text-sm text-card-foreground">{snap.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{new Date(snap.timestamp).toLocaleString()}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => { restoreSnapshot(snap.id); onOpenChange(false) }} className="p-1.5 text-zinc-400 hover:text-amber-400 transition-colors" title="Restore">
+                  <button onClick={() => { restoreSnapshot(snap.id); onOpenChange(false) }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors" title="Restore">
                     <RotateCcw size={14} />
                   </button>
-                  <button onClick={() => deleteSnapshot(snap.id)} className="p-1.5 text-zinc-400 hover:text-red-400 transition-colors" title="Delete">
+                  <button onClick={() => deleteSnapshot(snap.id)} className="p-1.5 text-muted-foreground hover:text-red-400 transition-colors" title="Delete">
                     <Trash2 size={14} />
                   </button>
                 </div>

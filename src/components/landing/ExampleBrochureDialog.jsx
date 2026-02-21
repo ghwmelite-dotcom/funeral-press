@@ -292,12 +292,12 @@ export default function ExampleBrochureDialog({ open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg bg-zinc-950 border-zinc-800 p-0 overflow-hidden">
+      <DialogContent className="max-w-lg bg-background border-border p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle className="text-zinc-200 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          <DialogTitle className="text-foreground text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
             Example Brochure
           </DialogTitle>
-          <DialogDescription className="text-zinc-500 text-center text-xs">
+          <DialogDescription className="text-muted-foreground text-center text-xs">
             {PAGE_LABELS[page]} &mdash; Page {page + 1} of {pages.length}
           </DialogDescription>
         </DialogHeader>
@@ -310,7 +310,7 @@ export default function ExampleBrochureDialog({ open, onOpenChange }) {
             {/* Left arrow */}
             <button
               onClick={goLeft}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 w-8 h-8 rounded-full bg-zinc-800/90 border border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 w-8 h-8 rounded-full bg-muted/90 border border-input flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               aria-label="Previous page"
             >
               <ChevronLeft size={16} />
@@ -319,7 +319,7 @@ export default function ExampleBrochureDialog({ open, onOpenChange }) {
             {/* Right arrow */}
             <button
               onClick={goRight}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 w-8 h-8 rounded-full bg-zinc-800/90 border border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors"
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 w-8 h-8 rounded-full bg-muted/90 border border-input flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               aria-label="Next page"
             >
               <ChevronRight size={16} />
@@ -334,7 +334,7 @@ export default function ExampleBrochureDialog({ open, onOpenChange }) {
               key={label}
               onClick={() => setPage(i)}
               className={`w-2 h-2 rounded-full transition-colors ${
-                i === page ? 'bg-amber-500' : 'bg-zinc-700 hover:bg-zinc-600'
+                i === page ? 'bg-primary' : 'bg-accent hover:bg-muted-foreground/60'
               }`}
               aria-label={label}
             />

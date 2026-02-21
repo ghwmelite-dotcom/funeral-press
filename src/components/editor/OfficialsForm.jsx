@@ -39,25 +39,25 @@ export default function OfficialsForm() {
 
       {/* Flower Bearers */}
       <div>
-        <label className="block text-xs text-zinc-400 mb-1">Flower Bearers</label>
+        <label className="block text-xs text-muted-foreground mb-1">Flower Bearers</label>
         <input
           type="text"
           value={officials.flowerBearers}
           onChange={(e) => store.updateNested('officials.flowerBearers', e.target.value)}
           placeholder="Names of flower bearers..."
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-600"
+          className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
         />
       </div>
 
       {/* Pall Bearers */}
       <div>
-        <label className="block text-xs text-zinc-400 mb-1">Pall Bearers</label>
+        <label className="block text-xs text-muted-foreground mb-1">Pall Bearers</label>
         <input
           type="text"
           value={officials.pallBearers}
           onChange={(e) => store.updateNested('officials.pallBearers', e.target.value)}
           placeholder="Names of pall bearers..."
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-600"
+          className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
         />
       </div>
     </div>
@@ -67,7 +67,7 @@ export default function OfficialsForm() {
 function Section({ title, children }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-zinc-400 mb-2">{title}</label>
+      <label className="block text-xs font-medium text-muted-foreground mb-2">{title}</label>
       <div className="space-y-2">{children}</div>
     </div>
   )
@@ -81,19 +81,19 @@ function RolePair({ role, name, onRoleChange, onNameChange, onRemove }) {
         value={role}
         onChange={(e) => onRoleChange(e.target.value)}
         placeholder="Role"
-        className="w-full sm:w-36 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-600"
+        className="w-full sm:w-36 bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
       />
       <input
         type="text"
         value={name}
         onChange={(e) => onNameChange(e.target.value)}
         placeholder="Name"
-        className="flex-1 w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-600"
+        className="flex-1 w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
       />
       {onRemove && (
         <button
           onClick={onRemove}
-          className="p-2 text-zinc-500 hover:text-red-400 transition-colors"
+          className="p-2 text-muted-foreground hover:text-red-400 transition-colors"
           aria-label="Remove official"
         >
           <Trash2 size={14} />
@@ -107,7 +107,7 @@ function AddButton({ onClick, label }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-500 transition-colors mt-1"
+      className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/90 transition-colors mt-1"
     >
       <Plus size={14} /> {label}
     </button>

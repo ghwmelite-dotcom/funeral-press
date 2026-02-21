@@ -1,6 +1,6 @@
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Download, Share2 } from 'lucide-react'
+import { ArrowLeft, Download, Share2, BookOpenCheck, Presentation } from 'lucide-react'
 import { useBrochureStore } from '../stores/brochureStore'
 import { useNotification } from '../components/ui/notification'
 import BrochureDocument from '../components/pdf/BrochureDocument'
@@ -38,6 +38,8 @@ export default function PreviewPage() {
     backCoverPhrase: store.backCoverPhrase,
     backCoverSubtext: store.backCoverSubtext,
     designerCredit: store.designerCredit,
+    memorialId: store.memorialId,
+    memorialQrCode: store.memorialQrCode,
   }
 
   const smartFilename = store.getSmartFilename('pdf')
@@ -52,17 +54,29 @@ export default function PreviewPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-zinc-950" role="main" aria-label="Brochure Preview">
+    <div className="h-screen flex flex-col bg-background" role="main" aria-label="Brochure Preview">
       {/* Header */}
-      <div className="h-12 flex items-center justify-between px-4 border-b border-zinc-800 shrink-0" role="toolbar" aria-label="Preview toolbar">
-        <Link to="/editor" className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors text-sm" aria-label="Back to Editor">
+      <div className="h-12 flex items-center justify-between px-4 border-b border-border shrink-0" role="toolbar" aria-label="Preview toolbar">
+        <Link to="/editor" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm" aria-label="Back to Editor">
           <ArrowLeft size={16} /> Back to Editor
         </Link>
 
         <div className="flex items-center gap-2">
+          <Link
+            to="/flipbook"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-input rounded-md transition-colors"
+          >
+            <BookOpenCheck size={14} /> Flipbook
+          </Link>
+          <Link
+            to="/slideshow"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-input rounded-md transition-colors"
+          >
+            <Presentation size={14} /> Slideshow
+          </Link>
           <button
             onClick={handleShare}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 border border-zinc-700 rounded-md transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-input rounded-md transition-colors"
             aria-label="Share brochure link"
           >
             <Share2 size={14} /> Share
@@ -75,7 +89,7 @@ export default function PreviewPage() {
             {({ loading }) => (
               <button
                 disabled={loading}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 text-white text-xs font-medium rounded-md transition-colors"
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-white text-xs font-medium rounded-md transition-colors"
                 aria-label={loading ? 'Preparing PDF download' : 'Download PDF'}
               >
                 <Download size={14} />

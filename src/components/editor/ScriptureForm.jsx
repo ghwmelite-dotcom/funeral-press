@@ -30,7 +30,7 @@ export default function ScriptureForm() {
     <div className="space-y-4">
       {/* Category tabs */}
       <div>
-        <label className="block text-xs text-zinc-400 mb-2">Scripture Category</label>
+        <label className="block text-xs text-muted-foreground mb-2">Scripture Category</label>
         <div className="flex gap-1 flex-wrap">
           {categoryTabs.map((tab) => (
             <button
@@ -43,8 +43,8 @@ export default function ScriptureForm() {
               }}
               className={`px-3 py-1.5 text-xs rounded-full transition-colors ${
                 activeTab === tab.key
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:text-foreground'
               }`}
             >
               {tab.label}
@@ -69,25 +69,25 @@ export default function ScriptureForm() {
                 onClick={() => handleSelect(key)}
                 className={`w-full text-left p-3 rounded-lg border transition-colors ${
                   isSelected
-                    ? 'border-amber-600 bg-amber-600/10'
-                    : 'border-zinc-800 bg-zinc-900 hover:border-zinc-600 hover:bg-zinc-800/50'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-card hover:border-input hover:bg-muted/50'
                 }`}
               >
                 <div className="flex items-start gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <BookOpen size={13} className={isSelected ? 'text-amber-500' : 'text-zinc-500'} />
-                      <span className={`text-sm font-medium ${isSelected ? 'text-amber-400' : 'text-zinc-200'}`}>
+                      <BookOpen size={13} className={isSelected ? 'text-primary' : 'text-muted-foreground'} />
+                      <span className={`text-sm font-medium ${isSelected ? 'text-primary' : 'text-foreground'}`}>
                         {scripture.title}
                       </span>
                     </div>
-                    <p className="text-[11px] text-zinc-400 mt-0.5 ml-5">{scripture.subtitle}</p>
-                    <p className="text-[10px] text-zinc-600 mt-1 ml-5 leading-relaxed italic">
+                    <p className="text-[11px] text-muted-foreground mt-0.5 ml-5">{scripture.subtitle}</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-1 ml-5 leading-relaxed italic">
                       {preview}
                     </p>
                   </div>
                   {isSelected && (
-                    <Check size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                    <Check size={16} className="text-primary shrink-0 mt-0.5" />
                   )}
                 </div>
               </button>
@@ -99,12 +99,12 @@ export default function ScriptureForm() {
       {/* Custom scripture */}
       {activeTab === 'custom' && (
         <div>
-          <label className="block text-xs text-zinc-400 mb-1">Custom Scripture Text</label>
+          <label className="block text-xs text-muted-foreground mb-1">Custom Scripture Text</label>
           <textarea
             value={store.customScripture}
             onChange={(e) => store.updateField('customScripture', e.target.value)}
             rows={10}
-            className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-600 resize-none"
+            className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
             placeholder="Enter custom scripture text..."
           />
         </div>
@@ -112,12 +112,12 @@ export default function ScriptureForm() {
 
       {/* Additional verse */}
       <div>
-        <label className="block text-xs text-zinc-400 mb-1">Additional Verse (bottom of page)</label>
+        <label className="block text-xs text-muted-foreground mb-1">Additional Verse (bottom of page)</label>
         <textarea
           value={store.additionalVerse}
           onChange={(e) => store.updateField('additionalVerse', e.target.value)}
           rows={4}
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-600 resize-none"
+          className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
         />
       </div>
     </div>

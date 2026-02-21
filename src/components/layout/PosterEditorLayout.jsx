@@ -85,7 +85,7 @@ function SectionBadge({ sectionKey, icon }) {
   }
 
   return (
-    <span className="w-5 h-5 rounded-full bg-amber-600/20 text-amber-500 text-[10px] font-bold flex items-center justify-center shrink-0">
+    <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">
       {icon}
     </span>
   )
@@ -103,12 +103,12 @@ function ProgressBar() {
   return (
     <div className="mb-3">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-zinc-400">Progress</span>
-        <span className="text-xs text-amber-500 font-medium">{completed}/{total} sections</span>
+        <span className="text-xs text-muted-foreground">Progress</span>
+        <span className="text-xs text-primary font-medium">{completed}/{total} sections</span>
       </div>
-      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div
-          className="h-full bg-amber-600 rounded-full transition-all duration-500"
+          className="h-full bg-primary rounded-full transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -127,10 +127,10 @@ function PosterBackupReminder() {
   if (dismissed || editCount < 5) return null
 
   return (
-    <div className="mb-3 px-3 py-2 bg-amber-900/30 border border-amber-700/50 rounded-lg flex items-center gap-2 text-xs text-amber-300">
+    <div className="mb-3 px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-2 text-xs text-primary">
       <span className="flex-1">You have unsaved changes. Don't forget to save!</span>
-      <button onClick={() => { savePoster(); setDismissed(true) }} className="px-2 py-1 bg-amber-600 text-white rounded text-xs hover:bg-amber-500">Save Now</button>
-      <button onClick={() => setDismissed(true)} className="text-amber-500 hover:text-amber-400 text-sm font-bold">&times;</button>
+      <button onClick={() => { savePoster(); setDismissed(true) }} className="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary/90">Save Now</button>
+      <button onClick={() => setDismissed(true)} className="text-primary hover:text-primary/80 text-sm font-bold">&times;</button>
     </div>
   )
 }
@@ -144,7 +144,7 @@ function PdfSkeleton() {
           <Skeleton className="w-3/4 h-3 mx-auto" />
           <Skeleton className="w-1/2 h-3 mx-auto" />
         </div>
-        <p className="text-xs text-zinc-500 text-center mt-3">Loading PDF preview...</p>
+        <p className="text-xs text-muted-foreground text-center mt-3">Loading PDF preview...</p>
       </div>
     </div>
   )
@@ -217,9 +217,9 @@ export default function PosterEditorLayout() {
   return (
     <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
       {/* Left Panel - Form Editor */}
-      <div className="w-full lg:w-[420px] xl:w-[460px] border-r border-zinc-800 overflow-y-auto bg-zinc-950">
+      <div className="w-full lg:w-[420px] xl:w-[460px] border-r border-border overflow-y-auto bg-background">
         <div className="p-4">
-          <h2 className="text-xs text-zinc-500 uppercase tracking-wider mb-3 font-medium">Poster Editor</h2>
+          <h2 className="text-xs text-muted-foreground uppercase tracking-wider mb-3 font-medium">Poster Editor</h2>
 
           <ProgressBar />
           <PosterBackupReminder />
@@ -228,16 +228,16 @@ export default function PosterEditorLayout() {
             {sections.map(({ key, title, icon, component: Component }) => {
               const isOpen = openSections.includes(key)
               return (
-                <div key={key} className="border border-zinc-800 rounded-lg overflow-hidden">
+                <div key={key} className="border border-border rounded-lg overflow-hidden">
                   <button
                     onClick={() => toggleSection(key)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-zinc-900/50 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-card/50 transition-colors"
                   >
                     <SectionBadge sectionKey={key} icon={icon} />
-                    <span className="text-sm text-zinc-300 flex-1">{title}</span>
+                    <span className="text-sm text-card-foreground flex-1">{title}</span>
                     {isOpen
-                      ? <ChevronDown size={14} className="text-zinc-500" />
-                      : <ChevronRight size={14} className="text-zinc-500" />
+                      ? <ChevronDown size={14} className="text-muted-foreground" />
+                      : <ChevronRight size={14} className="text-muted-foreground" />
                     }
                   </button>
                   <div
@@ -246,7 +246,7 @@ export default function PosterEditorLayout() {
                     }`}
                   >
                     <div className="overflow-hidden">
-                      <div className="px-3 pb-4 pt-2 border-t border-zinc-800/50">
+                      <div className="px-3 pb-4 pt-2 border-t border-border/50">
                         <Component />
                       </div>
                     </div>
@@ -260,10 +260,10 @@ export default function PosterEditorLayout() {
 
       {/* Right Panel - PDF Preview (desktop only) */}
       {!isMobile && (
-        <div className="flex-1 flex flex-col bg-zinc-900 min-h-0">
+        <div className="flex-1 flex flex-col bg-card min-h-0">
           {/* Preview header */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-950 shrink-0">
-            <span className="text-xs text-zinc-500 uppercase tracking-wider">Live Preview</span>
+          <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background shrink-0">
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">Live Preview</span>
             <PDFDownloadLink
               document={<PosterDocument data={pdfData} />}
               fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Obituary'}-Poster.pdf`}
@@ -271,7 +271,7 @@ export default function PosterEditorLayout() {
               {({ loading }) => (
                 <button
                   disabled={loading}
-                  className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 text-white text-xs font-medium rounded-md transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-white text-xs font-medium rounded-md transition-colors"
                 >
                   <Download size={14} />
                   {loading ? 'Preparing...' : 'Download PDF'}
@@ -303,7 +303,7 @@ export default function PosterEditorLayout() {
         <>
           <button
             onClick={() => setShowMobilePreview(true)}
-            className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium rounded-full shadow-lg transition-colors lg:hidden"
+            className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-full shadow-lg transition-colors lg:hidden"
             aria-label="Preview PDF"
           >
             <Eye size={18} /> Preview
@@ -312,8 +312,8 @@ export default function PosterEditorLayout() {
           <Dialog open={showMobilePreview} onOpenChange={setShowMobilePreview}>
             <DialogContent className="max-w-full w-full h-[90vh] p-0">
               <div className="flex flex-col h-full">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-                  <span className="text-sm text-zinc-300 font-medium">PDF Preview</span>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                  <span className="text-sm text-card-foreground font-medium">PDF Preview</span>
                   <PDFDownloadLink
                     document={<PosterDocument data={pdfData} />}
                     fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Obituary'}-Poster.pdf`}
@@ -321,7 +321,7 @@ export default function PosterEditorLayout() {
                     {({ loading }) => (
                       <button
                         disabled={loading}
-                        className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 text-white text-xs font-medium rounded-md transition-colors"
+                        className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-white text-xs font-medium rounded-md transition-colors"
                       >
                         <Download size={14} />
                         {loading ? 'Preparing...' : 'Download PDF'}

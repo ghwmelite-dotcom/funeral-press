@@ -1,11 +1,11 @@
 export default function WordCountIndicator({ text = '', min = 150, max = 500 }) {
   const count = (text || '').split(/\s+/).filter(Boolean).length
-  let color = 'text-zinc-500'
+  let color = 'text-muted-foreground'
   let label = ''
 
   if (count === 0) {
     label = 'not started'
-    color = 'text-zinc-600'
+    color = 'text-muted-foreground/60'
   } else if (count < min) {
     label = 'too short'
     color = 'text-red-400'
@@ -14,7 +14,7 @@ export default function WordCountIndicator({ text = '', min = 150, max = 500 }) 
     color = 'text-emerald-400'
   } else {
     label = 'getting long'
-    color = 'text-amber-400'
+    color = 'text-primary'
   }
 
   return (

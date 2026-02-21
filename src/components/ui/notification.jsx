@@ -34,10 +34,10 @@ export function NotificationProvider({ children }) {
         {notifications.map((n) => (
           <div key={n.id}
             className={`pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg border text-sm animate-notification-in
-              ${n.type === 'success' ? 'bg-emerald-950 border-emerald-800 text-emerald-200' : ''}
-              ${n.type === 'error' ? 'bg-red-950 border-red-800 text-red-200' : ''}
-              ${n.type === 'warning' ? 'bg-amber-950 border-amber-800 text-amber-200' : ''}
-              ${n.type === 'info' ? 'bg-zinc-900 border-zinc-700 text-zinc-200' : ''}
+              ${n.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200' : ''}
+              ${n.type === 'error' ? 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200' : ''}
+              ${n.type === 'warning' ? 'bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200' : ''}
+              ${n.type === 'info' ? 'bg-card border-border text-foreground' : ''}
             `}>
             {/* Icon based on type */}
             {n.type === 'success' && <CheckCircle size={16} />}
