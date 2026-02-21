@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80">
+  <defs>
+    <linearGradient id="logoGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8D48B"/>
+      <stop offset="50%" stop-color="#C9A84C"/>
+      <stop offset="100%" stop-color="#B8960F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon mark -->
+  <g transform="translate(8, 8)">
+    <!-- Diamond frame -->
+    <path d="M32 4 L60 32 L32 60 L4 32 Z" fill="none" stroke="url(#logoGold)" stroke-width="1.5" opacity="0.4"/>
+
+    <!-- Cross -->
+    <rect x="28" y="12" width="8" height="40" rx="1" fill="url(#logoGold)"/>
+    <rect x="17" y="24" width="30" height="8" rx="1" fill="url(#logoGold)"/>
+
+    <!-- Corner diamonds -->
+    <g fill="url(#logoGold)" opacity="0.5">
+      <path d="M32 6 L34 8 L32 10 L30 8 Z"/>
+      <path d="M32 54 L34 56 L32 58 L30 56 Z"/>
+    </g>
+  </g>
+
+  <!-- Text -->
+  <text x="80" y="35" font-family="'Playfair Display', Georgia, serif" font-weight="700" font-size="26" letter-spacing="3" fill="#C9A84C">
+    FUNERAL
+  </text>
+  <text x="80" y="60" font-family="'Playfair Display', Georgia, serif" font-weight="400" font-size="18" letter-spacing="6" fill="#E8D48B">
+    PRESS
+  </text>
+
+  <!-- Divider line -->
+  <line x1="80" y1="40" x2="230" y2="40" stroke="#C9A84C" stroke-width="0.5" opacity="0.3"/>
+</svg>

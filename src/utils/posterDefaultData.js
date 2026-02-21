@@ -2,6 +2,7 @@ export const posterThemes = {
   royalBlue: {
     name: 'Royal Blue & Gold',
     description: 'Classic, elegant blue and gold',
+    layout: 'classic',
     headerBg: '#1a3a6e',
     bodyBg: '#1a3a6e',
     accent: '#C9A84C',
@@ -18,6 +19,7 @@ export const posterThemes = {
   midnightBlack: {
     name: 'Midnight Black & Gold',
     description: 'Regal, dramatic black and gold',
+    layout: 'classic',
     headerBg: '#0A0A0A',
     bodyBg: '#111111',
     accent: '#C9A84C',
@@ -34,6 +36,7 @@ export const posterThemes = {
   burgundyIvory: {
     name: 'Burgundy & Ivory',
     description: 'Warm, dignified burgundy and ivory',
+    layout: 'elegant',
     headerBg: '#5C1A2A',
     bodyBg: '#4A1525',
     accent: '#D4AF37',
@@ -50,6 +53,7 @@ export const posterThemes = {
   forestGreen: {
     name: 'Forest Green & Gold',
     description: 'Peaceful, nature-inspired green and gold',
+    layout: 'modern',
     headerBg: '#1A3A2A',
     bodyBg: '#1A3A2A',
     accent: '#C9A84C',
@@ -66,6 +70,7 @@ export const posterThemes = {
   kenteHeritage: {
     name: 'Kente Heritage',
     description: 'Bold Ashanti kente-inspired warmth',
+    layout: 'heritage',
     headerBg: '#2E1504',
     bodyBg: '#3A1C08',
     accent: '#D4A017',
@@ -82,6 +87,7 @@ export const posterThemes = {
   purpleMajesty: {
     name: 'Purple Majesty',
     description: 'Regal purple with silver accents',
+    layout: 'centered',
     headerBg: '#1E0A38',
     bodyBg: '#28104A',
     accent: '#C0C0C8',
@@ -98,6 +104,7 @@ export const posterThemes = {
   ivoryClassic: {
     name: 'Ivory Classic',
     description: 'Light, elegant ivory and charcoal',
+    layout: 'centered',
     headerBg: '#FFFFFF',
     bodyBg: '#FAF8F5',
     accent: '#8B7340',
@@ -114,6 +121,7 @@ export const posterThemes = {
   rosePink: {
     name: 'Rose Pink',
     description: 'Soft, tender rose and blush',
+    layout: 'elegant',
     headerBg: '#3A1020',
     bodyBg: '#4A1828',
     accent: '#D4A0A8',
@@ -130,6 +138,7 @@ export const posterThemes = {
   oceanNavy: {
     name: 'Ocean Navy',
     description: 'Deep navy blue with white & teal',
+    layout: 'modern',
     headerBg: '#0A1628',
     bodyBg: '#0E1E38',
     accent: '#5ABCB0',
@@ -146,6 +155,7 @@ export const posterThemes = {
   oliveGold: {
     name: 'Olive & Gold',
     description: 'Military-inspired olive and brass',
+    layout: 'modern',
     headerBg: '#2A3020',
     bodyBg: '#343A28',
     accent: '#B8A04C',
@@ -162,6 +172,7 @@ export const posterThemes = {
   chocolateCream: {
     name: 'Chocolate & Cream',
     description: 'Rich chocolate brown with warm cream',
+    layout: 'heritage',
     headerBg: '#2E1A0E',
     bodyBg: '#3A2418',
     accent: '#D4AF60',

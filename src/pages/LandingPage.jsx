@@ -22,15 +22,21 @@ import {
   Globe,
   BookOpenCheck,
   Shield,
+  CalendarCheck,
+  Presentation,
 } from 'lucide-react'
 import { Sun, Moon } from 'lucide-react'
 import { useBrochureStore } from '../stores/brochureStore'
 import { useThemeStore } from '../stores/themeStore'
 import { usePosterStore } from '../stores/posterStore'
-import { posterTemplates } from '../utils/posterDefaultData'
+import { posterTemplates, posterThemes } from '../utils/posterDefaultData'
 import { themes } from '../utils/themes'
 import BrochureMockup from '../components/landing/BrochureMockup'
 import PosterMockup from '../components/landing/PosterMockup'
+import ProgrammeMockup from '../components/landing/ProgrammeMockup'
+import FlipbookMockup from '../components/landing/FlipbookMockup'
+import SlideshowMockup from '../components/landing/SlideshowMockup'
+import MemorialMockup from '../components/landing/MemorialMockup'
 import ExampleBrochureDialog from '../components/landing/ExampleBrochureDialog'
 import ThemePreviewCard from '../components/landing/ThemePreviewCard'
 import LoadSharedDialog from '../components/layout/LoadSharedDialog'
@@ -78,6 +84,7 @@ export default function LandingPage() {
   const [exampleOpen, setExampleOpen] = useState(false)
   const [loadSharedOpen, setLoadSharedOpen] = useState(false)
   const [shareCode, setShareCode] = useState('')
+  const [themeTab, setThemeTab] = useState('brochure')
 
   // Detect ?share= query parameter
   useEffect(() => {
@@ -116,6 +123,12 @@ export default function LandingPage() {
     navigate('/editor')
   }
 
+  const handlePosterThemeSelect = (themeKey) => {
+    posterStore.newPoster()
+    posterStore.updateField('posterTheme', themeKey)
+    navigate('/poster-editor')
+  }
+
   const handleNewPoster = () => {
     posterStore.newPoster()
     navigate('/poster-editor')
@@ -138,6 +151,36 @@ export default function LandingPage() {
     if (confirm('Delete this poster?')) {
       posterStore.deletePoster(id)
     }
+  }
+
+  const hasBrochureData = store.fullName && store.fullName !== ''
+
+  const handleOpenProgramme = () => {
+    if (!hasBrochureData && brochures.length > 0) {
+      store.loadBrochure(brochures[0].id)
+    }
+    navigate('/programme')
+  }
+
+  const handleOpenFlipbook = () => {
+    if (!hasBrochureData && brochures.length > 0) {
+      store.loadBrochure(brochures[0].id)
+    }
+    navigate('/flipbook')
+  }
+
+  const handleOpenSlideshow = () => {
+    if (!hasBrochureData && brochures.length > 0) {
+      store.loadBrochure(brochures[0].id)
+    }
+    navigate('/slideshow')
+  }
+
+  const handleOpenMemorial = () => {
+    if (!hasBrochureData && brochures.length > 0) {
+      store.loadBrochure(brochures[0].id)
+    }
+    navigate('/editor')
   }
 
   return (
@@ -203,7 +246,7 @@ export default function LandingPage() {
         {/* Choose Your Product */}
         <div className="mb-20">
           <div className="text-center mb-8">
-            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Two Beautiful Products</p>
+            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Complete Memorial Suite</p>
             <h2
               className="text-2xl md:text-3xl font-bold text-foreground"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
@@ -212,20 +255,20 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Brochure Card */}
             <button
               onClick={handleNew}
               className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
             >
-              <div className="w-full max-w-[160px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
+              <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <BrochureMockup themeKey="blackGold" className="text-[8px]" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+              <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                 Funeral Brochure
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed mb-3">
-                Multi-page A4 brochure with cover, order of service, tributes, biography, photo gallery, and acknowledgements.
+                Multi-page A4 brochure with cover, order of service, tributes, biography, and photo gallery.
               </p>
               <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 group-hover:text-primary transition-colors uppercase tracking-wider font-medium">
                 Create Brochure <ArrowRight size={10} />
@@ -237,10 +280,10 @@ export default function LandingPage() {
               onClick={handleNewPoster}
               className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
             >
-              <div className="w-full max-w-[160px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
+              <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <PosterMockup themeKey="royalBlue" className="text-[8px]" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+              <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                 Obituary Poster
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed mb-3">
@@ -248,6 +291,82 @@ export default function LandingPage() {
               </p>
               <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 group-hover:text-primary transition-colors uppercase tracking-wider font-medium">
                 Create Poster <ArrowRight size={10} />
+              </span>
+            </button>
+
+            {/* Programme Card */}
+            <button
+              onClick={handleOpenProgramme}
+              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+            >
+              <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
+                <ProgrammeMockup themeKey="blackGold" className="text-[8px]" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                Live Programme
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                Real-time countdown, order of service tracker, and interactive checklist for the day of the funeral.
+              </p>
+              <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 group-hover:text-primary transition-colors uppercase tracking-wider font-medium">
+                View Programme <ArrowRight size={10} />
+              </span>
+            </button>
+
+            {/* Flipbook Card */}
+            <button
+              onClick={handleOpenFlipbook}
+              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+            >
+              <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
+                <FlipbookMockup themeKey="blackGold" className="text-[8px]" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                Interactive Flipbook
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                View your brochure as a beautiful page-turning flipbook with realistic animations.
+              </p>
+              <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 group-hover:text-primary transition-colors uppercase tracking-wider font-medium">
+                Open Flipbook <ArrowRight size={10} />
+              </span>
+            </button>
+
+            {/* Slideshow Card */}
+            <button
+              onClick={handleOpenSlideshow}
+              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+            >
+              <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
+                <SlideshowMockup themeKey="blackGold" className="text-[8px]" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                Memorial Slideshow
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                Cinematic slideshow with music, transitions, and video recording for memorial tributes.
+              </p>
+              <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 group-hover:text-primary transition-colors uppercase tracking-wider font-medium">
+                Play Slideshow <ArrowRight size={10} />
+              </span>
+            </button>
+
+            {/* Memorial Page Card */}
+            <button
+              onClick={handleOpenMemorial}
+              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+            >
+              <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
+                <MemorialMockup themeKey="blackGold" className="text-[8px]" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                Online Memorial
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                Publish a public memorial page with a shareable link and QR code for the brochure.
+              </p>
+              <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 group-hover:text-primary transition-colors uppercase tracking-wider font-medium">
+                Create Memorial <ArrowRight size={10} />
               </span>
             </button>
           </div>
@@ -476,15 +595,79 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            {Object.keys(themes).map((key) => (
-              <ThemePreviewCard
-                key={key}
-                themeKey={key}
-                onClick={() => handleThemeSelect(key)}
+          {/* Tab Toggle */}
+          <div className="flex justify-center mb-8">
+            <div className="relative inline-flex bg-muted/60 border border-border rounded-full p-1">
+              {/* Sliding indicator */}
+              <div
+                className="absolute top-1 bottom-1 rounded-full bg-primary shadow-md transition-all duration-300 ease-out"
+                style={{
+                  width: 'calc(50% - 4px)',
+                  left: themeTab === 'brochure' ? 4 : 'calc(50% + 0px)',
+                }}
               />
-            ))}
+              <button
+                onClick={() => setThemeTab('brochure')}
+                className={`relative z-10 px-6 py-2 text-sm font-medium rounded-full transition-colors duration-300 ${
+                  themeTab === 'brochure' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Brochure Themes
+              </button>
+              <button
+                onClick={() => setThemeTab('poster')}
+                className={`relative z-10 px-6 py-2 text-sm font-medium rounded-full transition-colors duration-300 ${
+                  themeTab === 'poster' ? 'text-white' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Poster Themes
+              </button>
+            </div>
           </div>
+
+          {/* Brochure Themes Grid */}
+          {themeTab === 'brochure' && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              {Object.keys(themes).map((key) => (
+                <ThemePreviewCard
+                  key={key}
+                  themeKey={key}
+                  onClick={() => handleThemeSelect(key)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Poster Themes Grid */}
+          {themeTab === 'poster' && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              {Object.keys(posterThemes).map((key) => {
+                const t = posterThemes[key]
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handlePosterThemeSelect(key)}
+                    className="group flex flex-col bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 text-left w-full"
+                  >
+                    <div className="p-4 pb-3 flex items-center justify-center">
+                      <div className="w-full max-w-[180px] rounded-lg overflow-hidden shadow-md group-hover:shadow-lg transition-shadow duration-200 ring-1 ring-border/50">
+                        <PosterMockup themeKey={key} className="text-[8px]" />
+                      </div>
+                    </div>
+                    <div className="px-4 pb-4">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <span className="w-3.5 h-3.5 rounded-full border border-muted-foreground/60" style={{ backgroundColor: t.headerBg }} title="Header" />
+                        <span className="w-3.5 h-3.5 rounded-full border border-muted-foreground/60" style={{ backgroundColor: t.accent }} title="Accent" />
+                        <span className="w-3.5 h-3.5 rounded-full border border-muted-foreground/60" style={{ backgroundColor: t.detailsBg }} title="Details" />
+                      </div>
+                      <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{t.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
 
           <div className="text-center mt-6">
             <Link
