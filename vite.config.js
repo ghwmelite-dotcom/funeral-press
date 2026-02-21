@@ -15,14 +15,6 @@ export default defineConfig({
     minify: 'esbuild',
     target: 'es2020',
     chunkSizeWarningLimit: 2000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'react-pdf': ['@react-pdf/renderer'],
-        },
-      },
-    },
   },
   server: {
     port: 5173,
