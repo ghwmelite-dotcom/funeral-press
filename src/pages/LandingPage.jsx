@@ -436,130 +436,156 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* ═══ Partner Program Highlight ═══ */}
-        <div className="relative mb-20 group/partner">
-          {/* Outer glow ring on hover */}
-          <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-primary/40 via-amber-500/40 to-primary/40 opacity-0 group-hover/partner:opacity-100 blur-sm transition-opacity duration-700" />
+        {/* ═══ Partner Program — Premium Section ═══ */}
+        <div className="relative mb-20">
+          {/* Animated border glow */}
+          <div className="absolute -inset-[1px] rounded-3xl bg-gradient-to-r from-primary via-amber-400 to-primary bg-[length:200%_100%] animate-shimmer opacity-60" />
 
-          <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card">
-            {/* Background decorations */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-primary/8 to-transparent rounded-full -translate-y-1/3 translate-x-1/4" />
-            <div className="absolute bottom-0 left-0 w-60 h-60 bg-gradient-to-tr from-amber-500/6 to-transparent rounded-full translate-y-1/3 -translate-x-1/4" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-radial from-primary/3 to-transparent rounded-full" />
+          <div className="relative overflow-hidden rounded-3xl bg-card animate-glow-breathe">
+            {/* Layered background atmosphere */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.07] via-transparent to-amber-500/[0.05]" />
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-primary/10 via-primary/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/4" />
+            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-amber-500/8 via-amber-500/3 to-transparent rounded-full translate-y-1/2 -translate-x-1/4" />
 
-            {/* Subtle grid pattern */}
-            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+            {/* Shimmer sweep overlay */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent animate-shimmer-sweep" />
+            </div>
 
-            <div className="relative px-8 py-10 md:px-12 md:py-14">
-              {/* Top badge */}
-              <div className="flex items-center justify-center md:justify-start mb-6">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-primary/15 to-amber-500/15 border border-primary/20 rounded-full">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[10px] text-primary uppercase tracking-[0.15em] font-bold">Partner Program</span>
+            {/* Diamond pattern */}
+            <div className="absolute inset-0 opacity-[0.025]" style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0L40 20L20 40L0 20z' fill='%23fff' fill-opacity='0.4'/%3E%3C/svg%3E")`,
+              backgroundSize: '40px 40px',
+            }} />
+
+            <div className="relative px-8 py-12 md:px-14 md:py-16">
+              {/* Top badge row */}
+              <div className="flex items-center justify-center lg:justify-start gap-3 mb-8 animate-float-up">
+                <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-gradient-to-r from-primary/15 via-amber-500/10 to-primary/15 border border-primary/25 rounded-full backdrop-blur-sm">
+                  <div className="relative w-2 h-2">
+                    <div className="absolute inset-0 rounded-full bg-emerald-400 animate-pulse" />
+                    <div className="absolute inset-0 rounded-full bg-emerald-400/50 animate-ping" />
+                  </div>
+                  <span className="text-[11px] text-primary uppercase tracking-[0.2em] font-bold">Partner Program</span>
+                  <span className="text-[9px] text-emerald-400 font-semibold px-1.5 py-0.5 bg-emerald-400/10 rounded-full">LIVE</span>
                 </div>
               </div>
 
-              <div className="flex flex-col lg:flex-row items-center gap-10">
-                {/* Left: content */}
+              <div className="flex flex-col lg:flex-row items-center gap-12">
+                {/* Left: headline + text + CTA */}
                 <div className="flex-1 text-center lg:text-left">
                   <h2
-                    className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4 leading-tight"
-                    style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                    className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-5 leading-[1.15] animate-float-up"
+                    style={{ fontFamily: "'Playfair Display', Georgia, serif", animationDelay: '100ms' }}
                   >
-                    Earn Up to{' '}
+                    Refer Families,{' '}
                     <span className="relative inline-block">
-                      <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-primary to-amber-500">40% Commission</span>
-                      <span className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-primary/40 to-amber-500/40 rounded-full" />
+                      <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-400 to-primary bg-[length:200%_100%] animate-shimmer">
+                        Earn 40%
+                      </span>
                     </span>
+                    <br className="hidden sm:block" />
+                    <span className="text-muted-foreground text-[0.6em] font-normal">on every design they purchase</span>
                   </h2>
 
-                  <p className="text-muted-foreground text-sm sm:text-base max-w-xl mb-8 leading-relaxed">
-                    Join our partner program and earn money by referring families to FuneralPress.
-                    Share your unique referral link, and get paid for every design they purchase.
+                  <p className="text-muted-foreground text-sm sm:text-base max-w-lg mb-10 leading-relaxed animate-float-up" style={{ animationDelay: '200ms' }}>
+                    Funeral homes, event planners, and community leaders — share your unique link and earn tiered commissions
+                    with monthly payouts to your mobile money.
                   </p>
 
-                  {/* Stat pills */}
-                  <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start mb-8">
-                    <div className="flex items-center gap-2.5 px-4 py-2.5 bg-muted/60 border border-border rounded-xl">
-                      <TrendingUp size={16} className="text-primary shrink-0" />
-                      <div>
-                        <p className="text-base font-bold text-foreground leading-none">30–40%</p>
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">Commission Rate</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5 px-4 py-2.5 bg-muted/60 border border-border rounded-xl">
-                      <Banknote size={16} className="text-emerald-500 shrink-0" />
-                      <div>
-                        <p className="text-base font-bold text-foreground leading-none">GHS 19+</p>
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">Per Referral Sale</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5 px-4 py-2.5 bg-muted/60 border border-border rounded-xl">
-                      <Users size={16} className="text-amber-500 shrink-0" />
-                      <div>
-                        <p className="text-base font-bold text-foreground leading-none">4 Tiers</p>
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">Unlock Higher %</p>
-                      </div>
-                    </div>
+                  {/* Big stats row */}
+                  <div className="grid grid-cols-3 gap-3 mb-10 animate-float-up" style={{ animationDelay: '300ms' }}>
+                    {[
+                      { value: '40%', label: 'Max Commission', icon: TrendingUp, color: 'text-primary', glow: 'shadow-primary/20' },
+                      { value: 'GHS 19+', label: 'Per Referral', icon: Banknote, color: 'text-emerald-400', glow: 'shadow-emerald-400/20' },
+                      { value: '4 Tiers', label: 'To Climb', icon: Users, color: 'text-amber-400', glow: 'shadow-amber-400/20' },
+                    ].map((stat) => {
+                      const StatIcon = stat.icon
+                      return (
+                        <div key={stat.label} className={`relative group/stat flex flex-col items-center lg:items-start gap-1 p-4 rounded-2xl border border-border/60 bg-background/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 hover:shadow-lg ${stat.glow}`}>
+                          <StatIcon size={18} className={`${stat.color} mb-1`} />
+                          <p className="text-xl sm:text-2xl font-bold text-foreground leading-none">{stat.value}</p>
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                        </div>
+                      )
+                    })}
                   </div>
 
-                  {/* CTA */}
-                  {user?.isPartner ? (
-                    <button
-                      onClick={() => navigate('/partner-dashboard')}
-                      className="inline-flex items-center gap-2 px-7 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-all text-sm shadow-lg shadow-primary/20 hover:shadow-primary/30"
-                    >
-                      <Users size={16} />
-                      View Partner Dashboard
-                      <ChevronRight size={14} />
-                    </button>
-                  ) : user ? (
-                    <p className="text-sm text-muted-foreground italic">
-                      Interested? Contact us to join the partner program.
-                    </p>
-                  ) : (
-                    <div className="flex flex-col items-center lg:items-start gap-2">
-                      <p className="text-xs text-muted-foreground">Sign in to get started</p>
-                      <GoogleLoginButton />
-                    </div>
-                  )}
+                  {/* CTA area */}
+                  <div className="animate-float-up" style={{ animationDelay: '400ms' }}>
+                    {user?.isPartner ? (
+                      <button
+                        onClick={() => navigate('/partner-dashboard')}
+                        className="group/btn relative inline-flex items-center gap-2.5 px-8 py-3.5 bg-gradient-to-r from-primary to-amber-600 hover:from-primary/90 hover:to-amber-600/90 text-white font-semibold rounded-xl transition-all text-sm shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5"
+                      >
+                        <Users size={16} />
+                        View Partner Dashboard
+                        <ChevronRight size={14} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                      </button>
+                    ) : user ? (
+                      <p className="text-sm text-muted-foreground">
+                        Interested in becoming a partner?{' '}
+                        <a href="https://wa.me/233244000000?text=Hi%2C%20I%27m%20interested%20in%20the%20FuneralPress%20Partner%20Program" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Contact us</a>
+                      </p>
+                    ) : (
+                      <div className="flex flex-col items-center lg:items-start gap-3">
+                        <p className="text-xs text-muted-foreground">Sign in to apply as a partner</p>
+                        <GoogleLoginButton />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Right: Tier visualization */}
-                <div className="shrink-0 hidden lg:flex flex-col gap-2.5 w-56">
-                  {[
-                    { name: 'Starter', range: '0–5 referrals', rate: '30%', color: 'from-zinc-400 to-zinc-500', bg: 'bg-zinc-400/10', border: 'border-zinc-400/20', width: 'w-[60%]' },
-                    { name: 'Growing', range: '6–20 referrals', rate: '33%', color: 'from-blue-400 to-blue-500', bg: 'bg-blue-400/10', border: 'border-blue-400/20', width: 'w-[72%]' },
-                    { name: 'Pro', range: '21–50 referrals', rate: '37%', color: 'from-amber-400 to-amber-500', bg: 'bg-amber-400/10', border: 'border-amber-400/20', width: 'w-[86%]' },
-                    { name: 'Elite', range: '51+ referrals', rate: '40%', color: 'from-purple-400 to-purple-500', bg: 'bg-purple-400/10', border: 'border-purple-400/20', width: 'w-full' },
-                  ].map((tier, i) => (
-                    <div key={tier.name} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${tier.bg} ${tier.border} transition-all duration-300`} style={{ animationDelay: `${i * 100}ms` }}>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs font-semibold text-foreground">{tier.name}</span>
-                          <span className={`text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r ${tier.color}`}>{tier.rate}</span>
+                {/* Right: Premium tier card stack */}
+                <div className="shrink-0 w-full max-w-xs lg:w-64">
+                  <div className="space-y-3">
+                    {[
+                      { name: 'Starter', emoji: '', range: '0–5 referrals', rate: '30%', gradient: 'from-zinc-500 to-zinc-400', ring: 'ring-zinc-400/20', barW: '60%', delay: '200ms' },
+                      { name: 'Growing', emoji: '', range: '6–20 referrals', rate: '33%', gradient: 'from-blue-500 to-blue-400', ring: 'ring-blue-400/20', barW: '72%', delay: '300ms' },
+                      { name: 'Pro', emoji: '', range: '21–50 referrals', rate: '37%', gradient: 'from-amber-500 to-amber-400', ring: 'ring-amber-400/20', barW: '86%', delay: '400ms' },
+                      { name: 'Elite', emoji: '', range: '51+ referrals', rate: '40%', gradient: 'from-purple-500 via-pink-500 to-amber-400', ring: 'ring-purple-400/30', barW: '100%', delay: '500ms' },
+                    ].map((tier) => (
+                      <div
+                        key={tier.name}
+                        className={`group/tier relative flex items-center gap-4 px-5 py-4 rounded-2xl border border-border/50 bg-background/40 backdrop-blur-sm ring-1 ${tier.ring} hover:ring-2 transition-all duration-300 animate-float-up hover:-translate-y-0.5 hover:shadow-lg`}
+                        style={{ animationDelay: tier.delay }}
+                      >
+                        {/* Tier icon */}
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tier.gradient} flex items-center justify-center text-white text-sm shadow-lg shrink-0`}>
+                          {tier.emoji}
                         </div>
-                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full bg-gradient-to-r ${tier.color} ${tier.width} transition-all duration-700`} />
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-bold text-foreground">{tier.name}</span>
+                            <span className={`text-sm font-extrabold text-transparent bg-clip-text bg-gradient-to-r ${tier.gradient}`}>{tier.rate}</span>
+                          </div>
+                          {/* Progress bar */}
+                          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full bg-gradient-to-r ${tier.gradient} transition-all duration-1000 ease-out`}
+                              style={{ width: tier.barW }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1.5">{tier.range}</p>
                         </div>
-                        <p className="text-[9px] text-muted-foreground mt-1">{tier.range}</p>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Bottom perks strip */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-2 mt-8 pt-6 border-t border-border/50">
+              {/* Bottom perks bar */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mt-10 pt-7 border-t border-border/30 animate-float-up" style={{ animationDelay: '500ms' }}>
                 {[
-                  'Unique referral link',
-                  'Real-time tracking',
-                  'Monthly MoMo payouts',
-                  'Dedicated support',
-                ].map((perk) => (
-                  <span key={perk} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="w-1 h-1 rounded-full bg-primary/60" />
-                    {perk}
+                  { icon: Share2, text: 'Unique referral link' },
+                  { icon: Eye, text: 'Real-time tracking dashboard' },
+                  { icon: Banknote, text: 'Monthly MoMo payouts' },
+                  { icon: Shield, text: 'Dedicated partner support' },
+                ].map(({ icon: PerkIcon, text }) => (
+                  <span key={text} className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 border border-border/40 rounded-full px-3.5 py-1.5">
+                    <PerkIcon size={12} className="text-primary/70" />
+                    {text}
                   </span>
                 ))}
               </div>
