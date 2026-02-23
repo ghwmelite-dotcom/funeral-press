@@ -71,6 +71,7 @@ import ReminderMockup from '../components/landing/ReminderMockup'
 import ExampleBrochureDialog from '../components/landing/ExampleBrochureDialog'
 import ThemePreviewCard from '../components/landing/ThemePreviewCard'
 import LoadSharedDialog from '../components/layout/LoadSharedDialog'
+import { captureReferralCode } from '../utils/referralTracker'
 
 const FEATURES = [
   { icon: Palette, title: '9 Premium Themes', desc: 'From classic Black & Gold to bold Kente Gold — 9 beautiful themes' },
@@ -138,6 +139,14 @@ export default function LandingPage() {
     if (code && code.length === 6) {
       setShareCode(code)
       setLoadSharedOpen(true)
+    }
+  }, [searchParams])
+
+  // Detect ?ref= query parameter (partner referral)
+  useEffect(() => {
+    const ref = searchParams.get('ref')
+    if (ref) {
+      captureReferralCode(ref)
     }
   }, [searchParams])
 

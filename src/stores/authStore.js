@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { getStoredReferralCode, clearStoredReferralCode } from '../utils/referralTracker'
 
 const AUTH_KEY = 'fp-auth'
 const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
@@ -72,6 +73,22 @@ export const useAuthStore = create((set, get) => ({
       }
       set({ ...state, isLoading: false })
       saveAuth({ ...state, hasMigrated: get().hasMigrated })
+
+      // Hydrate purchase data from login response
+      import('../stores/purchaseStore').then(({ usePurchaseStore }) => {
+        usePurchaseStore.getState().hydrateFromUser(data.user)
+      }).catch(() => {})
+
+      // Track referral (fire-and-forget)
+      const refCode = getStoredReferralCode()
+      if (refCode && data.accessToken) {
+        fetch(`${API_BASE}/referrals/track`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.accessToken}` },
+          body: JSON.stringify({ referralCode: refCode }),
+        }).catch(() => {}).finally(() => clearStoredReferralCode())
+      }
+
       return data
     } catch (err) {
       set({ isLoading: false })
@@ -103,6 +120,12 @@ export const useAuthStore = create((set, get) => ({
       const data = await res.json()
       set({ user: data.user, accessToken: data.accessToken, refreshToken: data.refreshToken })
       saveAuth({ user: data.user, accessToken: data.accessToken, refreshToken: data.refreshToken, hasMigrated: get().hasMigrated })
+
+      // Hydrate purchase data from refresh response
+      import('../stores/purchaseStore').then(({ usePurchaseStore }) => {
+        usePurchaseStore.getState().hydrateFromUser(data.user)
+      }).catch(() => {})
+
       return data.accessToken
     } catch {
       get().clearAuth()
@@ -127,6 +150,9 @@ export const useAuthStore = create((set, get) => ({
   clearAuth: () => {
     set({ user: null, accessToken: null, refreshToken: null })
     saveAuth(null)
+    import('../stores/purchaseStore').then(({ usePurchaseStore }) => {
+      usePurchaseStore.getState().clear()
+    }).catch(() => {})
   },
 
   setMigrated: () => {
@@ -136,4 +162,20 @@ export const useAuthStore = create((set, get) => ({
   },
 
   setSyncing: (v) => set({ isSyncing: v }),
+
+  // Fetch fresh user data from the server (updates isAdmin, isPartner, etc.)
+  refreshUser: async () => {
+    const token = await get().getToken()
+    if (!token) return
+    try {
+      const res = await fetch(`${API_BASE}/user/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      const current = get()
+      set({ user: data.user })
+      saveAuth({ user: data.user, accessToken: current.accessToken, refreshToken: current.refreshToken, hasMigrated: current.hasMigrated })
+    } catch { /* ignore */ }
+  },
 }))

@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
-import { Download, ChevronDown, ChevronRight, Check, Eye, Share2, Globe } from 'lucide-react'
+import { PDFViewer } from '@react-pdf/renderer'
+import { ChevronDown, ChevronRight, Check, Eye, Share2, Globe } from 'lucide-react'
 import { useBrochureStore } from '../../stores/brochureStore'
+import GatedDownloadButton from '../editor/GatedDownloadButton'
 import { useAutoSave } from '../../hooks/useAutoSave'
 import { useSectionComplete, useOverallProgress } from '../../hooks/useValidation'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
@@ -229,20 +230,12 @@ export default function EditorLayout() {
             >
               <Share2 size={14} /> Share
             </button>
-            <PDFDownloadLink
+            <GatedDownloadButton
               document={<BrochureDocument data={pdfData} />}
               fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Memorial'}-Funeral-Brochure.pdf`}
-            >
-              {({ loading }) => (
-                <button
-                  disabled={loading}
-                  className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-white text-xs font-medium rounded-md transition-colors"
-                >
-                  <Download size={14} />
-                  {loading ? 'Preparing...' : 'Download PDF'}
-                </button>
-              )}
-            </PDFDownloadLink>
+              designId={useBrochureStore.getState().currentId}
+              productType="brochure"
+            />
           </div>
 
           {/* PDF Viewer */}
@@ -279,20 +272,12 @@ export default function EditorLayout() {
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                   <span className="text-sm text-card-foreground font-medium">PDF Preview</span>
-                  <PDFDownloadLink
+                  <GatedDownloadButton
                     document={<BrochureDocument data={pdfData} />}
                     fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Memorial'}-Funeral-Brochure.pdf`}
-                  >
-                    {({ loading }) => (
-                      <button
-                        disabled={loading}
-                        className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-white text-xs font-medium rounded-md transition-colors"
-                      >
-                        <Download size={14} />
-                        {loading ? 'Preparing...' : 'Download PDF'}
-                      </button>
-                    )}
-                  </PDFDownloadLink>
+                    designId={useBrochureStore.getState().currentId}
+                    productType="brochure"
+                  />
                 </div>
                 <div className="flex-1 relative">
                   <div className="absolute inset-0">

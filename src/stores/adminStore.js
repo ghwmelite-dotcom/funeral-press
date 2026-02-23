@@ -1,0 +1,110 @@
+import { create } from 'zustand'
+import { apiFetch } from '../utils/apiClient'
+
+export const useAdminStore = create((set, get) => ({
+  overview: null,
+  users: { data: [], total: 0, page: 1, totalPages: 0 },
+  orders: { data: [], total: 0, page: 1, totalPages: 0 },
+  partners: [],
+  designs: {},
+  isLoading: false,
+  activeTab: 'overview',
+
+  setActiveTab: (tab) => set({ activeTab: tab }),
+
+  fetchOverview: async () => {
+    set({ isLoading: true })
+    try {
+      const data = await apiFetch('/admin/overview')
+      set({ overview: data, isLoading: false })
+    } catch {
+      set({ isLoading: false })
+    }
+  },
+
+  fetchUsers: async (params = {}) => {
+    set({ isLoading: true })
+    try {
+      const qs = new URLSearchParams()
+      if (params.search) qs.set('search', params.search)
+      if (params.page) qs.set('page', params.page)
+      if (params.per_page) qs.set('per_page', params.per_page)
+      if (params.filter) qs.set('filter', params.filter)
+      const data = await apiFetch(`/admin/users?${qs}`)
+      set({ users: { data: data.users, total: data.total, page: data.page, totalPages: data.totalPages }, isLoading: false })
+    } catch {
+      set({ isLoading: false })
+    }
+  },
+
+  grantCredits: async (userId, credits, reason) => {
+    const data = await apiFetch('/admin/users/grant-credits', {
+      method: 'POST',
+      body: JSON.stringify({ userId, credits, reason }),
+    })
+    // Refresh user list to reflect changes
+    const { users } = get()
+    set({
+      users: {
+        ...users,
+        data: users.data.map(u => u.id === userId ? { ...u, credits_remaining: data.user.credits_remaining } : u),
+      },
+    })
+    return data
+  },
+
+  fetchOrders: async (params = {}) => {
+    set({ isLoading: true })
+    try {
+      const qs = new URLSearchParams()
+      if (params.page) qs.set('page', params.page)
+      if (params.per_page) qs.set('per_page', params.per_page)
+      if (params.status) qs.set('status', params.status)
+      if (params.plan) qs.set('plan', params.plan)
+      if (params.days) qs.set('days', params.days)
+      const data = await apiFetch(`/admin/orders?${qs}`)
+      set({ orders: { data: data.orders, total: data.total, page: data.page, totalPages: data.totalPages }, isLoading: false })
+    } catch {
+      set({ isLoading: false })
+    }
+  },
+
+  fetchPartners: async () => {
+    set({ isLoading: true })
+    try {
+      const data = await apiFetch('/admin/partners')
+      set({ partners: data.partners, isLoading: false })
+    } catch {
+      set({ isLoading: false })
+    }
+  },
+
+  promotePartner: async (userId, partnerName) => {
+    const data = await apiFetch('/admin/partners/promote', {
+      method: 'POST',
+      body: JSON.stringify({ userId, partnerName }),
+    })
+    // Refresh partners list
+    get().fetchPartners()
+    return data
+  },
+
+  demotePartner: async (userId) => {
+    await apiFetch('/admin/partners/demote', {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    })
+    // Refresh partners list
+    get().fetchPartners()
+  },
+
+  fetchDesigns: async () => {
+    set({ isLoading: true })
+    try {
+      const data = await apiFetch('/admin/designs')
+      set({ designs: data.designs, isLoading: false })
+    } catch {
+      set({ isLoading: false })
+    }
+  },
+}))

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Cloud, CloudOff, FolderOpen } from 'lucide-react'
+import { LogOut, Cloud, CloudOff, FolderOpen, Users, Shield } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 
 export default function UserMenu() {
@@ -72,6 +72,26 @@ export default function UserMenu() {
             <FolderOpen size={14} />
             <span>My Designs</span>
           </button>
+
+          {user.isPartner && (
+            <button
+              onClick={() => { setOpen(false); navigate('/partner-dashboard') }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <Users size={14} />
+              <span>Partner Dashboard</span>
+            </button>
+          )}
+
+          {user.isAdmin && (
+            <button
+              onClick={() => { setOpen(false); navigate('/admin') }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <Shield size={14} />
+              <span>Admin Dashboard</span>
+            </button>
+          )}
 
           <button
             onClick={() => { setOpen(false); logout() }}

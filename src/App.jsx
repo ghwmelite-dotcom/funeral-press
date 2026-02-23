@@ -6,7 +6,9 @@ import { NotificationProvider } from './components/ui/notification'
 import { Skeleton } from './components/ui/skeleton'
 import { useThemeStore } from './stores/themeStore'
 import { useAuthStore } from './stores/authStore'
+import { usePurchaseStore } from './stores/purchaseStore'
 import { useGoogleOneTap } from './hooks/useGoogleOneTap'
+import CheckoutDialog from './components/editor/CheckoutDialog'
 
 const EditorPage = lazy(() => import('./pages/EditorPage'))
 const PreviewPage = lazy(() => import('./pages/PreviewPage'))
@@ -24,6 +26,8 @@ const BudgetPlannerPage = lazy(() => import('./pages/BudgetPlannerPage'))
 const CollageMakerPage = lazy(() => import('./pages/CollageMakerPage'))
 const ReminderPage = lazy(() => import('./pages/ReminderPage'))
 const MyDesignsPage = lazy(() => import('./pages/MyDesignsPage'))
+const PartnerDashboardPage = lazy(() => import('./pages/PartnerDashboardPage'))
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'))
 
 function LoadingFallback() {
   return (
@@ -51,6 +55,11 @@ export default function App() {
   // Hydrate auth state from localStorage on app start
   useEffect(() => {
     useAuthStore.getState().hydrate()
+    // If logged in, fetch purchase status and refresh user data
+    if (useAuthStore.getState().isLoggedIn()) {
+      usePurchaseStore.getState().fetchStatus()
+      useAuthStore.getState().refreshUser()
+    }
   }, [])
 
   // Initialize Google One Tap
@@ -59,6 +68,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <NotificationProvider>
+        <CheckoutDialog />
         <BrowserRouter>
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
@@ -79,6 +89,8 @@ export default function App() {
               <Route path="/collage-maker" element={<CollageMakerPage />} />
               <Route path="/reminders" element={<ReminderPage />} />
               <Route path="/my-designs" element={<MyDesignsPage />} />
+              <Route path="/partner-dashboard" element={<PartnerDashboardPage />} />
+              <Route path="/admin" element={<AdminDashboardPage />} />
             </Routes>
           </Suspense>
         </BrowserRouter>

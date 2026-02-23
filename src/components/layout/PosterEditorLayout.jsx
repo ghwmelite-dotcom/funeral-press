@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
-import { Download, ChevronDown, ChevronRight, Check, Eye } from 'lucide-react'
+import { PDFViewer } from '@react-pdf/renderer'
+import { ChevronDown, ChevronRight, Check, Eye } from 'lucide-react'
 import { usePosterStore } from '../../stores/posterStore'
+import GatedDownloadButton from '../editor/GatedDownloadButton'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { Skeleton } from '../ui/skeleton'
 import { Dialog, DialogContent } from '../ui/dialog'
@@ -264,20 +265,12 @@ export default function PosterEditorLayout() {
           {/* Preview header */}
           <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background shrink-0">
             <span className="text-xs text-muted-foreground uppercase tracking-wider">Live Preview</span>
-            <PDFDownloadLink
+            <GatedDownloadButton
               document={<PosterDocument data={pdfData} />}
               fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Obituary'}-Poster.pdf`}
-            >
-              {({ loading }) => (
-                <button
-                  disabled={loading}
-                  className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-white text-xs font-medium rounded-md transition-colors"
-                >
-                  <Download size={14} />
-                  {loading ? 'Preparing...' : 'Download PDF'}
-                </button>
-              )}
-            </PDFDownloadLink>
+              designId={usePosterStore.getState().currentId}
+              productType="poster"
+            />
           </div>
 
           {/* PDF Viewer */}
@@ -314,20 +307,12 @@ export default function PosterEditorLayout() {
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                   <span className="text-sm text-card-foreground font-medium">PDF Preview</span>
-                  <PDFDownloadLink
+                  <GatedDownloadButton
                     document={<PosterDocument data={pdfData} />}
                     fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Obituary'}-Poster.pdf`}
-                  >
-                    {({ loading }) => (
-                      <button
-                        disabled={loading}
-                        className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-white text-xs font-medium rounded-md transition-colors"
-                      >
-                        <Download size={14} />
-                        {loading ? 'Preparing...' : 'Download PDF'}
-                      </button>
-                    )}
-                  </PDFDownloadLink>
+                    designId={usePosterStore.getState().currentId}
+                    productType="poster"
+                  />
                 </div>
                 <div className="flex-1 relative">
                   <div className="absolute inset-0">
