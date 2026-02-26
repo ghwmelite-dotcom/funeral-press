@@ -166,6 +166,16 @@ export default function LiveServicePage() {
           Order of Service
         </p>
 
+        {/* Photo */}
+        {data.coverPhoto && (
+          <div
+            className="w-36 h-44 mx-auto rounded-full overflow-hidden border-2 mb-5"
+            style={{ borderColor: theme.border }}
+          >
+            <img src={data.coverPhoto} alt={data.fullName} className="w-full h-full object-cover object-top" />
+          </div>
+        )}
+
         {/* Name */}
         <h1
           className="text-2xl md:text-3xl font-bold mb-2"

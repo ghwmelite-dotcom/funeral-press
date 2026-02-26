@@ -73,6 +73,7 @@ export default function PublishLiveServiceDialog({ open, onOpenChange }) {
         fullName: `${store.title} ${store.fullName}`,
         birthDate: store.dateOfBirth,
         deathDate: store.dateOfDeath,
+        coverPhoto: store.coverPhoto,
         theme: store.theme,
         serviceItems: buildServiceItems(store.orderOfService.churchService),
       }
