@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { defaultData } from '../utils/defaultData'
+import { defaultData, defaultOrderOfService } from '../utils/defaultData'
 import { syncDesign, deleteDesignFromCloud } from '../utils/syncEngine'
 import { useAuthStore } from './authStore'
 
@@ -26,11 +26,26 @@ function setActiveId(id) {
   } catch { /* ignore */ }
 }
 
+function migrateOrderOfService(data) {
+  if (!data || !data.orderOfService) return data
+  const church = data.orderOfService.churchService
+  // Detect old generic template by first item
+  if (church && church.length > 0 && /Arrival of Body/i.test(church[0].description)) {
+    data.orderOfService = { ...data.orderOfService, churchService: defaultOrderOfService.churchService }
+  }
+  // Migrate privateBurial if still generic
+  const burial = data.orderOfService.privateBurial
+  if (burial && burial.length > 0 && !burial[0].time && /Delegation Departs with Body$/i.test(burial[0].description)) {
+    data.orderOfService = { ...data.orderOfService, privateBurial: defaultOrderOfService.privateBurial }
+  }
+  return data
+}
+
 function loadInitialState() {
   const activeId = getActiveId()
   if (activeId) {
     const data = loadFromStorage(activeId)
-    if (data) return { ...data, currentId: activeId }
+    if (data) return { ...migrateOrderOfService(data), currentId: activeId }
   }
   return {}
 }

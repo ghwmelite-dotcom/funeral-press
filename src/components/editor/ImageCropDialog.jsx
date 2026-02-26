@@ -172,7 +172,7 @@ export default function ImageCropDialog({ open, onOpenChange, imageSrc, aspectRa
     return () => window.removeEventListener('keydown', handler)
   }, [open, onOpenChange])
 
-  const handleStyle = 'w-4 h-4 bg-primary border-2 border-white rounded-full absolute z-10 touch-none'
+  const handleStyle = 'w-5 h-5 sm:w-4 sm:h-4 bg-primary border-2 border-white rounded-full absolute z-10 touch-none'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -232,25 +232,25 @@ export default function ImageCropDialog({ open, onOpenChange, imageSrc, aspectRa
               {/* NW */}
               <div
                 className={handleStyle}
-                style={{ top: '-8px', left: '-8px', cursor: 'nw-resize' }}
+                style={{ top: '-10px', left: '-10px', cursor: 'nw-resize', padding: '8px', margin: '-8px' }}
                 onPointerDown={(e) => handlePointerDown(e, 'nw')}
               />
               {/* NE */}
               <div
                 className={handleStyle}
-                style={{ top: '-8px', right: '-8px', cursor: 'ne-resize' }}
+                style={{ top: '-10px', right: '-10px', cursor: 'ne-resize', padding: '8px', margin: '-8px' }}
                 onPointerDown={(e) => handlePointerDown(e, 'ne')}
               />
               {/* SW */}
               <div
                 className={handleStyle}
-                style={{ bottom: '-8px', left: '-8px', cursor: 'sw-resize' }}
+                style={{ bottom: '-10px', left: '-10px', cursor: 'sw-resize', padding: '8px', margin: '-8px' }}
                 onPointerDown={(e) => handlePointerDown(e, 'sw')}
               />
               {/* SE */}
               <div
                 className={handleStyle}
-                style={{ bottom: '-8px', right: '-8px', cursor: 'se-resize' }}
+                style={{ bottom: '-10px', right: '-10px', cursor: 'se-resize', padding: '8px', margin: '-8px' }}
                 onPointerDown={(e) => handlePointerDown(e, 'se')}
               />
             </div>
@@ -261,14 +261,14 @@ export default function ImageCropDialog({ open, onOpenChange, imageSrc, aspectRa
         <div className="flex items-center justify-end gap-2 p-4 pt-2 border-t border-border">
           <button
             onClick={handleCancel}
-            className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-md transition-colors"
+            className="px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground rounded-md transition-colors min-h-[44px]"
           >
             Cancel
           </button>
           <button
             onClick={handleApply}
             disabled={isApplying}
-            className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
           >
             {isApplying ? 'Applying...' : 'Apply Crop'}
           </button>

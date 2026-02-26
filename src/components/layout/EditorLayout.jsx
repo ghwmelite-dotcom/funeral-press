@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { PDFViewer } from '@react-pdf/renderer'
-import { ChevronDown, ChevronRight, Check, Eye, Share2, Globe } from 'lucide-react'
+import { ChevronDown, ChevronRight, Check, Eye, Share2, Globe, Radio } from 'lucide-react'
 import { useBrochureStore } from '../../stores/brochureStore'
 import GatedDownloadButton from '../editor/GatedDownloadButton'
+import OrderPrintsButton from '../editor/OrderPrintsButton'
 import { useAutoSave } from '../../hooks/useAutoSave'
 import { useSectionComplete, useOverallProgress } from '../../hooks/useValidation'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
@@ -12,6 +13,7 @@ import { Dialog, DialogContent } from '../ui/dialog'
 import BrochureDocument from '../pdf/BrochureDocument'
 import ShareWhatsAppDialog from '../editor/ShareWhatsAppDialog'
 import PublishMemorialDialog from '../editor/PublishMemorialDialog'
+import PublishLiveServiceDialog from '../editor/PublishLiveServiceDialog'
 
 import BasicInfoForm from '../editor/BasicInfoForm'
 import CoverForm from '../editor/CoverForm'
@@ -139,6 +141,7 @@ export default function EditorLayout() {
   const [showMobilePreview, setShowMobilePreview] = useState(false)
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
   const [publishDialogOpen, setPublishDialogOpen] = useState(false)
+  const [liveServiceDialogOpen, setLiveServiceDialogOpen] = useState(false)
   const timerRef = useRef(null)
   const isMobile = useMediaQuery('(max-width: 1023px)')
 
@@ -171,7 +174,7 @@ export default function EditorLayout() {
   return (
     <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
       {/* Left Panel - Form Editor */}
-      <div className="w-full lg:w-[420px] xl:w-[460px] border-r border-border overflow-y-auto bg-background">
+      <div className="w-full lg:w-[420px] xl:w-[460px] border-r border-border overflow-y-auto overflow-x-hidden min-w-0 bg-background">
         <div className="p-4">
           <h2 className="text-xs text-muted-foreground uppercase tracking-wider mb-3 font-medium">Brochure Editor</h2>
 
@@ -185,7 +188,7 @@ export default function EditorLayout() {
                 <div key={key} className="border border-border rounded-lg overflow-hidden">
                   <button
                     onClick={() => toggleSection(key)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-card/50 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-card/50 transition-colors"
                   >
                     <SectionBadge sectionKey={key} icon={icon} />
                     <span className="text-sm text-card-foreground flex-1">{title}</span>
@@ -225,17 +228,31 @@ export default function EditorLayout() {
               <Globe size={14} /> Publish
             </button>
             <button
+              onClick={() => setLiveServiceDialogOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-input rounded-md transition-colors"
+            >
+              <Radio size={14} /> Attendees
+            </button>
+            <button
               onClick={() => setShareDialogOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-input rounded-md transition-colors"
             >
               <Share2 size={14} /> Share
             </button>
-            <GatedDownloadButton
-              document={<BrochureDocument data={pdfData} />}
-              fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Memorial'}-Funeral-Brochure.pdf`}
-              designId={useBrochureStore.getState().currentId}
-              productType="brochure"
-            />
+            <div className="flex items-center gap-2">
+              <OrderPrintsButton
+                designId={useBrochureStore.getState().currentId}
+                productType="brochure"
+                designName={pdfData.fullName ? `${pdfData.fullName} Brochure` : 'Brochure'}
+                getDesignSnapshot={() => pdfData}
+              />
+              <GatedDownloadButton
+                document={<BrochureDocument data={pdfData} />}
+                fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Memorial'}-Funeral-Brochure.pdf`}
+                designId={useBrochureStore.getState().currentId}
+                productType="brochure"
+              />
+            </div>
           </div>
 
           {/* PDF Viewer */}
@@ -272,12 +289,20 @@ export default function EditorLayout() {
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                   <span className="text-sm text-card-foreground font-medium">PDF Preview</span>
-                  <GatedDownloadButton
-                    document={<BrochureDocument data={pdfData} />}
-                    fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Memorial'}-Funeral-Brochure.pdf`}
-                    designId={useBrochureStore.getState().currentId}
-                    productType="brochure"
-                  />
+                  <div className="flex items-center gap-2 mr-8">
+                    <OrderPrintsButton
+                      designId={useBrochureStore.getState().currentId}
+                      productType="brochure"
+                      designName={pdfData.fullName ? `${pdfData.fullName} Brochure` : 'Brochure'}
+                      getDesignSnapshot={() => pdfData}
+                    />
+                    <GatedDownloadButton
+                      document={<BrochureDocument data={pdfData} />}
+                      fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Memorial'}-Funeral-Brochure.pdf`}
+                      designId={useBrochureStore.getState().currentId}
+                      productType="brochure"
+                    />
+                  </div>
                 </div>
                 <div className="flex-1 relative">
                   <div className="absolute inset-0">
@@ -294,6 +319,7 @@ export default function EditorLayout() {
 
       <ShareWhatsAppDialog open={shareDialogOpen} onOpenChange={setShareDialogOpen} />
       <PublishMemorialDialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen} />
+      <PublishLiveServiceDialog open={liveServiceDialogOpen} onOpenChange={setLiveServiceDialogOpen} />
     </div>
   )
 }

@@ -114,7 +114,7 @@ export default function ShareOnlineDialog({ open, onOpenChange }) {
                 {shareCode.split('').map((char, i) => (
                   <span
                     key={i}
-                    className="w-10 h-12 bg-card border border-input rounded-lg flex items-center justify-center text-xl font-bold text-primary"
+                    className="w-9 h-11 sm:w-10 sm:h-12 bg-card border border-input rounded-lg flex items-center justify-center text-xl font-bold text-primary"
                   >
                     {char}
                   </span>

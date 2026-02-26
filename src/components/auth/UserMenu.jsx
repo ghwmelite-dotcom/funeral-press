@@ -17,8 +17,8 @@ export default function UserMenu() {
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('pointerdown', handler)
+    return () => document.removeEventListener('pointerdown', handler)
   }, [open])
 
   if (!user) return null
@@ -67,7 +67,7 @@ export default function UserMenu() {
 
           <button
             onClick={() => { setOpen(false); navigate('/my-designs') }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <FolderOpen size={14} />
             <span>My Designs</span>
@@ -76,7 +76,7 @@ export default function UserMenu() {
           {user.isPartner && (
             <button
               onClick={() => { setOpen(false); navigate('/partner-dashboard') }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <Users size={14} />
               <span>Partner Dashboard</span>
@@ -86,7 +86,7 @@ export default function UserMenu() {
           {user.isAdmin && (
             <button
               onClick={() => { setOpen(false); navigate('/admin') }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <Shield size={14} />
               <span>Admin Dashboard</span>
@@ -95,7 +95,7 @@ export default function UserMenu() {
 
           <button
             onClick={() => { setOpen(false); logout() }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <LogOut size={14} />
             <span>Sign out</span>

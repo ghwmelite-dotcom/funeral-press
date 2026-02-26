@@ -7,6 +7,7 @@ export const useAdminStore = create((set, get) => ({
   orders: { data: [], total: 0, page: 1, totalPages: 0 },
   partners: [],
   designs: {},
+  printOrders: { data: [], total: 0, page: 1, totalPages: 0 },
   isLoading: false,
   activeTab: 'overview',
 
@@ -106,5 +107,37 @@ export const useAdminStore = create((set, get) => ({
     } catch {
       set({ isLoading: false })
     }
+  },
+
+  fetchPrintOrders: async (params = {}) => {
+    set({ isLoading: true })
+    try {
+      const qs = new URLSearchParams()
+      if (params.page) qs.set('page', params.page)
+      if (params.per_page) qs.set('per_page', params.per_page)
+      if (params.fulfillment && params.fulfillment !== 'all') qs.set('fulfillment', params.fulfillment)
+      if (params.payment && params.payment !== 'all') qs.set('payment', params.payment)
+      const data = await apiFetch(`/admin/print-orders?${qs}`)
+      set({ printOrders: { data: data.orders, total: data.total, page: data.page, totalPages: data.totalPages }, isLoading: false })
+    } catch {
+      set({ isLoading: false })
+    }
+  },
+
+  updatePrintOrder: async (orderId, updates) => {
+    await apiFetch(`/admin/print-orders/${orderId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    })
+    // Refresh the list to reflect changes
+    const { printOrders } = get()
+    set({
+      printOrders: {
+        ...printOrders,
+        data: printOrders.data.map(o =>
+          o.id === orderId ? { ...o, ...updates } : o
+        ),
+      },
+    })
   },
 }))

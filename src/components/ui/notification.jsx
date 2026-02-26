@@ -30,7 +30,7 @@ export function NotificationProvider({ children }) {
     <NotificationContext.Provider value={{ notify }}>
       {children}
       {/* Toast container - fixed bottom-right */}
-      <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+      <div className="fixed bottom-20 sm:bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
         {notifications.map((n) => (
           <div key={n.id}
             className={`pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg border text-sm animate-notification-in

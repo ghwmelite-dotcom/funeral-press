@@ -178,6 +178,15 @@
 .animate-crossfade-in { animation: crossfade-in 0.6s ease-out; }
 .animate-crossfade-out { animation: crossfade-out 0.6s ease-out; }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Range input styling */
 input[type="range"] {
   -webkit-appearance: none;

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -15,6 +15,8 @@ import {
   Calculator,
   Grid3X3,
   FolderOpen,
+  Printer,
+  Package,
 } from 'lucide-react'
 import { Sun, Moon } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
@@ -29,6 +31,7 @@ import { useBudgetStore } from '../stores/budgetStore'
 import { useCollageStore } from '../stores/collageStore'
 import { useCloudDesigns } from '../hooks/useCloudDesigns'
 import { loadCloudDesign } from '../utils/syncEngine'
+import { usePrintOrderStore } from '../stores/printOrderStore'
 import GoogleLoginButton from '../components/auth/GoogleLoginButton'
 import UserMenu from '../components/auth/UserMenu'
 
@@ -50,6 +53,15 @@ export default function MyDesignsPage() {
 
   // Cloud
   const { cloudDesigns, isLoadingCloud } = useCloudDesigns()
+
+  // Print orders
+  const printOrders = usePrintOrderStore(s => s.orders)
+  const isLoadingOrders = usePrintOrderStore(s => s.isLoadingOrders)
+  const fetchPrintOrders = usePrintOrderStore(s => s.fetchOrders)
+
+  useEffect(() => {
+    if (user) fetchPrintOrders()
+  }, [user])
 
   // Local lists
   const brochures = store.brochuresList
@@ -142,7 +154,7 @@ export default function MyDesignsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+      <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
         {user ? <UserMenu /> : <GoogleLoginButton />}
         <button
           onClick={toggleTheme}
@@ -153,7 +165,7 @@ export default function MyDesignsPage() {
         </button>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 pt-20 pb-16">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-16">
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -243,7 +255,7 @@ export default function MyDesignsPage() {
                         {!item._isCloud && (
                           <button
                             onClick={(e) => meta.del(e, item.id)}
-                            className="p-2 text-muted-foreground/60 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                            className="p-2 text-muted-foreground/60 hover:text-red-400 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -255,6 +267,74 @@ export default function MyDesignsPage() {
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {/* Print Orders Section */}
+        {user && printOrders.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-center gap-3 mb-4">
+              <Package size={18} className="text-amber-500" />
+              <h2
+                className="text-lg font-bold text-foreground"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              >
+                Print Orders
+              </h2>
+              <span className="text-xs text-muted-foreground/80 bg-muted px-2.5 py-1 rounded-full">
+                {printOrders.length}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {printOrders.map(order => {
+                const fulfillmentColors = {
+                  pending: 'bg-amber-500/10 text-amber-500',
+                  sent_to_printer: 'bg-blue-500/10 text-blue-500',
+                  printing: 'bg-indigo-500/10 text-indigo-500',
+                  out_for_delivery: 'bg-cyan-500/10 text-cyan-500',
+                  delivered: 'bg-emerald-500/10 text-emerald-500',
+                  cancelled: 'bg-red-500/10 text-red-500',
+                }
+                const paymentColors = {
+                  success: 'bg-emerald-500/10 text-emerald-500',
+                  pending: 'bg-amber-500/10 text-amber-500',
+                  failed: 'bg-red-500/10 text-red-500',
+                }
+                const formatLabel = (s) => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                return (
+                  <div
+                    key={order.id}
+                    className="flex items-center justify-between p-4 bg-card border border-border rounded-lg"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Printer size={18} className="text-amber-500/60 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm text-card-foreground truncate">{order.design_name || 'Untitled'}</p>
+                          <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full shrink-0 uppercase tracking-wider capitalize">
+                            {order.product_type}
+                          </span>
+                          <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full shrink-0">
+                            x{order.quantity}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground/60">
+                          GHS {(order.total_pesewas / 100).toFixed(2)} &middot; {new Date(order.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${paymentColors[order.payment_status] || 'bg-muted text-muted-foreground'}`}>
+                        {order.payment_status}
+                      </span>
+                      <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${fulfillmentColors[order.fulfillment_status] || 'bg-muted text-muted-foreground'}`}>
+                        {formatLabel(order.fulfillment_status)}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>

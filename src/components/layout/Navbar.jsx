@@ -93,11 +93,11 @@ export default function Navbar() {
         </Link>
 
         {isEditor && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide max-w-[calc(100vw-200px)] sm:max-w-none">
             <button
               onClick={() => store.undo()}
               disabled={!store.canUndo()}
-              className="p-2 text-muted-foreground hover:text-card-foreground disabled:opacity-30 transition-colors"
+              className="p-2 text-muted-foreground hover:text-card-foreground disabled:opacity-30 transition-colors shrink-0"
               title="Undo"
               aria-label="Undo last change"
             >
@@ -106,18 +106,18 @@ export default function Navbar() {
             <button
               onClick={() => store.redo()}
               disabled={!store.canRedo()}
-              className="p-2 text-muted-foreground hover:text-card-foreground disabled:opacity-30 transition-colors"
+              className="p-2 text-muted-foreground hover:text-card-foreground disabled:opacity-30 transition-colors shrink-0"
               title="Redo"
               aria-label="Redo last change"
             >
               <Redo2 size={15} />
             </button>
 
-            <div className="w-px h-5 bg-accent mx-2" />
+            <div className="w-px h-5 bg-accent mx-2 shrink-0" />
 
             <button
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
               title="Save"
               aria-label="Save brochure"
             >
@@ -127,7 +127,7 @@ export default function Navbar() {
 
             <button
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
               title="Export JSON"
               aria-label="Export brochure as JSON"
             >
@@ -137,7 +137,7 @@ export default function Navbar() {
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
               title="Import JSON"
               aria-label="Import brochure from JSON file"
             >
@@ -147,7 +147,7 @@ export default function Navbar() {
 
             <button
               onClick={() => setVersionsOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
               title="Version History"
               aria-label="Open version history"
             >
@@ -155,11 +155,11 @@ export default function Navbar() {
               <span className="hidden sm:inline">Versions</span>
             </button>
 
-            <div className="w-px h-5 bg-accent mx-1" />
+            <div className="w-px h-5 bg-accent mx-1 shrink-0" />
 
             <Link
               to="/programme"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
               title="Day-of Programme"
               aria-label="Open day-of programme"
             >
@@ -169,7 +169,7 @@ export default function Navbar() {
 
             <button
               onClick={() => setShareOnlineOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
               title="Share Online"
               aria-label="Share brochure online"
             >

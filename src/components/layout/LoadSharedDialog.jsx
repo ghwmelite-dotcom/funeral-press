@@ -65,7 +65,7 @@ export default function LoadSharedDialog({ open, onOpenChange, initialCode = '' 
                 {Array.from({ length: 6 }).map((_, i) => (
                   <span
                     key={i}
-                    className={`w-10 h-12 bg-card border rounded-lg flex items-center justify-center text-xl font-bold ${
+                    className={`w-9 h-11 sm:w-10 sm:h-12 bg-card border rounded-lg flex items-center justify-center text-xl font-bold ${
                       code[i] ? 'border-primary/30 text-primary' : 'border-input text-muted-foreground/60'
                     }`}
                   >

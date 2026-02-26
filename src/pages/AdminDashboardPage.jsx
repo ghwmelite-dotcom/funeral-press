@@ -13,6 +13,7 @@ const UsersTab = lazy(() => import('../components/admin/UsersTab'))
 const OrdersTab = lazy(() => import('../components/admin/OrdersTab'))
 const PartnersTab = lazy(() => import('../components/admin/PartnersTab'))
 const DesignsTab = lazy(() => import('../components/admin/DesignsTab'))
+const PrintOrdersTab = lazy(() => import('../components/admin/PrintOrdersTab'))
 
 function TabLoader() {
   return (
@@ -38,7 +39,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+      <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
         {user ? <UserMenu /> : <GoogleLoginButton />}
         <button
           onClick={toggleTheme}
@@ -49,7 +50,7 @@ export default function AdminDashboardPage() {
         </button>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 pt-20 pb-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-16">
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -76,12 +77,13 @@ export default function AdminDashboardPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full sm:w-auto flex flex-wrap gap-1 mb-6 bg-muted/50 p-1.5 rounded-lg">
+          <TabsList className="w-full sm:w-auto flex gap-1 overflow-x-auto scrollbar-hide mb-6 bg-muted/50 p-1.5 rounded-lg">
             <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
             <TabsTrigger value="users" className="text-xs sm:text-sm">Users</TabsTrigger>
             <TabsTrigger value="orders" className="text-xs sm:text-sm">Orders</TabsTrigger>
             <TabsTrigger value="partners" className="text-xs sm:text-sm">Partners</TabsTrigger>
             <TabsTrigger value="designs" className="text-xs sm:text-sm">Designs</TabsTrigger>
+            <TabsTrigger value="print-orders" className="text-xs sm:text-sm">Print Orders</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -111,6 +113,12 @@ export default function AdminDashboardPage() {
           <TabsContent value="designs">
             <Suspense fallback={<TabLoader />}>
               <DesignsTab />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="print-orders">
+            <Suspense fallback={<TabLoader />}>
+              <PrintOrdersTab />
             </Suspense>
           </TabsContent>
         </Tabs>

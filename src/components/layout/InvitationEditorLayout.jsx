@@ -3,6 +3,7 @@ import { PDFViewer } from '@react-pdf/renderer'
 import { ChevronDown, ChevronRight, Check, Eye } from 'lucide-react'
 import { useInvitationStore } from '../../stores/invitationStore'
 import GatedDownloadButton from '../editor/GatedDownloadButton'
+import OrderPrintsButton from '../editor/OrderPrintsButton'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { Skeleton } from '../ui/skeleton'
 import { Dialog, DialogContent } from '../ui/dialog'
@@ -114,8 +115,8 @@ function InvitationBackupReminder() {
   return (
     <div className="mb-3 px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-2 text-xs text-primary">
       <span className="flex-1">You have unsaved changes. Don't forget to save!</span>
-      <button onClick={() => { saveInvitation(); setDismissed(true) }} className="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary/90">Save Now</button>
-      <button onClick={() => setDismissed(true)} className="text-primary hover:text-primary/80 text-sm font-bold">&times;</button>
+      <button onClick={() => { saveInvitation(); setDismissed(true) }} className="px-3 py-2 bg-primary text-white rounded text-xs hover:bg-primary/90">Save Now</button>
+      <button onClick={() => setDismissed(true)} className="text-primary hover:text-primary/80 text-sm font-bold p-2">&times;</button>
     </div>
   )
 }
@@ -198,7 +199,7 @@ export default function InvitationEditorLayout() {
   return (
     <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
       {/* Left Panel - Form Editor */}
-      <div className="w-full lg:w-[420px] xl:w-[460px] border-r border-border overflow-y-auto bg-background">
+      <div className="w-full lg:w-[420px] xl:w-[460px] border-r border-border overflow-y-auto overflow-x-hidden min-w-0 bg-background">
         <div className="p-4">
           <h2 className="text-xs text-muted-foreground uppercase tracking-wider mb-3 font-medium">Invitation Editor</h2>
 
@@ -212,7 +213,7 @@ export default function InvitationEditorLayout() {
                 <div key={key} className="border border-border rounded-lg overflow-hidden">
                   <button
                     onClick={() => toggleSection(key)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-card/50 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-card/50 transition-colors"
                   >
                     <SectionBadge sectionKey={key} icon={icon} />
                     <span className="text-sm text-card-foreground flex-1">{title}</span>
@@ -244,12 +245,20 @@ export default function InvitationEditorLayout() {
         <div className="flex-1 flex flex-col bg-card min-h-0">
           <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background shrink-0">
             <span className="text-xs text-muted-foreground uppercase tracking-wider">Live Preview</span>
-            <GatedDownloadButton
-              document={<InvitationDocument data={pdfData} />}
-              fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Funeral'}-Invitation.pdf`}
-              designId={useInvitationStore.getState().currentId}
-              productType="invitation"
-            />
+            <div className="flex items-center gap-2">
+              <OrderPrintsButton
+                designId={useInvitationStore.getState().currentId}
+                productType="invitation"
+                designName={pdfData.fullName ? `${pdfData.fullName} Invitation` : 'Invitation'}
+                getDesignSnapshot={() => pdfData}
+              />
+              <GatedDownloadButton
+                document={<InvitationDocument data={pdfData} />}
+                fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Funeral'}-Invitation.pdf`}
+                designId={useInvitationStore.getState().currentId}
+                productType="invitation"
+              />
+            </div>
           </div>
 
           <div className="flex-1 relative">
@@ -285,12 +294,20 @@ export default function InvitationEditorLayout() {
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                   <span className="text-sm text-card-foreground font-medium">PDF Preview</span>
-                  <GatedDownloadButton
-                    document={<InvitationDocument data={pdfData} />}
-                    fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Funeral'}-Invitation.pdf`}
-                    designId={useInvitationStore.getState().currentId}
-                    productType="invitation"
-                  />
+                  <div className="flex items-center gap-2 mr-8">
+                    <OrderPrintsButton
+                      designId={useInvitationStore.getState().currentId}
+                      productType="invitation"
+                      designName={pdfData.fullName ? `${pdfData.fullName} Invitation` : 'Invitation'}
+                      getDesignSnapshot={() => pdfData}
+                    />
+                    <GatedDownloadButton
+                      document={<InvitationDocument data={pdfData} />}
+                      fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Funeral'}-Invitation.pdf`}
+                      designId={useInvitationStore.getState().currentId}
+                      productType="invitation"
+                    />
+                  </div>
                 </div>
                 <div className="flex-1 relative">
                   <div className="absolute inset-0">

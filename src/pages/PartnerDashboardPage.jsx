@@ -165,7 +165,7 @@ export default function PartnerDashboardPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+      <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
         {user ? <UserMenu /> : <GoogleLoginButton />}
         <button
           onClick={toggleTheme}
@@ -176,7 +176,7 @@ export default function PartnerDashboardPage() {
         </button>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 pt-20 pb-16">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-16">
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -389,7 +389,7 @@ export default function PartnerDashboardPage() {
           </div>
 
           <div className="bg-muted/50 border border-border rounded-lg p-4">
-            <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Monthly</p>
                 <p className="text-lg font-bold text-foreground">

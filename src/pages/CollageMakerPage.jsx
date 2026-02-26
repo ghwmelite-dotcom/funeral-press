@@ -44,7 +44,7 @@ export default function CollageMakerPage() {
       {/* Body */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left sidebar */}
-        <div className="w-full lg:w-[320px] border-r border-border overflow-y-auto bg-background p-4 space-y-6">
+        <div className="w-full lg:w-[320px] max-h-[40vh] lg:max-h-none border-b lg:border-b-0 lg:border-r border-border overflow-y-auto bg-background p-4 space-y-6">
           {/* Name + dates */}
           <div className="space-y-3">
             <div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import {
   Plus,
@@ -109,6 +109,15 @@ const TEMPLATES = [
   },
 ]
 
+const HERO_PRODUCTS = [
+  { label: 'Brochures', mockup: 'brochure', route: '/editor' },
+  { label: 'Posters', mockup: 'poster', route: '/poster-editor' },
+  { label: 'Invitations', mockup: 'invitation', route: '/invitation-editor' },
+  { label: 'Thank You Cards', mockup: 'thankYou', route: '/thankyou-editor' },
+  { label: 'Booklets', mockup: 'booklet', route: '/booklet-editor' },
+  { label: 'Collages', mockup: 'collage', route: '/collage-maker' },
+]
+
 export default function LandingPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -136,6 +145,32 @@ export default function LandingPage() {
   const [loadSharedOpen, setLoadSharedOpen] = useState(false)
   const [shareCode, setShareCode] = useState('')
   const [themeTab, setThemeTab] = useState('brochure')
+  const [heroIdx, setHeroIdx] = useState(0)
+  const [heroAnimating, setHeroAnimating] = useState(false)
+  const heroTimerRef = useRef(null)
+
+  // Hero product rotation
+  useEffect(() => {
+    heroTimerRef.current = setInterval(() => {
+      setHeroAnimating(true)
+      setTimeout(() => {
+        setHeroIdx(prev => (prev + 1) % HERO_PRODUCTS.length)
+        setHeroAnimating(false)
+      }, 400)
+    }, 3500)
+    return () => clearInterval(heroTimerRef.current)
+  }, [])
+
+  const currentHeroProduct = HERO_PRODUCTS[heroIdx]
+
+  const heroMockups = {
+    brochure: <BrochureMockup themeKey="blackGold" className="text-[10px]" />,
+    poster: <PosterMockup themeKey="midnightBlack" className="text-[10px]" />,
+    invitation: <InvitationMockup themeKey="burgundyGold" className="text-[10px]" />,
+    thankYou: <ThankYouMockup themeKey="ivoryGold" className="text-[10px]" />,
+    booklet: <BookletMockup themeKey="blackGold" className="text-[10px]" />,
+    collage: <CollageMockup className="text-[10px]" />,
+  }
 
   // Detect ?share= query parameter
   useEffect(() => {
@@ -371,9 +406,9 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       {/* Top-right controls */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+      <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
         {user ? <UserMenu /> : <GoogleLoginButton />}
         <button
           onClick={toggleTheme}
@@ -388,8 +423,8 @@ export default function LandingPage() {
       <MigrationDialog />
 
       {/* Hero */}
-      <div className="max-w-5xl mx-auto px-6 pt-20 pb-16">
-        <div className="flex flex-col lg:flex-row items-center gap-12 mb-20">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 pb-10 sm:pb-16">
+        <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-12 mb-12 lg:mb-20">
           {/* Left: text content */}
           <div className="flex-1 text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full mb-6">
@@ -398,16 +433,40 @@ export default function LandingPage() {
             </div>
 
             <h1
-              className="text-4xl md:text-5xl font-bold text-foreground mb-4 leading-tight"
+              className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 leading-tight"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
-              Create Beautiful<br />
-              <span className="text-primary">Memorial Brochures</span>
+              Create Beautiful Memorial<br className="hidden sm:block" />
+              <span className="relative inline-block overflow-hidden h-[1.2em] align-bottom">
+                {HERO_PRODUCTS.map((p, i) => (
+                  <span
+                    key={p.label}
+                    className="absolute left-0 text-primary whitespace-nowrap"
+                    style={{
+                      transition: 'all 0.4s ease',
+                      transform: i === heroIdx
+                        ? (heroAnimating ? 'translateY(-110%)' : 'translateY(0)')
+                        : i === (heroIdx + 1) % HERO_PRODUCTS.length
+                          ? (heroAnimating ? 'translateY(0)' : 'translateY(110%)')
+                          : 'translateY(110%)',
+                      opacity: i === heroIdx
+                        ? (heroAnimating ? 0 : 1)
+                        : i === (heroIdx + 1) % HERO_PRODUCTS.length
+                          ? (heroAnimating ? 1 : 0)
+                          : 0,
+                    }}
+                  >
+                    {p.label}
+                  </span>
+                ))}
+                {/* Invisible spacer for width */}
+                <span className="invisible">Thank You Cards</span>
+              </span>
             </h1>
 
             <p className="text-muted-foreground text-lg max-w-2xl mb-8 leading-relaxed">
-              Design premium funeral brochures with our elegant editor. Choose from professional themes,
-              add tributes, photos, and order of service — then download as a print-ready PDF.
+              Design premium funeral brochures, posters, invitations, booklets, collages, and more
+              with our elegant editor. Choose from professional themes — then download as a print-ready PDF.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start">
@@ -416,7 +475,7 @@ export default function LandingPage() {
                 className="inline-flex items-center gap-2 px-8 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors text-sm"
               >
                 <Plus size={18} />
-                Create New Brochure
+                Start Creating
               </button>
               <button
                 onClick={() => setExampleOpen(true)}
@@ -426,18 +485,59 @@ export default function LandingPage() {
                 See Example
               </button>
             </div>
+
+            {/* Product type pills */}
+            <div className="flex flex-wrap items-center gap-2 mt-6 justify-center lg:justify-start">
+              {HERO_PRODUCTS.map((p, i) => (
+                <button
+                  key={p.label}
+                  onClick={() => {
+                    clearInterval(heroTimerRef.current)
+                    setHeroAnimating(true)
+                    setTimeout(() => {
+                      setHeroIdx(i)
+                      setHeroAnimating(false)
+                    }, 400)
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300 ${
+                    i === heroIdx
+                      ? 'bg-primary/15 border-primary/40 text-primary'
+                      : 'bg-muted/50 border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Right: hero brochure mockup */}
-          <div className="flex-shrink-0 w-full max-w-[280px] lg:max-w-[300px]">
-            <div className="rounded-xl overflow-hidden shadow-2xl shadow-primary/10 ring-1 ring-border">
-              <BrochureMockup themeKey="blackGold" className="text-[10px]" />
-            </div>
+          {/* Right: rotating mockup showcase */}
+          <div className="flex-shrink-0 w-full max-w-[280px] lg:max-w-[300px] relative" style={{ minHeight: 380 }}>
+            {HERO_PRODUCTS.map((p, i) => (
+              <div
+                key={p.mockup}
+                className="absolute inset-0 transition-all duration-500 ease-out"
+                style={{
+                  opacity: i === heroIdx ? 1 : 0,
+                  transform: i === heroIdx
+                    ? 'scale(1) rotate(0deg)'
+                    : i < heroIdx
+                      ? 'scale(0.92) rotate(-3deg)'
+                      : 'scale(0.92) rotate(3deg)',
+                  zIndex: i === heroIdx ? 10 : 1,
+                  pointerEvents: i === heroIdx ? 'auto' : 'none',
+                }}
+              >
+                <div className="rounded-xl overflow-hidden shadow-2xl shadow-primary/10 ring-1 ring-border">
+                  {heroMockups[p.mockup]}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* ═══ Partner Program — Premium Section ═══ */}
-        <div className="relative mb-20">
+        <div className="relative mb-12 lg:mb-20">
           {/* Animated border glow */}
           <div className="absolute -inset-[1px] rounded-3xl bg-gradient-to-r from-primary via-amber-400 to-primary bg-[length:200%_100%] animate-shimmer opacity-60" />
 
@@ -458,7 +558,7 @@ export default function LandingPage() {
               backgroundSize: '40px 40px',
             }} />
 
-            <div className="relative px-8 py-12 md:px-14 md:py-16">
+            <div className="relative px-4 py-8 sm:px-8 sm:py-12 md:px-14 md:py-16">
               {/* Top badge row */}
               <div className="flex items-center justify-center lg:justify-start gap-3 mb-8 animate-float-up">
                 <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-gradient-to-r from-primary/15 via-amber-500/10 to-primary/15 border border-primary/25 rounded-full backdrop-blur-sm">
@@ -471,7 +571,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col lg:flex-row items-center gap-12">
+              <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-12">
                 {/* Left: headline + text + CTA */}
                 <div className="flex-1 text-center lg:text-left">
                   <h2
@@ -494,7 +594,7 @@ export default function LandingPage() {
                   </p>
 
                   {/* Big stats row */}
-                  <div className="grid grid-cols-3 gap-3 mb-10 animate-float-up" style={{ animationDelay: '300ms' }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10 animate-float-up" style={{ animationDelay: '300ms' }}>
                     {[
                       { value: '40%', label: 'Max Commission', icon: TrendingUp, color: 'text-primary', glow: 'shadow-primary/20' },
                       { value: 'GHS 19+', label: 'Per Referral', icon: Banknote, color: 'text-emerald-400', glow: 'shadow-emerald-400/20' },
@@ -595,7 +695,7 @@ export default function LandingPage() {
 
         {/* My Designs */}
         {allDesigns.length > 0 && (
-          <div className="mb-20">
+          <div className="mb-12 lg:mb-20">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Save size={16} className="text-primary" />
@@ -652,7 +752,7 @@ export default function LandingPage() {
                           {!item._isCloud && (
                             <button
                               onClick={(e) => meta.del(e, item.id)}
-                              className="p-2 text-muted-foreground/60 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                              className="p-2 text-muted-foreground/60 hover:text-red-400 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                             >
                               <Trash2 size={14} />
                             </button>
@@ -669,7 +769,7 @@ export default function LandingPage() {
         )}
 
         {/* Choose Your Product */}
-        <div className="mb-20">
+        <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
             <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Complete Memorial Suite</p>
             <h2
@@ -931,7 +1031,7 @@ export default function LandingPage() {
         </div>
 
         {/* Template Selection */}
-        <div className="mb-20">
+        <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
             <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Get Started Quickly</p>
             <h2
@@ -945,7 +1045,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {TEMPLATES.map((tmpl) => {
               const Icon = tmpl.icon
               return (
@@ -971,7 +1071,7 @@ export default function LandingPage() {
         </div>
 
         {/* Poster Templates */}
-        <div className="mb-20">
+        <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
             <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Obituary Posters</p>
             <h2
@@ -1012,7 +1112,7 @@ export default function LandingPage() {
         </div>
 
         {/* Invitation Templates */}
-        <div className="mb-20">
+        <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
             <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Invitation Cards</p>
             <h2
@@ -1026,7 +1126,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {Object.entries(invitationTemplates).map(([key, tpl]) => {
               const iconMap = { BookOpen, Church, Shield }
               const Icon = iconMap[tpl.icon] || Mail
@@ -1053,13 +1153,13 @@ export default function LandingPage() {
         </div>
 
         {/* Thank You Templates */}
-        <div className="mb-20">
+        <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
             <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Thank You Cards</p>
             <h2 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Thank You Templates</h2>
             <p className="text-muted-foreground text-sm mt-2 max-w-lg mx-auto">Choose a thank you style for funeral attendees.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {Object.entries(thankYouTemplates).map(([key, tpl]) => {
               const iconMap = { BookOpen, Church, Heart }
               const Icon = iconMap[tpl.icon] || Gift
@@ -1076,13 +1176,13 @@ export default function LandingPage() {
         </div>
 
         {/* Booklet Templates */}
-        <div className="mb-20">
+        <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
             <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Programme Booklets</p>
             <h2 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Booklet Templates</h2>
             <p className="text-muted-foreground text-sm mt-2 max-w-lg mx-auto">Choose a programme style with order of service and hymns.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {Object.entries(bookletTemplates).map(([key, tpl]) => {
               const iconMap = { Church, BookOpen, Heart }
               const Icon = iconMap[tpl.icon] || BookOpenCheck
@@ -1099,13 +1199,13 @@ export default function LandingPage() {
         </div>
 
         {/* Banner Templates */}
-        <div className="mb-20">
+        <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
             <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Memorial Banners</p>
             <h2 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Banner Templates</h2>
             <p className="text-muted-foreground text-sm mt-2 max-w-lg mx-auto">Choose a roll-up banner style for the funeral venue.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {Object.entries(bannerTemplates).map(([key, tpl]) => {
               const iconMap = { Heart, Sparkles, BookOpen }
               const Icon = iconMap[tpl.icon] || Flag
@@ -1122,7 +1222,7 @@ export default function LandingPage() {
         </div>
 
         {/* Features */}
-        <div className="mb-20">
+        <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
             <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Everything You Need</p>
             <h2
@@ -1133,7 +1233,7 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {FEATURES.map((f, i) => {
               const Icon = f.icon
               return (
@@ -1150,7 +1250,7 @@ export default function LandingPage() {
         </div>
 
         {/* Load Shared Brochure */}
-        <div className="mb-20">
+        <div className="mb-12 lg:mb-20">
           <div className="text-center mb-6">
             <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Collaboration</p>
             <h2
@@ -1191,7 +1291,7 @@ export default function LandingPage() {
 
           {/* Tab Toggle — scrollable pill bar */}
           <div className="flex justify-center mb-8">
-            <div className="inline-flex bg-muted/60 border border-border rounded-full p-1 overflow-x-auto max-w-full no-scrollbar">
+            <div className="inline-flex bg-muted/60 border border-border rounded-full p-1 overflow-x-auto max-w-full">
               {[
                 { key: 'brochure', label: 'Brochure' },
                 { key: 'poster', label: 'Poster' },

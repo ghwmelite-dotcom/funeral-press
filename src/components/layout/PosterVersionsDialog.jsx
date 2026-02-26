@@ -25,10 +25,10 @@ export default function PosterVersionsDialog({ open, onOpenChange }) {
                   <p className="text-[10px] text-muted-foreground">{new Date(snap.timestamp).toLocaleString()}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => { restoreSnapshot(snap.id); onOpenChange(false) }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors" title="Restore">
+                  <button onClick={() => { restoreSnapshot(snap.id); onOpenChange(false) }} className="p-2.5 text-muted-foreground hover:text-primary transition-colors" title="Restore">
                     <RotateCcw size={14} />
                   </button>
-                  <button onClick={() => deleteSnapshot(snap.id)} className="p-1.5 text-muted-foreground hover:text-red-400 transition-colors" title="Delete">
+                  <button onClick={() => deleteSnapshot(snap.id)} className="p-2.5 text-muted-foreground hover:text-red-400 transition-colors" title="Delete">
                     <Trash2 size={14} />
                   </button>
                 </div>

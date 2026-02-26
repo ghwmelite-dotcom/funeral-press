@@ -117,7 +117,7 @@ export default function CheckoutDialog() {
 
   return (
     <Dialog open={checkoutOpen} onOpenChange={(open) => !open && closeCheckout()}>
-      <DialogContent className="max-w-md w-full p-0 gap-0">
+      <DialogContent className="max-w-md w-full p-0 gap-0 max-h-[90vh] overflow-y-auto">
         <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="text-lg">
             {stage === 'success' ? 'Download Ready' :

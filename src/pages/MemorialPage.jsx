@@ -72,7 +72,7 @@ export default function MemorialPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: theme.pageBg }}>
       {/* Header / Hero */}
-      <div className="max-w-2xl mx-auto px-6 py-12 text-center">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 text-center">
         {/* Cross */}
         <div className="text-3xl mb-4" style={{ color: theme.heading }}>&#10013;</div>
 

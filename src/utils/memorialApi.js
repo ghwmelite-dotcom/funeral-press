@@ -1,4 +1,4 @@
-const MEMORIAL_API_URL = 'https://brochure-memorial-api.anthropic-workers.workers.dev'
+const MEMORIAL_API_URL = 'https://brochure-memorial-api.ghwmelite.workers.dev'
 
 export async function publishMemorial(data) {
   const response = await fetch(MEMORIAL_API_URL, {

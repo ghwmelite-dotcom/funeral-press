@@ -61,25 +61,25 @@ export default function PreviewPage() {
           <ArrowLeft size={16} /> Back to Editor
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
           <Link
             to="/flipbook"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-input rounded-md transition-colors"
           >
-            <BookOpenCheck size={14} /> Flipbook
+            <BookOpenCheck size={14} /> <span className="hidden sm:inline">Flipbook</span>
           </Link>
           <Link
             to="/slideshow"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-input rounded-md transition-colors"
           >
-            <Presentation size={14} /> Slideshow
+            <Presentation size={14} /> <span className="hidden sm:inline">Slideshow</span>
           </Link>
           <button
             onClick={handleShare}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-input rounded-md transition-colors"
             aria-label="Share brochure link"
           >
-            <Share2 size={14} /> Share
+            <Share2 size={14} /> <span className="hidden sm:inline">Share</span>
           </button>
 
           <PDFDownloadLink
@@ -93,7 +93,7 @@ export default function PreviewPage() {
                 aria-label={loading ? 'Preparing PDF download' : 'Download PDF'}
               >
                 <Download size={14} />
-                {loading ? 'Preparing...' : 'Download PDF'}
+                <span className="hidden sm:inline">{loading ? 'Preparing...' : 'Download PDF'}</span>
               </button>
             )}
           </PDFDownloadLink>

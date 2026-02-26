@@ -9,6 +9,7 @@ import { useAuthStore } from './stores/authStore'
 import { usePurchaseStore } from './stores/purchaseStore'
 import { useGoogleOneTap } from './hooks/useGoogleOneTap'
 import CheckoutDialog from './components/editor/CheckoutDialog'
+import PrintOrderDialog from './components/editor/PrintOrderDialog'
 
 const EditorPage = lazy(() => import('./pages/EditorPage'))
 const PreviewPage = lazy(() => import('./pages/PreviewPage'))
@@ -28,6 +29,7 @@ const ReminderPage = lazy(() => import('./pages/ReminderPage'))
 const MyDesignsPage = lazy(() => import('./pages/MyDesignsPage'))
 const PartnerDashboardPage = lazy(() => import('./pages/PartnerDashboardPage'))
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'))
+const LiveServicePage = lazy(() => import('./pages/LiveServicePage'))
 
 function LoadingFallback() {
   return (
@@ -69,6 +71,7 @@ export default function App() {
     <ErrorBoundary>
       <NotificationProvider>
         <CheckoutDialog />
+        <PrintOrderDialog />
         <BrowserRouter>
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
@@ -91,6 +94,7 @@ export default function App() {
               <Route path="/my-designs" element={<MyDesignsPage />} />
               <Route path="/partner-dashboard" element={<PartnerDashboardPage />} />
               <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/live-service/:id" element={<LiveServicePage />} />
             </Routes>
           </Suspense>
         </BrowserRouter>

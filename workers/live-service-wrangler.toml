@@ -1,0 +1,7 @@
+name = "brochure-live-service-api"
+main = "live-service-api.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "LIVE_SERVICE_KV"
+id = "cea5d511eba548518c396f5fe05b3701"

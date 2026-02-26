@@ -310,7 +310,7 @@ export default function ExampleBrochureDialog({ open, onOpenChange }) {
             {/* Left arrow */}
             <button
               onClick={goLeft}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 w-8 h-8 rounded-full bg-muted/90 border border-input flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-3 w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-muted/90 border border-input flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               aria-label="Previous page"
             >
               <ChevronLeft size={16} />
@@ -319,7 +319,7 @@ export default function ExampleBrochureDialog({ open, onOpenChange }) {
             {/* Right arrow */}
             <button
               onClick={goRight}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 w-8 h-8 rounded-full bg-muted/90 border border-input flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-3 w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-muted/90 border border-input flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               aria-label="Next page"
             >
               <ChevronRight size={16} />
@@ -333,9 +333,10 @@ export default function ExampleBrochureDialog({ open, onOpenChange }) {
             <button
               key={label}
               onClick={() => setPage(i)}
-              className={`w-2 h-2 rounded-full transition-colors ${
+              className={`w-3 h-3 rounded-full transition-colors ${
                 i === page ? 'bg-primary' : 'bg-accent hover:bg-muted-foreground/60'
               }`}
+              style={{ padding: '8px', margin: '-6px', backgroundClip: 'content-box' }}
               aria-label={label}
             />
           ))}

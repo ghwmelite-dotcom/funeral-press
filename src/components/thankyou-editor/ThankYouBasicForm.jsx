@@ -37,7 +37,7 @@ export default function ThankYouBasicForm() {
           <ChevronDown size={10} className={`transition-transform ${templateOpen ? 'rotate-180' : ''}`} />
         </button>
         {templateOpen && (
-          <div className="absolute top-full left-0 mt-1 z-20 w-72 bg-card border border-input rounded-lg shadow-xl overflow-hidden">
+          <div className="absolute top-full left-0 mt-1 z-20 w-72 max-w-[calc(100vw-2rem)] bg-card border border-input rounded-lg shadow-xl overflow-hidden">
             {Object.entries(thankYouTemplates).map(([key, tpl]) => (
               <button
                 key={key}

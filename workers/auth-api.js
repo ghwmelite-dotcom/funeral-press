@@ -189,6 +189,98 @@ const PLANS = {
   suite:  { amount: 12000, credits: -1 }, // -1 = unlimited
 }
 
+// ─── Print fulfillment pricing ──────────────────────────────────────────────
+
+const PRINT_PRICING = {
+  brochure: {
+    label: 'Brochure',
+    min: 10,
+    sizes: {
+      A5:  { base: 1000, label: 'A5 (folded)' },
+      A4:  { base: 1500, label: 'A4 (folded)' },
+      A3:  { base: 2500, label: 'A3 (folded)' },
+    },
+    defaultSize: 'A4',
+  },
+  poster: {
+    label: 'Poster',
+    min: 5,
+    sizes: {
+      A3:  { base: 1800, label: 'A3 (29.7 x 42cm)' },
+      A2:  { base: 3000, label: 'A2 (42 x 59.4cm)' },
+      A1:  { base: 5500, label: 'A1 (59.4 x 84.1cm)' },
+      A0:  { base: 9000, label: 'A0 (84.1 x 118.9cm)' },
+    },
+    defaultSize: 'A2',
+  },
+  invitation: {
+    label: 'Invitation Card',
+    min: 20,
+    sizes: {
+      A6:  { base: 600,  label: 'A6 (10.5 x 14.8cm)' },
+      A5:  { base: 800,  label: 'A5 (14.8 x 21cm)' },
+    },
+    defaultSize: 'A5',
+  },
+  booklet: {
+    label: 'Programme Booklet',
+    min: 10,
+    sizes: {
+      A5:  { base: 4000, label: 'A5 (14.8 x 21cm)' },
+      A4:  { base: 6000, label: 'A4 (21 x 29.7cm)' },
+    },
+    defaultSize: 'A5',
+  },
+  banner: {
+    label: 'Banner',
+    min: 1,
+    sizes: {
+      '3x6':  { base: 6000,  label: 'Small (3 x 6 ft)' },
+      '4x8':  { base: 8000,  label: 'Medium (4 x 8 ft)' },
+      '5x10': { base: 12000, label: 'Large (5 x 10 ft)' },
+    },
+    defaultSize: '4x8',
+  },
+  thankYou: {
+    label: 'Thank You Card',
+    min: 20,
+    sizes: {
+      A7:  { base: 400, label: 'A7 (7.4 x 10.5cm)' },
+      A6:  { base: 600, label: 'A6 (10.5 x 14.8cm)' },
+      A5:  { base: 900, label: 'A5 (14.8 x 21cm)' },
+    },
+    defaultSize: 'A6',
+  },
+}
+const PAPER_MULTIPLIER = { standard: 1.0, premium: 1.5 }
+const QUANTITY_TIERS = [
+  { min: 1, max: 24, discount: 0 },
+  { min: 25, max: 49, discount: 0.10 },
+  { min: 50, max: 99, discount: 0.15 },
+  { min: 100, max: 9999, discount: 0.20 },
+]
+const DELIVERY_FEES = {
+  'greater-accra': 2000, 'ashanti': 3500, 'western': 4000,
+  'eastern': 3500, 'central': 3500, 'volta': 4500,
+  'northern': 5500, 'upper-east': 6000, 'upper-west': 6000,
+  'bono': 4500, 'bono-east': 4500, 'ahafo': 4500,
+  'western-north': 4500, 'oti': 5000, 'north-east': 5500, 'savannah': 5500,
+}
+
+function calculatePrintPrice(productType, quantity, paperQuality, deliveryRegion, size) {
+  const product = PRINT_PRICING[productType]
+  if (!product || quantity < product.min) return null
+  const sizeKey = size || product.defaultSize
+  const sizeInfo = product.sizes[sizeKey]
+  if (!sizeInfo) return null
+  const qualityMult = PAPER_MULTIPLIER[paperQuality] || 1.0
+  const tier = QUANTITY_TIERS.find(t => quantity >= t.min && quantity <= t.max)
+  const discount = tier ? tier.discount : 0.20
+  const perUnit = Math.round(sizeInfo.base * qualityMult * (1 - discount))
+  const printCost = perUnit * quantity
+  const deliveryFee = DELIVERY_FEES[deliveryRegion] || 4000
+  return { perUnit, printCost, deliveryFee, total: printCost + deliveryFee, discount: Math.round(discount * 100), minQuantity: product.min, size: sizeKey, sizeLabel: sizeInfo.label }
+}
 
 // ─── Payment helpers ────────────────────────────────────────────────────────
 
@@ -608,6 +700,15 @@ async function handlePaymentWebhook(request, env) {
   const reference = event.data?.reference
   if (!reference) return json({ ok: true }, 200, request)
 
+  // Check if this is a print order (fp-print- prefix) or a credit order
+  if (reference.startsWith('fp-print-')) {
+    const printOrder = await env.DB.prepare('SELECT * FROM print_orders WHERE paystack_reference = ?').bind(reference).first()
+    if (!printOrder || printOrder.payment_status === 'success') return json({ ok: true }, 200, request)
+    const now = new Date().toISOString()
+    await env.DB.prepare("UPDATE print_orders SET payment_status = 'success', paid_at = ?, updated_at = ? WHERE id = ?").bind(now, now, printOrder.id).run()
+    return json({ ok: true }, 200, request)
+  }
+
   const order = await env.DB.prepare('SELECT * FROM orders WHERE paystack_reference = ?').bind(reference).first()
   if (!order) return json({ ok: true }, 200, request)
 
@@ -853,6 +954,180 @@ async function handleAdminDesigns(request, env) {
   return json({ designs: breakdown }, 200, request)
 }
 
+// ─── Print order handlers ───────────────────────────────────────────────────
+
+async function handlePrintCalculate(request, env, userId) {
+  const { productType, quantity, paperQuality, deliveryRegion, size } = await request.json()
+  if (!productType || !quantity || !paperQuality || !deliveryRegion) {
+    return error('Missing required fields', 400, request)
+  }
+  const pricing = calculatePrintPrice(productType, quantity, paperQuality, deliveryRegion, size)
+  if (!pricing) {
+    const product = PRINT_PRICING[productType]
+    if (!product) return error('Invalid product type', 400, request)
+    if (size && !product.sizes[size]) return error('Invalid size for this product', 400, request)
+    return error(`Minimum quantity is ${product.min}`, 400, request)
+  }
+  const product = PRINT_PRICING[productType]
+  return json({ pricing, productLabel: product.label, sizes: product.sizes, defaultSize: product.defaultSize }, 200, request)
+}
+
+async function handlePrintOrderCreate(request, env, userId) {
+  const body = await request.json()
+  const { productType, designId, designName, designSnapshot, quantity, paperQuality, size, recipientName, recipientPhone, deliveryCity, deliveryArea, deliveryLandmark, deliveryRegion } = body
+
+  if (!productType || !designId || !designSnapshot || !quantity || !paperQuality || !recipientName || !recipientPhone || !deliveryCity || !deliveryRegion) {
+    return error('Missing required fields', 400, request)
+  }
+
+  const pricing = calculatePrintPrice(productType, quantity, paperQuality, deliveryRegion, size)
+  if (!pricing) {
+    const product = PRINT_PRICING[productType]
+    return error(product ? `Minimum quantity is ${product.min}` : 'Invalid product type', 400, request)
+  }
+
+  const user = await env.DB.prepare('SELECT id, email FROM users WHERE id = ?').bind(userId).first()
+  if (!user) return error('User not found', 404, request)
+
+  const reference = `fp-print-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
+  const orderId = generateId()
+  const snapshotStr = typeof designSnapshot === 'string' ? designSnapshot : JSON.stringify(designSnapshot)
+
+  await env.DB.prepare(
+    `INSERT INTO print_orders (id, user_id, design_id, product_type, design_name, design_snapshot, quantity, paper_quality, print_size, recipient_name, recipient_phone, delivery_city, delivery_area, delivery_landmark, delivery_region, print_cost_pesewas, delivery_fee_pesewas, total_pesewas, paystack_reference)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(orderId, userId, designId, productType, designName || 'Untitled', snapshotStr, quantity, paperQuality, pricing.size, recipientName, recipientPhone, deliveryCity, deliveryArea || null, deliveryLandmark || null, deliveryRegion, pricing.printCost, pricing.deliveryFee, pricing.total, reference).run()
+
+  return json({
+    orderId,
+    reference,
+    amount: pricing.total,
+    email: user.email,
+    currency: 'GHS',
+  }, 200, request)
+}
+
+async function handlePrintOrderVerify(request, env, userId) {
+  const { reference } = await request.json()
+  if (!reference) return error('Missing reference', 400, request)
+
+  const order = await env.DB.prepare('SELECT * FROM print_orders WHERE paystack_reference = ? AND user_id = ?').bind(reference, userId).first()
+  if (!order) return error('Order not found', 404, request)
+
+  if (order.payment_status === 'success') {
+    return json({ verified: true, orderId: order.id }, 200, request)
+  }
+
+  const psRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+    headers: { Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}` },
+  })
+  const psData = await psRes.json()
+
+  if (!psData.status || psData.data?.status !== 'success') {
+    await env.DB.prepare("UPDATE print_orders SET payment_status = 'failed' WHERE id = ?").bind(order.id).run()
+    return error('Payment not successful', 400, request)
+  }
+
+  if (psData.data.amount !== order.total_pesewas) {
+    return error('Amount mismatch', 400, request)
+  }
+
+  const now = new Date().toISOString()
+  await env.DB.prepare("UPDATE print_orders SET payment_status = 'success', paid_at = ?, updated_at = ? WHERE id = ?").bind(now, now, order.id).run()
+
+  // Fire-and-forget admin WhatsApp notification
+  if (env.ADMIN_WHATSAPP_WEBHOOK) {
+    fetch(env.ADMIN_WHATSAPP_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: `New print order! ${order.quantity}x ${order.product_type} ${order.print_size || ''} (${order.paper_quality}) for ${order.recipient_name} in ${order.delivery_region}. Total: GHS ${(order.total_pesewas / 100).toFixed(2)}. Ref: ${reference}` }),
+    }).catch(() => {})
+  }
+
+  return json({ verified: true, orderId: order.id }, 200, request)
+}
+
+async function handleListPrintOrders(request, env, userId) {
+  const rows = await env.DB.prepare(
+    `SELECT id, design_id, product_type, design_name, quantity, paper_quality, print_size, total_pesewas, payment_status, fulfillment_status, estimated_delivery, created_at
+     FROM print_orders WHERE user_id = ? ORDER BY created_at DESC`
+  ).bind(userId).all()
+  return json({ orders: rows.results }, 200, request)
+}
+
+async function handleAdminPrintOrders(request, env) {
+  const auth = await requireAdmin(request, env)
+  if (auth.error) return auth.error
+
+  const url = new URL(request.url)
+  const page = Math.max(1, parseInt(url.searchParams.get('page')) || 1)
+  const perPage = Math.min(100, Math.max(1, parseInt(url.searchParams.get('per_page')) || 20))
+  const fulfillment = url.searchParams.get('fulfillment') || 'all'
+  const payment = url.searchParams.get('payment') || 'all'
+  const offset = (page - 1) * perPage
+
+  let where = '1=1'
+  const binds = []
+
+  if (fulfillment !== 'all') {
+    where += ' AND po.fulfillment_status = ?'
+    binds.push(fulfillment)
+  }
+  if (payment !== 'all') {
+    where += ' AND po.payment_status = ?'
+    binds.push(payment)
+  }
+
+  const countResult = await env.DB.prepare(`SELECT COUNT(*) as total FROM print_orders po WHERE ${where}`).bind(...binds).first()
+
+  const rows = await env.DB.prepare(
+    `SELECT po.*, u.name as user_name, u.email as user_email
+     FROM print_orders po
+     LEFT JOIN users u ON u.id = po.user_id
+     WHERE ${where}
+     ORDER BY po.created_at DESC LIMIT ? OFFSET ?`
+  ).bind(...binds, perPage, offset).all()
+
+  return json({
+    orders: rows.results,
+    total: countResult.total,
+    page,
+    perPage,
+    totalPages: Math.ceil(countResult.total / perPage),
+  }, 200, request)
+}
+
+async function handleAdminUpdatePrintOrder(request, env, orderId) {
+  const auth = await requireAdmin(request, env)
+  if (auth.error) return auth.error
+
+  const { fulfillment_status, admin_notes, printer_reference, estimated_delivery } = await request.json()
+
+  const order = await env.DB.prepare('SELECT id FROM print_orders WHERE id = ?').bind(orderId).first()
+  if (!order) return error('Print order not found', 404, request)
+
+  const updates = []
+  const vals = []
+
+  if (fulfillment_status) { updates.push('fulfillment_status = ?'); vals.push(fulfillment_status) }
+  if (admin_notes !== undefined) { updates.push('admin_notes = ?'); vals.push(admin_notes) }
+  if (printer_reference !== undefined) { updates.push('printer_reference = ?'); vals.push(printer_reference) }
+  if (estimated_delivery !== undefined) { updates.push('estimated_delivery = ?'); vals.push(estimated_delivery) }
+
+  if (fulfillment_status === 'delivered') {
+    updates.push('completed_at = ?')
+    vals.push(new Date().toISOString())
+  }
+
+  updates.push("updated_at = datetime('now')")
+
+  if (updates.length === 1) return error('No fields to update', 400, request)
+
+  await env.DB.prepare(`UPDATE print_orders SET ${updates.join(', ')} WHERE id = ?`).bind(...vals, orderId).run()
+
+  return json({ ok: true }, 200, request)
+}
+
 // ─── Router ─────────────────────────────────────────────────────────────────
 
 export default {
@@ -886,6 +1161,9 @@ export default {
         if (method === 'POST' && path === '/admin/partners/promote') return await handleAdminPromotePartner(request, env)
         if (method === 'POST' && path === '/admin/partners/demote') return await handleAdminDemotePartner(request, env)
         if (method === 'GET' && path === '/admin/designs') return await handleAdminDesigns(request, env)
+        if (method === 'GET' && path === '/admin/print-orders') return await handleAdminPrintOrders(request, env)
+        const adminPrintMatch = path.match(/^\/admin\/print-orders\/([^/]+)$/)
+        if (adminPrintMatch && method === 'PUT') return await handleAdminUpdatePrintOrder(request, env, adminPrintMatch[1])
       }
 
       // Authenticated routes
@@ -902,6 +1180,10 @@ export default {
       if (method === 'POST' && path === '/payments/verify') return await handlePaymentVerify(request, env, userId)
       if (method === 'POST' && path === '/payments/unlock-design') return await handleUnlockDesign(request, env, userId)
       if (method === 'GET' && path === '/payments/status') return await handlePaymentStatus(request, env, userId)
+      if (method === 'POST' && path === '/print-orders/calculate') return await handlePrintCalculate(request, env, userId)
+      if (method === 'POST' && path === '/print-orders/create') return await handlePrintOrderCreate(request, env, userId)
+      if (method === 'POST' && path === '/print-orders/verify') return await handlePrintOrderVerify(request, env, userId)
+      if (method === 'GET' && path === '/print-orders') return await handleListPrintOrders(request, env, userId)
       if (method === 'GET' && path === '/designs') return await handleListDesigns(request, env, userId)
       if (method === 'POST' && path === '/designs/sync') return await handleBulkSync(request, env, userId)
       if (method === 'POST' && path === '/images/upload') return await handleImageUpload(request, env, userId)

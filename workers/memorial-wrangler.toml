@@ -1,0 +1,7 @@
+name = "brochure-memorial-api"
+main = "memorial-page-api.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "MEMORIAL_PAGES_KV"
+id = "314cc22d0bb6497d85280eccf10e54bb"

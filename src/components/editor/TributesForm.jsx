@@ -95,7 +95,7 @@ export default function TributesForm() {
                     Browse tribute templates...
                   </button>
                   {templateDropdownIndex === i && (
-                    <div className="absolute top-full left-0 mt-1 z-20 w-64 bg-card border border-input rounded-lg shadow-xl overflow-hidden">
+                    <div className="absolute top-full left-0 mt-1 z-20 w-64 max-w-[calc(100vw-2rem)] bg-card border border-input rounded-lg shadow-xl overflow-hidden">
                       {Object.entries(tributeTemplates).map(([key, tpl]) => (
                         <button
                           key={key}

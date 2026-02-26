@@ -7,8 +7,8 @@ import { useProgrammeTracker } from '../hooks/useProgrammeTracker'
 function CountdownUnit({ value, label }) {
   return (
     <div className="flex flex-col items-center">
-      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-muted border border-input rounded-xl flex items-center justify-center">
-        <span className="text-2xl sm:text-3xl font-bold text-primary tabular-nums">
+      <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-muted border border-input rounded-xl flex items-center justify-center">
+        <span className="text-xl sm:text-2xl md:text-3xl font-bold text-primary tabular-nums">
           {String(value).padStart(2, '0')}
         </span>
       </div>
@@ -94,7 +94,7 @@ export default function ProgrammePage() {
           {countdown.isPast ? (
             <p className="text-primary text-lg font-semibold">The service has started or passed</p>
           ) : (
-            <div className="flex items-center justify-center gap-3 sm:gap-4">
+            <div className="flex items-center justify-center gap-1.5 sm:gap-3 md:gap-4">
               <CountdownUnit value={countdown.days} label="Days" />
               <span className="text-muted-foreground/60 text-xl mt-[-20px]">:</span>
               <CountdownUnit value={countdown.hours} label="Hours" />
