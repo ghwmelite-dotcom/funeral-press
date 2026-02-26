@@ -16,7 +16,7 @@ export default function PublishMemorialDialog({ open, onOpenChange }) {
   const [step, setStep] = useState(store.memorialId ? 'published' : 'preview')
   const [publishing, setPublishing] = useState(false)
   const [memorialUrl, setMemorialUrl] = useState(
-    store.memorialId ? `https://funeral-brochure-app.pages.dev/memorial/${store.memorialId}` : ''
+    store.memorialId ? `https://funeralpress.org/memorial/${store.memorialId}` : ''
   )
   const [qrDataUrl, setQrDataUrl] = useState(store.memorialQrCode || '')
   const [copied, setCopied] = useState(false)
@@ -46,7 +46,7 @@ export default function PublishMemorialDialog({ open, onOpenChange }) {
       }
 
       const result = await publishMemorial(data)
-      const url = result.url || `https://funeral-brochure-app.pages.dev/memorial/${result.id}`
+      const url = result.url || `https://funeralpress.org/memorial/${result.id}`
       setMemorialUrl(url)
 
       // Generate QR code

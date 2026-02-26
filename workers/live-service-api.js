@@ -53,7 +53,7 @@ async function handlePost(request, env) {
       publishedAt: new Date().toISOString(),
     }), { expirationTtl: 365 * 24 * 60 * 60 })
 
-    return new Response(JSON.stringify({ id, url: `https://funeral-brochure-app.pages.dev/live-service/${id}` }), {
+    return new Response(JSON.stringify({ id, url: `https://funeralpress.org/live-service/${id}` }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders }
     })

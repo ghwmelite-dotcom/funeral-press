@@ -12,7 +12,8 @@
       "Bash(cd /c/Users/rsimd/Desktop/funeral-brochure-builder/workers && npx wrangler list 2>&1)",
       "Bash(cd /c/Users/rsimd/Desktop/funeral-brochure-builder && npx wrangler kv namespace create \"MEMORIAL_PAGES\" 2>&1)",
       "Bash(cd /c/Users/rsimd/Desktop/funeral-brochure-builder/workers && npx wrangler deploy --config memorial-wrangler.toml 2>&1)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(cd /c/Users/rsimd/Desktop/funeral-brochure-builder/workers && npx wrangler deploy --config live-service-wrangler.toml 2>&1 && npx wrangler deploy --config memorial-wrangler.toml 2>&1)"
     ]
   }
 }

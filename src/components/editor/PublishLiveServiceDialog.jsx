@@ -58,7 +58,7 @@ export default function PublishLiveServiceDialog({ open, onOpenChange }) {
   const [step, setStep] = useState(store.liveServiceId ? 'published' : 'preview')
   const [publishing, setPublishing] = useState(false)
   const [serviceUrl, setServiceUrl] = useState(
-    store.liveServiceId ? `https://funeral-brochure-app.pages.dev/live-service/${store.liveServiceId}` : ''
+    store.liveServiceId ? `https://funeralpress.org/live-service/${store.liveServiceId}` : ''
   )
   const [qrDataUrl, setQrDataUrl] = useState(store.liveServiceQrCode || '')
   const [copied, setCopied] = useState(false)
@@ -78,7 +78,7 @@ export default function PublishLiveServiceDialog({ open, onOpenChange }) {
       }
 
       const result = await publishLiveService(data)
-      const url = result.url || `https://funeral-brochure-app.pages.dev/live-service/${result.id}`
+      const url = result.url || `https://funeralpress.org/live-service/${result.id}`
       setServiceUrl(url)
 
       const qr = await generateQRCodeDataUrl(url)

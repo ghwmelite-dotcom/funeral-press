@@ -56,7 +56,7 @@ async function handlePost(request, env) {
 
     return new Response(JSON.stringify({
       code,
-      url: `https://funeral-brochure-app.pages.dev/?share=${code}`,
+      url: `https://funeralpress.org/?share=${code}`,
     }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders }

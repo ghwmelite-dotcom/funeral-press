@@ -18,7 +18,7 @@ export default function ShareWhatsAppDialog({ open, onOpenChange }) {
   const cardRef = useRef(null)
 
   const memorialUrl = store.memorialId
-    ? `https://funeral-brochure-app.pages.dev/memorial/${store.memorialId}`
+    ? `https://funeralpress.org/memorial/${store.memorialId}`
     : null
 
   const message = buildWhatsAppMessage(store, memorialUrl)
