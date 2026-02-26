@@ -29,8 +29,11 @@ function setActiveId(id) {
 function migrateOrderOfService(data) {
   if (!data || !data.orderOfService) return data
   const church = data.orderOfService.churchService
-  // Detect old generic template by first item
-  if (church && church.length > 0 && /Arrival of Body/i.test(church[0].description)) {
+  // Detect old templates by checking for outdated hymns
+  if (church && church.length > 0 && (
+    /Arrival of Body/i.test(church[0].description) ||
+    church.some(item => /Lead Us Heavenly Father/i.test(item.description))
+  )) {
     data.orderOfService = { ...data.orderOfService, churchService: defaultOrderOfService.churchService }
   }
   // Migrate privateBurial if still generic

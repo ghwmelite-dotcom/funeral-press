@@ -12,20 +12,18 @@ import { publishLiveService } from '../../utils/liveServiceApi'
 import { generateQRCodeDataUrl } from '../../utils/qrCode'
 
 const HYMN_LYRICS = {
-  'Lead Us Heavenly Father': [
-    "Lead us, heavenly Father, lead us\nO'er the world's tempestuous sea;\nGuard us, guide us, keep us, feed us,\nFor we have no help but Thee,\nYet possessing every blessing\nIf our God our Father be.",
-    "Saviour, breathe forgiveness o'er us;\nAll our weakness Thou dost know,\nThou didst tread this earth before us,\nThou didst feel its keenest woe;\nLone and dreary, faint and weary,\nThrough the desert Thou didst go.",
-    "Spirit of our God, descending,\nFill our hearts with heavenly joy;\nLove with every passion blending,\nPleasure that can never cloy;\nThus provided, pardoned, guided,\nNothing can our peace destroy.",
-  ],
   'When I Survey': [
     "When I survey the wondrous cross\nOn which the Prince of glory died,\nMy richest gain I count but loss,\nAnd pour contempt on all my pride.",
     "Forbid it, Lord, that I should boast,\nSave in the death of Christ, my God!\nAll the vain things that charm me most,\nI sacrifice them to His blood.",
     "See, from His head, His hands, His feet,\nSorrow and love flow mingled down!\nDid e'er such love and sorrow meet,\nOr thorns compose so rich a crown?",
     "Were the whole realm of nature mine,\nThat were an offering far too small;\nLove so amazing, so divine,\nDemands my soul, my life, my all.",
   ],
-  'Now Thank We All Our God': [
-    "Now thank we all our God\nWith hearts and hands and voices\nWho wondrous things hath done\nIn whom this world rejoices\nWho from our mothers' arms\nHath blessed us on our way\nWith countless gifts of love\nAnd still is ours today.",
-    "All praise and thanks to God\nThe Father now be given\nThe Son and Him who reigns\nWith them in highest Heaven\nThe one eternal God\nWhom Heaven and Earth adore\nFor thus it was is now\nAnd shall be evermore. Amen.",
+  'Because He Lives': [
+    "God sent His Son\nThey called Him Jesus;\nHe came to love, heal and forgive,\nHe lived and died to buy my pardon,\nAn empty grave is there to\nprove my Savior lives.",
+    "Because He lives\nI can face tomorrow!\nBecause He lives\nAll fear is gone\nAnd now I know\nHe holds the future\nAnd life is worth the living\nJust because He lives.",
+  ],
+  'When Peace Like a River': [
+    "When peace like a river\nAttendeth my way;\nWhen sorrows like sea-billows roll;\nWhatever my lot\nThou has taught me to say,\n\u201CIt is well, it is well, with my soul.\u201D\nIt is well (echo)\nWith my soul, (echo)\nIt is well, it is well with my soul.",
   ],
 }
 
