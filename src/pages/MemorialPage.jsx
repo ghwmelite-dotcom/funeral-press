@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Heart, Calendar, MapPin, Clock, BookOpen, Loader2 } from 'lucide-react'
+import { Heart, Calendar, MapPin, Clock, BookOpen, Loader2, Download } from 'lucide-react'
 import { getMemorial } from '../utils/memorialApi'
 import { themes } from '../utils/themes'
+import { downloadPageAsPdf } from '../utils/downloadQrPdf'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -68,9 +69,40 @@ export default function MemorialPage() {
   }
 
   const theme = themes[data.theme] || themes.blackGold
+  const contentRef = useRef(null)
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownload = async () => {
+    if (!contentRef.current || downloading) return
+    setDownloading(true)
+    try {
+      const name = data.fullName || 'Memorial'
+      await downloadPageAsPdf(contentRef.current, `${name}-Memorial.pdf`, { bgColor: theme.pageBg })
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: theme.pageBg }}>
+      {/* Download button */}
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 flex justify-end">
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="flex items-center gap-1.5 px-4 py-2 text-xs rounded-lg transition-all disabled:opacity-50"
+          style={{
+            backgroundColor: theme.secondaryBg,
+            color: theme.heading,
+            border: `1px solid ${theme.border}40`,
+          }}
+        >
+          {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+          {downloading ? 'Preparing PDF...' : 'Download PDF'}
+        </button>
+      </div>
+
+      <div ref={contentRef}>
       {/* Header / Hero */}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 text-center">
         {/* Cross */}
@@ -223,6 +255,7 @@ export default function MemorialPage() {
           </p>
         </div>
       </div>
+      </div>{/* end ref wrapper */}
     </div>
   )
 }

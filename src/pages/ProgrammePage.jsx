@@ -1,8 +1,10 @@
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, CalendarCheck, Clock, MapPin, RotateCcw, Share2, CheckCircle2, Circle, Users } from 'lucide-react'
+import { ArrowLeft, CalendarCheck, Clock, MapPin, RotateCcw, Share2, CheckCircle2, Circle, Users, Download, Loader2 } from 'lucide-react'
 import { useBrochureStore } from '../stores/brochureStore'
 import { useCountdown } from '../hooks/useCountdown'
 import { useProgrammeTracker } from '../hooks/useProgrammeTracker'
+import { downloadPageAsPdf } from '../utils/downloadQrPdf'
 
 function CountdownUnit({ value, label }) {
   return (
@@ -21,6 +23,19 @@ export default function ProgrammePage() {
   const store = useBrochureStore()
   const countdown = useCountdown(store.funeralDate, store.funeralTime)
   const tracker = useProgrammeTracker()
+  const printRef = useRef(null)
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownload = async () => {
+    if (!printRef.current || downloading) return
+    setDownloading(true)
+    try {
+      const name = store.fullName || 'Programme'
+      await downloadPageAsPdf(printRef.current, `${name}-Order-of-Service.pdf`, { bgColor: '#09090b' })
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   const allItems = [
     ...(store.orderOfService?.churchService || []).map((item, i) => ({
@@ -64,7 +79,7 @@ export default function ProgrammePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div ref={printRef} className="max-w-3xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -78,12 +93,22 @@ export default function ProgrammePage() {
               <p className="text-xs text-muted-foreground">{store.title} {store.fullName}</p>
             </div>
           </div>
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors"
-          >
-            <Share2 size={14} /> Share
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors disabled:opacity-50"
+            >
+              {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              {downloading ? 'Preparing...' : 'Download'}
+            </button>
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors"
+            >
+              <Share2 size={14} /> Share
+            </button>
+          </div>
         </div>
 
         {/* Countdown */}
