@@ -239,18 +239,20 @@ export default function WreathCardsPage() {
         ))}
       </div>
 
-      {/* Hidden full-size cards for PDF capture */}
-      {cards.map((card, i) => (
-        <div
-          key={`capture-${i}`}
-          ref={(el) => { cardRefs.current[i] = el }}
-          style={{ position: 'fixed', left: '-9999px', top: 0, width: '794px', height: '1123px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CREAM, padding: '60px' }}
-        >
-          <div style={{ width: '100%' }}>
-            <WreathCard {...card} />
+      {/* Off-screen full-size cards for PDF capture — absolute inside a clipped wrapper */}
+      <div className="print:hidden" style={{ position: 'absolute', left: 0, top: 0, width: 0, height: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        {cards.map((card, i) => (
+          <div
+            key={`capture-${i}`}
+            ref={(el) => { cardRefs.current[i] = el }}
+            style={{ width: '794px', height: '1123px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CREAM, padding: '60px' }}
+          >
+            <div style={{ width: '100%' }}>
+              <WreathCard {...card} />
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }
