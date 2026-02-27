@@ -36,6 +36,8 @@ import {
   Banknote,
   ChevronRight,
   Users,
+  QrCode,
+  Receipt,
 } from 'lucide-react'
 import { Sun, Moon } from 'lucide-react'
 import { useBrochureStore } from '../stores/brochureStore'
@@ -72,6 +74,9 @@ import BannerMockup from '../components/landing/BannerMockup'
 import BudgetMockup from '../components/landing/BudgetMockup'
 import CollageMockup from '../components/landing/CollageMockup'
 import ReminderMockup from '../components/landing/ReminderMockup'
+import QRCardsMockup from '../components/landing/QRCardsMockup'
+import ReceiptMockup from '../components/landing/ReceiptMockup'
+import WreathCardMockup from '../components/landing/WreathCardMockup'
 import ExampleBrochureDialog from '../components/landing/ExampleBrochureDialog'
 import ThemePreviewCard from '../components/landing/ThemePreviewCard'
 import LoadSharedDialog from '../components/layout/LoadSharedDialog'
@@ -81,11 +86,15 @@ const FEATURES = [
   { icon: Palette, title: '9 Premium Themes', desc: 'From classic Black & Gold to bold Kente Gold — 9 beautiful themes' },
   { icon: Sparkles, title: 'AI Tribute Writer', desc: 'Let AI help you write heartfelt tributes, biography, and acknowledgements' },
   { icon: Eye, title: 'Live Preview', desc: 'See your brochure update in real-time as you type and edit' },
-  { icon: Printer, title: 'Print-Ready PDF', desc: 'Download high-quality A4 PDFs ready for professional printing' },
+  { icon: Printer, title: 'Print Materials', desc: 'QR cards, donation receipts, and wreath cards — all from one editor' },
   { icon: Image, title: 'Photo Magic', desc: 'Enhance photos with filters, brightness, contrast, and background removal' },
   { icon: BookOpenCheck, title: 'Interactive Flipbook', desc: 'View your brochure as a beautiful page-flip animation' },
+  { icon: QrCode, title: 'QR Code Cards', desc: 'Generate printable QR cards linking to your memorial and live service' },
+  { icon: Flower2, title: 'Wreath Cards', desc: 'Design elegant gold-bordered message cards for funeral wreaths' },
+  { icon: Receipt, title: 'Donation Receipts', desc: 'Print numbered acknowledgement receipt booklets for funeral donations' },
   { icon: Globe, title: 'Online Memorial', desc: 'Publish an online memorial page with QR code for the brochure' },
   { icon: Share2, title: 'Share & Collaborate', desc: 'Share via WhatsApp or collaborate with a 6-character share code' },
+  { icon: Cloud, title: 'Cloud Sync', desc: 'Your designs auto-save and sync across devices when logged in' },
 ]
 
 const TEMPLATES = [
@@ -1025,6 +1034,63 @@ export default function LandingPage() {
               </p>
               <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 group-hover:text-primary transition-colors uppercase tracking-wider font-medium">
                 View Reminders <ArrowRight size={10} />
+              </span>
+            </button>
+
+            {/* QR Code Cards */}
+            <button
+              onClick={() => navigate('/qr-cards')}
+              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+            >
+              <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
+                <QRCardsMockup className="text-[8px]" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                QR Code Cards
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                Generate elegant A4 QR code cards linking to your memorial page and live order of service.
+              </p>
+              <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 group-hover:text-primary transition-colors uppercase tracking-wider font-medium">
+                Create Cards <ArrowRight size={10} />
+              </span>
+            </button>
+
+            {/* Donation Receipt */}
+            <button
+              onClick={() => navigate('/receipt')}
+              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+            >
+              <div className="w-full max-w-[160px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
+                <ReceiptMockup className="text-[8px]" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                Donation Receipts
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                Print numbered acknowledgement receipt booklets for funeral donations with cover page.
+              </p>
+              <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 group-hover:text-primary transition-colors uppercase tracking-wider font-medium">
+                Create Booklet <ArrowRight size={10} />
+              </span>
+            </button>
+
+            {/* Wreath Cards */}
+            <button
+              onClick={() => navigate('/wreath-cards')}
+              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+            >
+              <div className="w-full max-w-[160px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
+                <WreathCardMockup className="text-[8px]" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                Wreath Cards
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                Create elegant message cards for funeral wreaths with custom messages and gold-bordered design.
+              </p>
+              <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 group-hover:text-primary transition-colors uppercase tracking-wider font-medium">
+                Design Cards <ArrowRight size={10} />
               </span>
             </button>
           </div>
