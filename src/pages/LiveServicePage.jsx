@@ -28,15 +28,12 @@ function ServiceItem({ item, index, theme }) {
         style={hasVerses && expanded ? { backgroundColor: theme.secondaryBg } : undefined}
         disabled={!hasVerses}
       >
-        {/* Number */}
+        {/* Time */}
         <span
-          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
-          style={{
-            backgroundColor: item.type === 'hymn' ? theme.heading + '25' : theme.border + '15',
-            color: item.type === 'hymn' ? theme.heading : theme.subtleText,
-          }}
+          className="shrink-0 mt-1 text-[10px] font-medium w-14 text-right"
+          style={{ color: theme.subtleText, fontFamily: 'system-ui, sans-serif' }}
         >
-          {index + 1}
+          {item.time || ''}
         </span>
 
         {/* Content */}

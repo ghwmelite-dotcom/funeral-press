@@ -31,24 +31,25 @@ const HYMN_LYRICS = {
 function buildServiceItems(churchService) {
   return churchService.map((item) => {
     const desc = item.description
+    const time = item.time || ''
 
     // Detect hymns/songs with lyrics
     for (const [keyword, verses] of Object.entries(HYMN_LYRICS)) {
       if (desc.toLowerCase().includes(keyword.toLowerCase())) {
-        return { type: 'hymn', title: desc, verses }
+        return { type: 'hymn', title: desc, verses, time }
       }
     }
 
     // Detect scripture readings — extract reference from parentheses
     const scriptureMatch = desc.match(/^(Scripture Reading[^(]*)\(([^)]+)\)$/i)
     if (scriptureMatch) {
-      return { type: 'scripture', text: scriptureMatch[1].trim(), reference: scriptureMatch[2].trim() }
+      return { type: 'scripture', text: scriptureMatch[1].trim(), reference: scriptureMatch[2].trim(), time }
     }
     if (/^scripture reading/i.test(desc)) {
-      return { type: 'scripture', text: desc, reference: '' }
+      return { type: 'scripture', text: desc, reference: '', time }
     }
 
-    return { type: 'action', text: desc }
+    return { type: 'action', text: desc, time }
   })
 }
 
