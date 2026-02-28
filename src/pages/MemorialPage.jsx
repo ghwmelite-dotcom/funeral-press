@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom'
 import { Heart, Calendar, MapPin, Clock, BookOpen, Loader2, Download } from 'lucide-react'
 import { getMemorial } from '../utils/memorialApi'
 import { themes } from '../utils/themes'
-import { downloadPageAsPdf } from '../utils/downloadQrPdf'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -76,6 +75,7 @@ export default function MemorialPage() {
     if (!contentRef.current || downloading) return
     setDownloading(true)
     try {
+      const { downloadPageAsPdf } = await import('../utils/downloadQrPdf')
       const name = data.fullName || 'Memorial'
       await downloadPageAsPdf(contentRef.current, `${name}-Memorial.pdf`, { bgColor: theme.pageBg })
     } finally {

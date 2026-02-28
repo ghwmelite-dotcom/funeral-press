@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom'
 import { ChevronDown, ChevronUp, Loader2, BookOpen, Music, Download } from 'lucide-react'
 import { getLiveService } from '../utils/liveServiceApi'
 import { themes } from '../utils/themes'
-import { downloadPageAsPdf } from '../utils/downloadQrPdf'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -158,6 +157,7 @@ export default function LiveServicePage() {
     if (!contentRef.current || downloading) return
     setDownloading(true)
     try {
+      const { downloadPageAsPdf } = await import('../utils/downloadQrPdf')
       const name = data.fullName || 'Order-of-Service'
       await downloadPageAsPdf(contentRef.current, `${name}-Order-of-Service.pdf`, { bgColor: theme.pageBg })
     } finally {

@@ -4,7 +4,6 @@ import { ArrowLeft, CalendarCheck, Clock, MapPin, RotateCcw, Share2, CheckCircle
 import { useBrochureStore } from '../stores/brochureStore'
 import { useCountdown } from '../hooks/useCountdown'
 import { useProgrammeTracker } from '../hooks/useProgrammeTracker'
-import { downloadPageAsPdf } from '../utils/downloadQrPdf'
 
 function CountdownUnit({ value, label }) {
   return (
@@ -30,6 +29,7 @@ export default function ProgrammePage() {
     if (!printRef.current || downloading) return
     setDownloading(true)
     try {
+      const { downloadPageAsPdf } = await import('../utils/downloadQrPdf')
       const name = store.fullName || 'Programme'
       await downloadPageAsPdf(printRef.current, `${name}-Order-of-Service.pdf`, { bgColor: '#09090b' })
     } finally {
