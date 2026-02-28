@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ChevronDown, ChevronUp, Loader2, BookOpen, Music } from 'lucide-react'
+import { ChevronDown, ChevronUp, Loader2, BookOpen, Music, Download } from 'lucide-react'
 import { getLiveService } from '../utils/liveServiceApi'
 import { themes } from '../utils/themes'
+import { downloadPageAsPdf } from '../utils/downloadQrPdf'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -150,9 +151,40 @@ export default function LiveServicePage() {
 
   const theme = themes[data.theme] || themes.blackGold
   const serviceItems = data.serviceItems || []
+  const contentRef = useRef(null)
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownload = async () => {
+    if (!contentRef.current || downloading) return
+    setDownloading(true)
+    try {
+      const name = data.fullName || 'Order-of-Service'
+      await downloadPageAsPdf(contentRef.current, `${name}-Order-of-Service.pdf`, { bgColor: theme.pageBg })
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: theme.pageBg }}>
+      {/* Download button */}
+      <div className="max-w-lg mx-auto px-4 pt-4 flex justify-end">
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="flex items-center gap-1.5 px-4 py-2 text-xs rounded-lg transition-all disabled:opacity-50"
+          style={{
+            backgroundColor: theme.secondaryBg,
+            color: theme.heading,
+            border: `1px solid ${theme.border}40`,
+          }}
+        >
+          {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+          {downloading ? 'Preparing PDF...' : 'Download PDF'}
+        </button>
+      </div>
+
+      <div ref={contentRef}>
       {/* Header */}
       <div className="max-w-lg mx-auto px-4 pt-10 pb-6 text-center">
         {/* Cross */}
@@ -221,6 +253,7 @@ export default function LiveServicePage() {
           </p>
         </div>
       </div>
+      </div>{/* end ref wrapper */}
     </div>
   )
 }
