@@ -2,7 +2,6 @@ import { useState, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { QrCode, Receipt, ChevronDown, ChevronRight, Globe, Radio, ExternalLink, Download, Loader2, Upload, X, Flower2, Plus, Trash2 } from 'lucide-react'
 import { useBrochureStore } from '../../stores/brochureStore'
-import { downloadCardAsPdf } from '../../utils/downloadQrPdf'
 
 /* Minimal inline QR card preview (matches QRCodePrintPage design) */
 const GOLD = '#C9A84C'
@@ -268,6 +267,7 @@ export default function PrintMaterialsForm({ onOpenPublish, onOpenLiveService })
     if (!ref.current) return
     setDownloading(type)
     try {
+      const { downloadCardAsPdf } = await import('../../utils/downloadQrPdf')
       const label = type === 'memorial' ? 'Memorial' : 'Order-of-Service'
       await downloadCardAsPdf(ref.current, `${safeName}-${label}-QR.pdf`)
     } finally {
