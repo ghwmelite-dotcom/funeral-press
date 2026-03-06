@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# Environment secrets
+.env
+.env.*
+
+# Cloudflare
+.wrangler/
+
+# Claude Code
+.claude/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

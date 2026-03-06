@@ -4,7 +4,7 @@ compatibility_date = "2024-01-01"
 
 [vars]
 GOOGLE_CLIENT_ID = "820118502550-4cju49bcbn2btvr3d31k5cpgdefpv0j1.apps.googleusercontent.com"
-CORS_ORIGIN = "https://funeral-brochure-app.pages.dev"
+CORS_ORIGIN = "https://funeralpress.org"
 
 [[d1_databases]]
 binding = "DB"
