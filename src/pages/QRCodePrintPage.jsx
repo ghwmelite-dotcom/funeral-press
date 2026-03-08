@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button'
 import { Printer, ArrowLeft, Download, Loader2 } from 'lucide-react'
 import { useBrochureStore } from '../stores/brochureStore'
 import { generateQRCodeDataUrl } from '../utils/qrCode'
+import PageMeta from '../components/seo/PageMeta'
 import { downloadCardAsPdf } from '../utils/downloadQrPdf'
+import { events } from '../utils/analytics'
 
 /* Inject portrait @page rule while this page is mounted */
 function usePortraitPrint() {
@@ -45,13 +47,19 @@ export default function QRCodePrintPage() {
   // Generate QR codes on mount if URLs exist but QR data doesn't
   useEffect(() => {
     async function gen() {
+      let generated = false
       if (memorialUrl && !qrMemorial) {
         const qr = await generateQRCodeDataUrl(memorialUrl, { width: 400, margin: 2, dark: BLACK, light: '#FFFFFF' })
         setQrMemorial(qr)
+        generated = true
       }
       if (liveServiceUrl && !qrLiveService) {
         const qr = await generateQRCodeDataUrl(liveServiceUrl, { width: 400, margin: 2, dark: BLACK, light: '#FFFFFF' })
         setQrLiveService(qr)
+        generated = true
+      }
+      if (generated) {
+        events.qrCodeGenerated()
       }
     }
     gen()
@@ -89,6 +97,11 @@ export default function QRCodePrintPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <PageMeta
+        title="Memorial QR Code Cards — Link Print to Digital Memorials | FuneralPress"
+        description="Generate QR code cards that link to online memorial pages. Print and distribute at funerals so guests can access tributes, photos, and memorial slideshows."
+        path="/qr-cards"
+      />
       {/* Header bar — hidden when printing */}
       <header className="print:hidden sticky top-0 z-10 bg-card/80 backdrop-blur border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import PageMeta from '../components/seo/PageMeta'
 import {
   Plus,
   BookOpen,
@@ -38,11 +39,13 @@ import {
   Users,
   QrCode,
   Receipt,
+  Calendar,
 } from 'lucide-react'
 import { Sun, Moon } from 'lucide-react'
 import { useBrochureStore } from '../stores/brochureStore'
 import { useThemeStore } from '../stores/themeStore'
 import { useAuthStore } from '../stores/authStore'
+import { events } from '../utils/analytics'
 import GoogleLoginButton from '../components/auth/GoogleLoginButton'
 import UserMenu from '../components/auth/UserMenu'
 import MigrationDialog from '../components/auth/MigrationDialog'
@@ -53,6 +56,7 @@ import { useBookletStore } from '../stores/bookletStore'
 import { useBannerStore } from '../stores/bannerStore'
 import { useBudgetStore } from '../stores/budgetStore'
 import { useCollageStore } from '../stores/collageStore'
+import { useOneWeekStore } from '../stores/oneWeekStore'
 import { useCloudDesigns } from '../hooks/useCloudDesigns'
 import { loadCloudDesign } from '../utils/syncEngine'
 import { posterTemplates, posterThemes } from '../utils/posterDefaultData'
@@ -77,6 +81,7 @@ import ReminderMockup from '../components/landing/ReminderMockup'
 import QRCardsMockup from '../components/landing/QRCardsMockup'
 import ReceiptMockup from '../components/landing/ReceiptMockup'
 import WreathCardMockup from '../components/landing/WreathCardMockup'
+import OneWeekMockup from '../components/landing/OneWeekMockup'
 import ExampleBrochureDialog from '../components/landing/ExampleBrochureDialog'
 import ThemePreviewCard from '../components/landing/ThemePreviewCard'
 import LoadSharedDialog from '../components/layout/LoadSharedDialog'
@@ -126,6 +131,7 @@ const HERO_PRODUCTS = [
   { label: 'Thank You Cards', mockup: 'thankYou', route: '/thankyou-editor' },
   { label: 'Booklets', mockup: 'booklet', route: '/booklet-editor' },
   { label: 'Collages', mockup: 'collage', route: '/collage-maker' },
+  { label: 'One-Week Posters', mockup: 'oneweek', route: '/oneweek-editor' },
 ]
 
 export default function LandingPage() {
@@ -133,6 +139,7 @@ export default function LandingPage() {
   const [searchParams] = useSearchParams()
   const { theme, toggleTheme } = useThemeStore()
   const user = useAuthStore((s) => s.user)
+  const getReferralLink = useAuthStore((s) => s.getReferralLink)
   const store = useBrochureStore()
   const brochures = store.brochuresList
   const posterStore = usePosterStore()
@@ -149,6 +156,7 @@ export default function LandingPage() {
   const budgets = budgetStore.budgetsList
   const collageStore = useCollageStore()
   const collages = collageStore.collagesList
+  const oneWeekStore = useOneWeekStore()
   const { cloudDesigns, isLoadingCloud } = useCloudDesigns()
   const [loadingCloudId, setLoadingCloudId] = useState(null)
   const [exampleOpen, setExampleOpen] = useState(false)
@@ -180,6 +188,7 @@ export default function LandingPage() {
     thankYou: <ThankYouMockup themeKey="ivoryGold" className="text-[10px]" />,
     booklet: <BookletMockup themeKey="blackGold" className="text-[10px]" />,
     collage: <CollageMockup className="text-[10px]" />,
+    oneweek: <OneWeekMockup themeKey="burgundyGold" className="text-[10px]" />,
   }
 
   // Detect ?share= query parameter
@@ -320,6 +329,9 @@ export default function LandingPage() {
   const handleDeleteBanner = (e, id) => { e.stopPropagation(); if (confirm('Delete this banner?')) bannerStore.deleteBanner(id) }
   const handleBannerThemeSelect = (themeKey) => { bannerStore.newBanner(); bannerStore.updateField('bannerTheme', themeKey); navigate('/banner-editor') }
 
+  // One-Week handlers
+  const handleNewOneWeek = () => { oneWeekStore.newDesign(); navigate('/oneweek-editor') }
+
   // Budget handlers
   const handleNewBudget = () => { budgetStore.newBudget(); navigate('/budget-planner') }
   const handleLoadBudget = (id) => { budgetStore.loadBudget(id); navigate('/budget-planner') }
@@ -429,6 +441,11 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      <PageMeta
+        title="FuneralPress — Ghana's All-in-One Funeral Design Platform"
+        description="Design funeral brochures, posters, invitations, and memorial pages online. Ghana's most trusted funeral planning platform. Start designing free today."
+        path="/"
+      />
       {/* Partner banner (shown when ?ref=CODE or ?partner=CODE) */}
       {partnerData && <PartnerBanner partner={partnerData} />}
 
@@ -509,6 +526,23 @@ export default function LandingPage() {
                 <Eye size={18} />
                 See Example
               </button>
+            </div>
+
+            {/* Social proof */}
+            <div className="flex items-center gap-4 sm:gap-6 mt-6 justify-center lg:justify-start text-muted-foreground">
+              <div className="flex items-center gap-1.5 text-sm">
+                <Users size={14} className="text-primary" />
+                <span className="font-semibold text-foreground">500+</span>
+                <span className="hidden sm:inline">families served</span>
+                <span className="sm:hidden">families</span>
+              </div>
+              <div className="w-px h-4 bg-border" />
+              <div className="flex items-center gap-1.5 text-sm">
+                <FileText size={14} className="text-primary" />
+                <span className="font-semibold text-foreground">2,000+</span>
+                <span className="hidden sm:inline">designs created</span>
+                <span className="sm:hidden">designs</span>
+              </div>
             </div>
 
             {/* Product type pills */}
@@ -650,7 +684,7 @@ export default function LandingPage() {
                     ) : user ? (
                       <p className="text-sm text-muted-foreground">
                         Interested in becoming a partner?{' '}
-                        <a href="https://wa.me/233244000000?text=Hi%2C%20I%27m%20interested%20in%20the%20FuneralPress%20Partner%20Program" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Contact us</a>
+                        <a href="https://chat.whatsapp.com/EbJjUflYBNUKDvkgqLiey8" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Contact us on WhatsApp</a>
                       </p>
                     ) : (
                       <div className="flex flex-col items-center lg:items-start gap-3">
@@ -717,6 +751,37 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+
+        {user && (
+          <div className="bg-card border border-border rounded-xl p-6 mb-12 text-center max-w-xl mx-auto">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Share2 size={18} className="text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Share FuneralPress</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Help a family in need — share your personal referral link
+            </p>
+            <div className="flex items-center gap-2 max-w-md mx-auto">
+              <input
+                readOnly
+                value={getReferralLink() || 'https://funeralpress.org'}
+                className="flex-1 px-3 py-2 bg-muted border border-input rounded-lg text-sm text-foreground truncate"
+              />
+              <button
+                onClick={() => {
+                  const link = getReferralLink()
+                  if (link) {
+                    navigator.clipboard.writeText(link)
+                    events.referralLinkShared('copy')
+                  }
+                }}
+                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors whitespace-nowrap"
+              >
+                Copy Link
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* My Designs */}
         {allDesigns.length > 0 && (
@@ -838,6 +903,25 @@ export default function LandingPage() {
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed mb-3">
                 Single-page A3 poster with photo, family announcement, funeral arrangements, and family details.
+              </p>
+              <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 group-hover:text-primary transition-colors uppercase tracking-wider font-medium">
+                Create Poster <ArrowRight size={10} />
+              </span>
+            </button>
+
+            {/* One-Week Celebration Card */}
+            <button
+              onClick={handleNewOneWeek}
+              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+            >
+              <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
+                <OneWeekMockup themeKey="burgundyGold" className="text-[8px]" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                One-Week Poster
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                Announce one-week observance celebrations with a stunning poster featuring portrait, event details, and age badge.
               </p>
               <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 group-hover:text-primary transition-colors uppercase tracking-wider font-medium">
                 Create Poster <ArrowRight size={10} />
@@ -1109,6 +1193,51 @@ export default function LandingPage() {
                 Design Cards <ArrowRight size={10} />
               </span>
             </button>
+          </div>
+        </div>
+
+        {/* New Services */}
+        <div className="mb-12 lg:mb-20">
+          <div className="text-center mb-8">
+            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">New Services</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+              Beyond Design
+            </h2>
+            <p className="text-muted-foreground text-sm mt-2 max-w-lg mx-auto">
+              Complete funeral planning tools — from guest books to hymn libraries.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {[
+              { icon: BookOpen, label: 'Guest Book', desc: 'Digital condolence book for guests to sign and leave messages', route: '/guest-book-creator', badge: '1 credit' },
+              { icon: Globe, label: 'Obituary Page', desc: 'Shareable obituary with funeral details, countdown, and biography', route: '/obituary-creator', badge: '1 credit' },
+              { icon: Image, label: 'Photo Gallery', desc: 'Upload and share funeral photos in a beautiful gallery', route: '/gallery-creator', badge: '1 credit' },
+              { icon: Church, label: 'Hymn Library', desc: '25+ funeral hymns with full lyrics in English and Twi', route: '/hymns', badge: 'Free' },
+              { icon: Flag, label: 'Venue Directory', desc: 'Find churches, mortuaries, and funeral grounds in Ghana', route: '/venues', badge: 'Free' },
+              { icon: Bell, label: 'Anniversaries', desc: 'Track memorial dates with reminders and calendar export', route: '/anniversaries', badge: 'Free' },
+              { icon: Grid3X3, label: 'Aseda Labels', desc: 'Design funeral cloth labels with Kente borders and more', route: '/aseda-editor', badge: 'Free' },
+              { icon: Calendar, label: 'One-Week Poster', desc: 'Design stunning one-week observation/celebration announcement posters', route: '/oneweek-editor', badge: '1 credit' },
+            ].map((item) => {
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.route}
+                  onClick={() => navigate(item.route)}
+                  className="group text-left p-4 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Icon size={15} className="text-primary" />
+                    </div>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${item.badge === 'Free' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-primary/10 text-primary'}`}>
+                      {item.badge}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{item.label}</h3>
+                  <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed line-clamp-2">{item.desc}</p>
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -1569,6 +1698,52 @@ export default function LandingPage() {
               className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/90 transition-colors"
             >
               See All Themes <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Funeral Planning Guides */}
+      <div className="py-20 px-4 sm:px-6 bg-primary/5 border-y border-primary/20">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wide uppercase mb-4">
+              <BookOpen size={14} />
+              Free Resources
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Funeral Planning Guides</h2>
+            <p className="text-base text-muted-foreground mt-3 max-w-xl mx-auto">Practical step-by-step resources for planning dignified funerals in Ghana</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              { title: 'How to Design a Funeral Brochure in Ghana', slug: 'how-to-design-funeral-brochure-ghana', desc: 'Step-by-step guide to creating a beautiful memorial brochure with photos, tributes, and order of service.', icon: FileText },
+              { title: 'Methodist Funeral Order of Service', slug: 'methodist-funeral-order-of-service', desc: 'Complete programme template with hymns, Scripture readings, and traditional Methodist funeral liturgy.', icon: Church },
+              { title: 'Catholic Requiem Mass Programme', slug: 'catholic-requiem-mass-programme', desc: 'Full guide to the Catholic funeral mass structure including readings, prayers, and hymns.', icon: Cross },
+              { title: 'Funeral Printing Costs in Ghana (2026)', slug: 'funeral-printing-cost-ghana', desc: 'What to expect for brochure, poster, and booklet printing. Tips to save money on funeral materials.', icon: Printer },
+              { title: 'Presbyterian Funeral Service Programme', slug: 'presbyterian-funeral-service-programme', desc: 'Order of worship template for Presbyterian funerals with hymns, readings, and sermon guide.', icon: BookOpenCheck },
+            ].map((post) => {
+              const Icon = post.icon
+              return (
+                <Link
+                  key={post.slug}
+                  to={`/blog/${post.slug}`}
+                  className="group block bg-card border border-border rounded-2xl p-6 hover:border-primary/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Icon size={18} className="text-primary" />
+                  </div>
+                  <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors leading-snug">{post.title}</h3>
+                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{post.desc}</p>
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary mt-4 group-hover:gap-2 transition-all">
+                    Read guide <ArrowRight size={14} />
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+          <div className="text-center mt-10">
+            <Link to="/blog" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-medium rounded-full hover:bg-primary/90 transition-colors shadow-md">
+              View All Guides <ArrowRight size={16} />
             </Link>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import PageMeta from '../components/seo/PageMeta'
 import { Calculator, Save, Download, Plus, Sun, Moon, ArrowLeft } from 'lucide-react'
 import { useBudgetStore, DEFAULT_CATEGORIES } from '../stores/budgetStore'
 import { useThemeStore } from '../stores/themeStore'
@@ -9,6 +10,7 @@ import ExpenseTable from '../components/budget/ExpenseTable'
 import ContributionTable from '../components/budget/ContributionTable'
 import BudgetCategoryBreakdown from '../components/budget/BudgetCategoryBreakdown'
 import BudgetExportActions from '../components/budget/BudgetExportActions'
+import { events } from '../utils/analytics'
 
 export default function BudgetPlannerPage() {
   const store = useBudgetStore()
@@ -20,6 +22,7 @@ export default function BudgetPlannerPage() {
 
   const handleSave = () => {
     store.saveBudget()
+    events.budgetPlannerUsed()
     notify('Budget saved successfully!', 'success')
   }
 
@@ -31,6 +34,11 @@ export default function BudgetPlannerPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PageMeta
+        title="Funeral Budget Planner Ghana — Track Every Cost | FuneralPress"
+        description="Plan your funeral budget with our free cost tracker. Covers venue, catering, casket, transport, and more. Built for Ghanaian funeral costs and customs."
+        path="/budget-planner"
+      />
       {/* Navbar */}
       <nav className="h-12 bg-background border-b border-border flex items-center justify-between px-4 shrink-0">
         <Link to="/" className="flex items-center gap-2 text-card-foreground hover:text-foreground transition-colors">

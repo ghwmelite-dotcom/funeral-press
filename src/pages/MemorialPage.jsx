@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { Heart, Calendar, MapPin, Clock, BookOpen, Loader2, Download } from 'lucide-react'
 import { getMemorial } from '../utils/memorialApi'
 import { themes } from '../utils/themes'
@@ -83,8 +84,30 @@ export default function MemorialPage() {
     }
   }
 
+  const ogTitle = `${data.fullName || 'Memorial'} — Memorial`
+  const ogDescription = (() => {
+    if (data.tributes && data.tributes.length > 0 && data.tributes[0].body) {
+      const text = data.tributes[0].body
+      return text.length > 150 ? text.slice(0, 147) + '...' : text
+    }
+    if (data.biography) {
+      return data.biography.length > 150 ? data.biography.slice(0, 147) + '...' : data.biography
+    }
+    return `In loving memory of ${data.fullName || 'our beloved'}. View the memorial page and celebrate their life.`
+  })()
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: theme.pageBg }}>
+      <Helmet>
+        <title>{ogTitle} | FuneralPress</title>
+        <meta property="og:title" content={ogTitle} />
+        <meta property="og:description" content={ogDescription} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`https://funeralpress.org/memorial/${id}`} />
+        {data.coverPhoto && <meta property="og:image" content={data.coverPhoto} />}
+        <meta name="description" content={ogDescription} />
+      </Helmet>
+
       {/* Download button */}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 flex justify-end">
         <button
@@ -254,8 +277,28 @@ export default function MemorialPage() {
             </Link>
           </p>
         </div>
+
+        {/* Branding footer */}
+        <div className="text-center py-6 border-t border-border mt-12">
+          <a href="https://funeralpress.org" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+            Created with FuneralPress
+          </a>
+        </div>
       </div>
       </div>{/* end ref wrapper */}
+
+      {/* FuneralPress branding */}
+      <div className="max-w-2xl mx-auto px-4 py-8 text-center">
+        <a
+          href="https://funeralpress.org"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs opacity-40 hover:opacity-60 transition-opacity"
+          style={{ color: theme.subtleText }}
+        >
+          Created with FuneralPress
+        </a>
+      </div>
     </div>
   )
 }

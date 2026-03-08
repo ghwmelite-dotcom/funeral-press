@@ -172,6 +172,13 @@ export const useAuthStore = create((set, get) => ({
     if (saved) saveAuth({ ...saved, hasMigrated: true })
   },
 
+  getReferralLink: () => {
+    const user = get().user
+    if (!user) return null
+    const code = user.referralCode || user.partnerCode || user.id
+    return `https://funeralpress.org/?ref=${code}`
+  },
+
   setSyncing: (v) => set({ isSyncing: v }),
 
   // Fetch fresh user data from the server (updates isAdmin, isPartner, etc.)

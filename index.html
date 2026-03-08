@@ -4,14 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>FuneralPress — Create Beautiful Memorial Brochures</title>
-    <meta name="description" content="Design premium funeral brochures, obituary posters, memorial slideshows, and online memorial pages. 11 elegant themes, AI tribute writer, print-ready PDF export." />
+    <title>FuneralPress — Ghana's All-in-One Funeral Design Platform</title>
+    <meta name="description" content="Design funeral brochures, posters, invitations, and memorial pages online. Ghana's most trusted funeral planning platform. Start designing free today." />
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-    <!-- Apple Touch Icon -->
+    <!-- Apple Touch Icon & PWA -->
     <link rel="apple-touch-icon" href="/icon-192.svg" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FuneralPress" />
+    <meta name="mobile-web-app-capable" content="yes" />
 
     <!-- Web App Manifest -->
     <link rel="manifest" href="/site.webmanifest" />
@@ -21,18 +25,74 @@
     <meta name="theme-color" content="#C9A84C" media="(prefers-color-scheme: light)" />
 
     <!-- Open Graph -->
-    <meta property="og:title" content="FuneralPress — Beautiful Memorial Brochures" />
-    <meta property="og:description" content="Design premium funeral brochures with elegant themes, AI tribute writer, and print-ready PDF export." />
+    <meta property="og:title" content="FuneralPress — Ghana's All-in-One Funeral Design Platform" />
+    <meta property="og:description" content="Design funeral brochures, posters, invitations, and memorial pages online. Ghana's most trusted funeral planning platform. Start designing free today." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://funeralpress.org" />
+    <meta property="og:image" content="https://funeralpress.org/og-image.svg" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="FuneralPress" />
-    <meta name="twitter:description" content="Create beautiful memorial brochures, obituary posters, and online memorial pages." />
+    <meta name="twitter:title" content="FuneralPress — Ghana's All-in-One Funeral Design Platform" />
+    <meta name="twitter:description" content="Design funeral brochures, posters, invitations, and memorial pages online. Ghana's most trusted funeral planning platform. Start designing free today." />
+    <meta name="twitter:image" content="https://funeralpress.org/og-image.svg" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "FuneralPress",
+      "url": "https://funeralpress.org",
+      "logo": "https://funeralpress.org/logo.svg",
+      "description": "Design premium funeral brochures, obituary posters, memorial booklets, invitations, and more. Professional templates with AI tribute writer and print-ready PDF export.",
+      "foundingDate": "2026",
+      "areaServed": "GH"
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "FuneralPress",
+      "url": "https://funeralpress.org",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://funeralpress.org/themes?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "FuneralPress",
+      "url": "https://funeralpress.org",
+      "applicationCategory": "DesignApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "GHS"
+      },
+      "description": "Design funeral brochures, posters, invitations, and memorial pages online. Ghana's most trusted funeral planning platform.",
+      "screenshot": "https://funeralpress.org/og-image.svg",
+      "featureList": "Funeral Brochure Designer, Memorial Pages, Obituary Creator, Budget Planner, 11000+ Hymn Library, QR Code Cards"
+    }
+    </script>
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>body{margin:0;background:#09090b}</style>
+
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
   </head>
   <body>
     <div id="root"></div>

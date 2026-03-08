@@ -90,6 +90,14 @@ export default function BackCoverPage({ data, theme }) {
             </Text>
           )}
 
+          <Text style={{
+            fontFamily: 'Cormorant', fontSize: 6,
+            color: theme.subtleText, textAlign: 'center',
+            opacity: 0.4, marginTop: data.designerCredit ? 6 : 20, letterSpacing: 0.5,
+          }}>
+            Designed with FuneralPress — funeralpress.org
+          </Text>
+
           {data.memorialQrCode && (
             <View style={{ alignItems: 'center', marginTop: 15 }}>
               <Image

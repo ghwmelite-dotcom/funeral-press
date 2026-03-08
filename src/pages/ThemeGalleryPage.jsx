@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import PageMeta from '../components/seo/PageMeta'
 import { ArrowLeft, Palette } from 'lucide-react'
 import { themes, themeCategories } from '../utils/themes'
 import { useBrochureStore } from '../stores/brochureStore'
@@ -22,6 +23,11 @@ export default function ThemeGalleryPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PageMeta
+        title="Funeral Design Templates — Brochures, Posters & More | FuneralPress"
+        description="Browse 100+ professionally designed funeral templates. Brochures, posters, invitations, booklets, and memorial cards. Customise instantly for your loved one."
+        path="/themes"
+      />
       <div className="max-w-6xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
