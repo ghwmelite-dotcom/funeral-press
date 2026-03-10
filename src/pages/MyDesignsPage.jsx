@@ -30,6 +30,8 @@ import { useBannerStore } from '../stores/bannerStore'
 import { useBudgetStore } from '../stores/budgetStore'
 import { useCollageStore } from '../stores/collageStore'
 import { useCloudDesigns } from '../hooks/useCloudDesigns'
+import { haptic } from '../hooks/useHaptic'
+import { usePullToRefresh, PullToRefreshIndicator } from '../hooks/usePullToRefresh'
 import { loadCloudDesign } from '../utils/syncEngine'
 import { usePrintOrderStore } from '../stores/printOrderStore'
 import GoogleLoginButton from '../components/auth/GoogleLoginButton'
@@ -52,7 +54,7 @@ export default function MyDesignsPage() {
   const collageStore = useCollageStore()
 
   // Cloud
-  const { cloudDesigns, isLoadingCloud } = useCloudDesigns()
+  const { cloudDesigns, isLoadingCloud, refreshCloudDesigns } = useCloudDesigns()
 
   // Print orders
   const printOrders = usePrintOrderStore(s => s.orders)
@@ -62,6 +64,12 @@ export default function MyDesignsPage() {
   useEffect(() => {
     if (user) fetchPrintOrders()
   }, [user])
+
+  // Pull-to-refresh
+  const { pullDistance } = usePullToRefresh(async () => {
+    await refreshCloudDesigns()
+    if (user) await fetchPrintOrders()
+  })
 
   // Local lists
   const brochures = store.brochuresList
@@ -84,14 +92,14 @@ export default function MyDesignsPage() {
   const handleLoadCollage = (id) => { collageStore.loadCollage(id); navigate('/collage-maker') }
 
   // Delete handlers
-  const handleDelete = (e, id) => { e.stopPropagation(); if (confirm('Delete this brochure?')) store.deleteBrochure(id) }
-  const handleDeletePoster = (e, id) => { e.stopPropagation(); if (confirm('Delete this poster?')) posterStore.deletePoster(id) }
-  const handleDeleteInvitation = (e, id) => { e.stopPropagation(); if (confirm('Delete this invitation?')) invitationStore.deleteInvitation(id) }
-  const handleDeleteThankYou = (e, id) => { e.stopPropagation(); if (confirm('Delete this thank you card?')) thankYouStore.deleteThankYou(id) }
-  const handleDeleteBooklet = (e, id) => { e.stopPropagation(); if (confirm('Delete this booklet?')) bookletStore.deleteBooklet(id) }
-  const handleDeleteBanner = (e, id) => { e.stopPropagation(); if (confirm('Delete this banner?')) bannerStore.deleteBanner(id) }
-  const handleDeleteBudget = (e, id) => { e.stopPropagation(); if (confirm('Delete this budget?')) budgetStore.deleteBudget(id) }
-  const handleDeleteCollage = (e, id) => { e.stopPropagation(); if (confirm('Delete this collage?')) collageStore.deleteCollage(id) }
+  const handleDelete = (e, id) => { e.stopPropagation(); if (confirm('Delete this brochure?')) { haptic('medium'); store.deleteBrochure(id) } }
+  const handleDeletePoster = (e, id) => { e.stopPropagation(); if (confirm('Delete this poster?')) { haptic('medium'); posterStore.deletePoster(id) } }
+  const handleDeleteInvitation = (e, id) => { e.stopPropagation(); if (confirm('Delete this invitation?')) { haptic('medium'); invitationStore.deleteInvitation(id) } }
+  const handleDeleteThankYou = (e, id) => { e.stopPropagation(); if (confirm('Delete this thank you card?')) { haptic('medium'); thankYouStore.deleteThankYou(id) } }
+  const handleDeleteBooklet = (e, id) => { e.stopPropagation(); if (confirm('Delete this booklet?')) { haptic('medium'); bookletStore.deleteBooklet(id) } }
+  const handleDeleteBanner = (e, id) => { e.stopPropagation(); if (confirm('Delete this banner?')) { haptic('medium'); bannerStore.deleteBanner(id) } }
+  const handleDeleteBudget = (e, id) => { e.stopPropagation(); if (confirm('Delete this budget?')) { haptic('medium'); budgetStore.deleteBudget(id) } }
+  const handleDeleteCollage = (e, id) => { e.stopPropagation(); if (confirm('Delete this collage?')) { haptic('medium'); collageStore.deleteCollage(id) } }
 
   // Merge with cloud
   function mergeWithCloud(localList, productType) {
@@ -166,6 +174,7 @@ export default function MyDesignsPage() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-16">
+        <PullToRefreshIndicator pullDistance={pullDistance} />
         {/* Header */}
         <div className="mb-8">
           <Link

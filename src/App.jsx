@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { lazy, Suspense, useEffect } from 'react'
+import { HelmetProvider } from 'react-helmet-async'
 import ErrorBoundary from './components/ErrorBoundary'
 import LandingPage from './pages/LandingPage'
 import { NotificationProvider } from './components/ui/notification'
@@ -10,6 +11,12 @@ import { usePurchaseStore } from './stores/purchaseStore'
 import { useGoogleOneTap } from './hooks/useGoogleOneTap'
 import CheckoutDialog from './components/editor/CheckoutDialog'
 import PrintOrderDialog from './components/editor/PrintOrderDialog'
+import BottomNav from './components/layout/BottomNav'
+import { EditorSkeleton, GallerySkeleton, DashboardSkeleton, BlogSkeleton, DesignsSkeleton } from './components/ui/PageSkeletons'
+import InstallPrompt from './components/pwa/InstallPrompt'
+import RouteProgressBar from './components/pwa/RouteProgressBar'
+import PageTransition from './components/layout/PageTransition'
+import WhatsAppHelp from './components/layout/WhatsAppHelp'
 
 const EditorPage = lazy(() => import('./pages/EditorPage'))
 const PreviewPage = lazy(() => import('./pages/PreviewPage'))
@@ -33,6 +40,24 @@ const LiveServicePage = lazy(() => import('./pages/LiveServicePage'))
 const ReceiptPage = lazy(() => import('./pages/ReceiptPage'))
 const QRCodePrintPage = lazy(() => import('./pages/QRCodePrintPage'))
 const WreathCardsPage = lazy(() => import('./pages/WreathCardsPage'))
+const FuneralBrochureTemplatesPage = lazy(() => import('./pages/seo/FuneralBrochureTemplatesPage'))
+const FuneralPosterTemplatesPage = lazy(() => import('./pages/seo/FuneralPosterTemplatesPage'))
+const FuneralInvitationTemplatesPage = lazy(() => import('./pages/seo/FuneralInvitationTemplatesPage'))
+const FuneralBookletTemplatesPage = lazy(() => import('./pages/seo/FuneralBookletTemplatesPage'))
+const GalleryCreatorPage = lazy(() => import('./pages/GalleryCreatorPage'))
+const GalleryEditorPage = lazy(() => import('./pages/GalleryEditorPage'))
+const GalleryViewPage = lazy(() => import('./pages/GalleryViewPage'))
+const AnniversaryTrackerPage = lazy(() => import('./pages/AnniversaryTrackerPage'))
+const AsedaEditorPage = lazy(() => import('./pages/AsedaEditorPage'))
+const BlogIndexPage = lazy(() => import('./pages/blog/BlogIndexPage'))
+const BlogPostPage = lazy(() => import('./pages/blog/BlogPostPage'))
+const GuestBookCreatorPage = lazy(() => import('./pages/GuestBookCreatorPage'))
+const GuestBookPage = lazy(() => import('./pages/GuestBookPage'))
+const ObituaryCreatorPage = lazy(() => import('./pages/ObituaryCreatorPage'))
+const ObituaryPage = lazy(() => import('./pages/ObituaryPage'))
+const HymnLibraryPage = lazy(() => import('./pages/HymnLibraryPage'))
+const VenueDirectoryPage = lazy(() => import('./pages/VenueDirectoryPage'))
+const OneWeekEditorPage = lazy(() => import('./pages/OneWeekEditorPage'))
 
 function LoadingFallback() {
   return (
@@ -48,6 +73,19 @@ function LoadingFallback() {
       </div>
     </div>
   )
+}
+
+function RouteSkeleton() {
+  const location = useLocation()
+  const path = location.pathname
+
+  if (path.includes('editor') || path === '/collage-maker') return <EditorSkeleton />
+  if (path === '/my-designs') return <DesignsSkeleton />
+  if (path === '/admin' || path === '/partner-dashboard') return <DashboardSkeleton />
+  if (path.startsWith('/blog')) return <BlogSkeleton />
+  if (path.includes('template')) return <GallerySkeleton />
+  if (path === '/themes') return <GallerySkeleton />
+  return <LoadingFallback />
 }
 
 export default function App() {
@@ -71,17 +109,21 @@ export default function App() {
   useGoogleOneTap()
 
   return (
+    <HelmetProvider>
     <ErrorBoundary>
       <NotificationProvider>
         <CheckoutDialog />
         <PrintOrderDialog />
         <BrowserRouter>
-          <Suspense fallback={<LoadingFallback />}>
+          <RouteProgressBar />
+          <Suspense fallback={<RouteSkeleton />}>
+            <PageTransition>
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/editor" element={<EditorPage />} />
               <Route path="/preview" element={<PreviewPage />} />
               <Route path="/poster-editor" element={<PosterEditorPage />} />
+              <Route path="/oneweek-editor" element={<OneWeekEditorPage />} />
               <Route path="/themes" element={<ThemeGalleryPage />} />
               <Route path="/programme" element={<ProgrammePage />} />
               <Route path="/memorial/:id" element={<MemorialPage />} />
@@ -94,6 +136,8 @@ export default function App() {
               <Route path="/budget-planner" element={<BudgetPlannerPage />} />
               <Route path="/collage-maker" element={<CollageMakerPage />} />
               <Route path="/reminders" element={<ReminderPage />} />
+              <Route path="/anniversaries" element={<AnniversaryTrackerPage />} />
+              <Route path="/aseda-editor" element={<AsedaEditorPage />} />
               <Route path="/my-designs" element={<MyDesignsPage />} />
               <Route path="/partner-dashboard" element={<PartnerDashboardPage />} />
               <Route path="/admin" element={<AdminDashboardPage />} />
@@ -101,10 +145,30 @@ export default function App() {
               <Route path="/receipt" element={<ReceiptPage />} />
               <Route path="/qr-cards" element={<QRCodePrintPage />} />
               <Route path="/wreath-cards" element={<WreathCardsPage />} />
+              <Route path="/funeral-brochure-templates" element={<FuneralBrochureTemplatesPage />} />
+              <Route path="/funeral-poster-templates" element={<FuneralPosterTemplatesPage />} />
+              <Route path="/funeral-invitation-templates" element={<FuneralInvitationTemplatesPage />} />
+              <Route path="/funeral-booklet-templates" element={<FuneralBookletTemplatesPage />} />
+              <Route path="/gallery-creator" element={<GalleryCreatorPage />} />
+              <Route path="/gallery-editor/:slug" element={<GalleryEditorPage />} />
+              <Route path="/gallery/:slug" element={<GalleryViewPage />} />
+              <Route path="/guest-book-creator" element={<GuestBookCreatorPage />} />
+              <Route path="/guest-book/:slug" element={<GuestBookPage />} />
+              <Route path="/obituary-creator" element={<ObituaryCreatorPage />} />
+              <Route path="/obituary/:slug" element={<ObituaryPage />} />
+              <Route path="/hymns" element={<HymnLibraryPage />} />
+              <Route path="/venues" element={<VenueDirectoryPage />} />
+              <Route path="/blog" element={<BlogIndexPage />} />
+              <Route path="/blog/:slug" element={<BlogPostPage />} />
             </Routes>
+            </PageTransition>
           </Suspense>
+          <InstallPrompt />
+          <WhatsAppHelp />
+          <BottomNav />
         </BrowserRouter>
       </NotificationProvider>
     </ErrorBoundary>
+    </HelmetProvider>
   )
 }

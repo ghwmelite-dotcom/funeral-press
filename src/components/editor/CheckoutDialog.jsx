@@ -11,6 +11,7 @@ import { usePurchaseStore } from '../../stores/purchaseStore'
 import { useAuthStore } from '../../stores/authStore'
 import { apiFetch } from '../../utils/apiClient'
 import { loadPaystackInline, PAYSTACK_PUBLIC_KEY } from '../../utils/paystack'
+import { haptic } from '../../hooks/useHaptic'
 
 const PLANS = [
   { key: 'single', name: 'Single', price: 35, credits: '1 design', desc: 'Perfect for one project' },
@@ -59,6 +60,7 @@ export default function CheckoutDialog() {
     setStage('verifying')
     try {
       await unlockDesign(pendingDownload.designId, pendingDownload.productType)
+      haptic('success')
       setStage('success')
       setTimeout(() => {
         closeCheckout()
@@ -95,6 +97,7 @@ export default function CheckoutDialog() {
             if (pendingDownload) {
               await unlockDesign(pendingDownload.designId, pendingDownload.productType)
             }
+            haptic('success')
             setStage('success')
             setTimeout(() => {
               closeCheckout()

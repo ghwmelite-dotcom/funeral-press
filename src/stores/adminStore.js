@@ -99,6 +99,19 @@ export const useAdminStore = create((set, get) => ({
     get().fetchPartners()
   },
 
+  setPartnerType: async (userId, partnerType) => {
+    await apiFetch('/admin/partners/set-type', {
+      method: 'POST',
+      body: JSON.stringify({ userId, partnerType }),
+    })
+    const { partners } = get()
+    set({
+      partners: partners.map(p =>
+        p.id === userId ? { ...p, partner_type: partnerType } : p
+      ),
+    })
+  },
+
   setCommissionOverride: async (userId, commissionRate) => {
     const data = await apiFetch('/admin/partners/commission-override', {
       method: 'POST',

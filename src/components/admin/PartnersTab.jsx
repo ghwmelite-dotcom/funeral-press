@@ -32,6 +32,32 @@ function PartnerTypeBadge({ partnerType }) {
   )
 }
 
+function PartnerTypeSelector({ partner, onSave }) {
+  const [saving, setSaving] = useState(false)
+
+  const handleChange = async (e) => {
+    const val = e.target.value === '' ? null : e.target.value
+    setSaving(true)
+    try {
+      await onSave(partner.id, val)
+    } catch { /* ignore */ }
+    setSaving(false)
+  }
+
+  return (
+    <select
+      value={partner.partner_type || ''}
+      onChange={handleChange}
+      disabled={saving}
+      className="px-1.5 py-0.5 text-[10px] bg-muted border border-border rounded text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-50"
+    >
+      <option value="">Individual</option>
+      <option value="church">Church</option>
+      <option value="funeral_home">Funeral Home</option>
+    </select>
+  )
+}
+
 const TIER_RATES = { default: 10 }
 
 function CommissionOverrideInput({ partner, onSave }) {
@@ -76,7 +102,7 @@ function CommissionOverrideInput({ partner, onSave }) {
 }
 
 export default function PartnersTab() {
-  const { partners, fetchPartners, fetchUsers, users, promotePartner, demotePartner, setCommissionOverride, isLoading } = useAdminStore()
+  const { partners, fetchPartners, fetchUsers, users, promotePartner, demotePartner, setCommissionOverride, setPartnerType, isLoading } = useAdminStore()
 
   const [promoteOpen, setPromoteOpen] = useState(false)
   const [promoteSearch, setPromoteSearch] = useState('')
@@ -166,6 +192,7 @@ export default function PartnersTab() {
             <thead>
               <tr className="border-b border-border bg-muted/50">
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Partner</th>
+                <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground">Type</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground hidden sm:table-cell">Email</th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground">Code</th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground">Referrals</th>
@@ -178,11 +205,11 @@ export default function PartnersTab() {
               {filteredPartners.map(p => (
                 <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-foreground font-medium text-sm">{p.partner_name || p.name}</p>
-                      <PartnerTypeBadge partnerType={p.partner_type} />
-                    </div>
+                    <p className="text-foreground font-medium text-sm">{p.partner_name || p.name}</p>
                     <p className="text-[10px] text-muted-foreground">{p.name}</p>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <PartnerTypeSelector partner={p} onSave={setPartnerType} />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell truncate max-w-[200px]">{p.email}</td>
                   <td className="px-4 py-3 text-center">
@@ -193,11 +220,7 @@ export default function PartnersTab() {
                     {formatGHS(p.total_earned)}
                   </td>
                   <td className="px-4 py-3 text-center hidden lg:table-cell">
-                    {p.partner_type ? (
-                      <CommissionOverrideInput partner={p} onSave={setCommissionOverride} />
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{TIER_RATES.default}%</span>
-                    )}
+                    <CommissionOverrideInput partner={p} onSave={setCommissionOverride} />
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button
@@ -212,7 +235,7 @@ export default function PartnersTab() {
               ))}
               {filteredPartners.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                     {isLoading ? 'Loading...' : 'No partners yet'}
                   </td>
                 </tr>

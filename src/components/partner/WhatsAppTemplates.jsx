@@ -18,8 +18,14 @@ export default function WhatsAppTemplates({ partnerType, referralUrl }) {
 
   const templates = partnerType === 'funeral_home' ? FUNERAL_HOME_TEMPLATES : CHURCH_TEMPLATES
 
+  const addUtm = (url) => {
+    if (!url) return ''
+    const utm = 'utm_source=whatsapp&utm_medium=partner&utm_campaign=referral'
+    return url.includes('?') ? `${url}&${utm}` : `${url}?${utm}`
+  }
+
   const handleCopy = async (template, idx) => {
-    const message = template.replace('{link}', referralUrl || '')
+    const message = template.replace('{link}', addUtm(referralUrl))
     try {
       await navigator.clipboard.writeText(message)
       setCopiedIdx(idx)
@@ -40,7 +46,7 @@ export default function WhatsAppTemplates({ partnerType, referralUrl }) {
       <div className="space-y-3">
         {templates.map((template, idx) => {
           const isCopied = copiedIdx === idx
-          const displayText = template.replace('{link}', referralUrl || 'your-link')
+          const displayText = template.replace('{link}', addUtm(referralUrl) || 'your-link')
           return (
             <div
               key={idx}

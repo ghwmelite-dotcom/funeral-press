@@ -603,7 +603,7 @@ export default function PartnerDashboardPage() {
 
           <div className="space-y-3">
             <a
-              href="https://chat.whatsapp.com/FuneralPressPartners"
+              href="https://chat.whatsapp.com/EbJjUflYBNUKDvkgqLiey8"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 p-3 bg-muted/30 border border-border rounded-lg hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-all group"
@@ -617,18 +617,6 @@ export default function PartnerDashboardPage() {
               </div>
             </a>
 
-            <a
-              href="mailto:partners@funeralpress.org"
-              className="flex items-center gap-3 p-3 bg-muted/30 border border-border rounded-lg hover:border-primary/40 hover:bg-primary/5 transition-all group"
-            >
-              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Mail size={16} className="text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">partners@funeralpress.org</p>
-                <p className="text-[10px] text-muted-foreground">Email us for account or payout enquiries</p>
-              </div>
-            </a>
           </div>
         </div>
 

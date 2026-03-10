@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Printer, ArrowLeft, Download, Loader2 } from 'lucide-react'
 import { useBrochureStore } from '../stores/brochureStore'
 import { downloadCardAsPdf } from '../utils/downloadQrPdf'
+import PageMeta from '../components/seo/PageMeta'
 
 function usePortraitPrint() {
   useEffect(() => {
@@ -180,6 +181,11 @@ export default function WreathCardsPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <PageMeta
+        title="Wreath Condolence Cards — Design Sympathy Cards Online | FuneralPress"
+        description="Create elegant wreath condolence cards and sympathy messages. Professional designs for funeral wreaths and floral tributes. Print-ready PDF export."
+        path="/wreath-cards"
+      />
       {/* Header — hidden when printing */}
       <header className="print:hidden sticky top-0 z-10 bg-card/80 backdrop-blur border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">

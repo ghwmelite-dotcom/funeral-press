@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { ArrowLeft, Loader2, BookOpen, Upload, X } from 'lucide-react'
+import PageMeta from '../components/seo/PageMeta'
 import { pdf } from '@react-pdf/renderer'
 import { useBrochureStore } from '../stores/brochureStore'
 import BrochureDocument from '../components/pdf/BrochureDocument'
@@ -121,6 +123,17 @@ export default function FlipbookPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PageMeta
+        title="Memorial Flipbook — Interactive Digital Funeral Programme | FuneralPress"
+        description="View funeral programmes as interactive digital flipbooks. Share online with family and friends. Beautiful page-turning experience for memorial brochures."
+        path="/flipbook"
+      />
+      <Helmet>
+        <meta property="og:title" content={store.fullName ? `${store.fullName} — Memorial Flipbook` : 'Memorial Flipbook | FuneralPress'} />
+        <meta property="og:description" content={store.fullName ? `View the memorial flipbook for ${store.fullName}. An interactive digital funeral programme.` : 'View funeral programmes as interactive digital flipbooks. Share online with family and friends.'} />
+        <meta property="og:type" content="article" />
+        {store.coverPhoto && <meta property="og:image" content={store.coverPhoto} />}
+      </Helmet>
       {/* Header */}
       <div className="h-auto min-h-12 flex items-center justify-between px-4 py-2 border-b border-border bg-background gap-2 flex-wrap">
         <Link to="/preview" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm shrink-0">
@@ -227,6 +240,13 @@ export default function FlipbookPage() {
         ) : (
           <FlipbookViewer images={images} onDownload={handleDownload} />
         )}
+      </div>
+
+      {/* Branding footer */}
+      <div className="text-center py-6 border-t border-border mt-12">
+        <a href="https://funeralpress.org" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+          Created with FuneralPress
+        </a>
       </div>
     </div>
   )
