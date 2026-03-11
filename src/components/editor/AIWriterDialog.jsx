@@ -108,7 +108,7 @@ export default function AIWriterDialog({ open, onOpenChange, type = 'tribute', o
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. The Hodges Family"
+                  placeholder="e.g. The Johnson Family"
                   className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
@@ -124,7 +124,7 @@ export default function AIWriterDialog({ open, onOpenChange, type = 'tribute', o
                 rows={4}
                 placeholder={
                   type === 'biography'
-                    ? 'e.g. Born in Anloga, Volta Region. Teacher for 30 years. Devoted mother of 5...'
+                    ? 'e.g. Born in a small town. Teacher for 30 years. Devoted mother of 5...'
                     : 'e.g. Always smiling, incredible cook, loved singing hymns, strong faith...'
                 }
                 className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring resize-none"

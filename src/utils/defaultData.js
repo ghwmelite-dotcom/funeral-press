@@ -57,7 +57,7 @@ export const defaultOrderOfService = {
     { time: '11:00 AM', description: 'The Benediction' },
   ],
   privateBurial: [
-    { time: '11:45 AM', description: 'Delegation Departs with Body to Anloga' },
+    { time: '11:45 AM', description: 'Delegation Departs with Body to Burial Site' },
     { time: '', description: 'Reception by Family Elders' },
     { time: '', description: 'Traditional Rites & Customs' },
     { time: '', description: 'Scripture Reading' },
@@ -141,13 +141,13 @@ May the good Lord richly bless you all for your love, kindness, and generosity.`
 
 export const defaultData = {
   title: 'Mrs.',
-  fullName: 'Josephine Worla Ameovi-Hodges',
-  dateOfBirth: '1948-07-15',
-  dateOfDeath: '2025-12-14',
-  funeralDate: '2026-02-28',
-  funeralTime: '08:30',
-  funeralVenue: '37 Military Hospital Methodist-Presbyterian Church',
-  burialLocation: 'Anloga, Volta Region',
+  fullName: 'Grace Amara Johnson',
+  dateOfBirth: '1950-03-10',
+  dateOfDeath: '2025-11-20',
+  funeralDate: '2026-01-15',
+  funeralTime: '09:00',
+  funeralVenue: 'Community Chapel of Grace',
+  burialLocation: 'Riverside Memorial Gardens',
   theme: 'blackGold',
   coverPhoto: null,
   coverVerse: '"Blessed are the dead who die in the Lord from henceforth: Yea, saith the Spirit, that they may rest from their labours; and their works do follow them."\n— Revelation 14:13',
@@ -188,8 +188,8 @@ export const defaultData = {
   liveServiceId: null,
   liveServiceQrCode: null,
   wreathCards: [
-    { message: 'Farewell Aunty Joe!', from: 'Children & Grandchildren' },
-    { message: 'Xedenyuie Sister Worla', from: 'Family' },
-    { message: 'Rest Well!', from: 'Friends & Colleagues' },
+    { message: 'We will miss you dearly', from: 'Children & Grandchildren' },
+    { message: 'Forever in our hearts', from: 'Family' },
+    { message: 'Rest in peace, dear friend', from: 'Friends & Colleagues' },
   ],
 }

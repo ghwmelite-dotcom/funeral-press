@@ -72,7 +72,7 @@ export default function BasicInfoForm() {
             value={store.fullName}
             onChange={(e) => store.updateField('fullName', e.target.value)}
             onBlur={() => handleBlur('fullName')}
-            placeholder="e.g. Josephine Worla Ameovi-Hodges"
+            placeholder="e.g. Grace Amara Johnson"
             className={`${inputBase} ${!fullNameValidation.valid ? borderError : borderNormal} placeholder:text-muted-foreground/60`}
           />
           {!fullNameValidation.valid && (
@@ -175,7 +175,7 @@ export default function BasicInfoForm() {
           type="text"
           value={store.burialLocation}
           onChange={(e) => store.updateField('burialLocation', e.target.value)}
-          placeholder="e.g. Anloga, Volta Region"
+          placeholder="e.g. Riverside Memorial Gardens"
           className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
         />
       </div>

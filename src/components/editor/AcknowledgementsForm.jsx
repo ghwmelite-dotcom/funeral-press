@@ -34,7 +34,7 @@ export default function AcknowledgementsForm() {
           type="text"
           value={store.familySignature}
           onChange={(e) => store.updateField('familySignature', e.target.value)}
-          placeholder="e.g. The Hodges & Amewovi Families"
+          placeholder="e.g. The Johnson Family"
           className="w-full bg-card border border-input rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
         />
       </div>
