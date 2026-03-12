@@ -23,8 +23,8 @@
     color: var(--cream);
     font-family: 'Cormorant Garamond', 'Georgia', serif;
     overflow: hidden;
-    width: 1920px;
-    height: 1080px;
+    width: 100vw;
+    height: 100vh;
     position: relative;
   }
 
@@ -129,15 +129,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 80px;
+    padding: 40px;
     position: relative;
   }
 
   .product-grid {
     display: grid;
-    grid-template-columns: repeat(3, 160px);
-    grid-template-rows: repeat(3, 200px);
-    gap: 20px;
+    grid-template-columns: repeat(3, min(130px, 10vw));
+    grid-template-rows: repeat(3, min(155px, 13vh));
+    gap: 14px;
     transform: perspective(1200px) rotateY(6deg) rotateX(2deg);
     transform-style: preserve-3d;
   }
@@ -221,7 +221,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 80px;
+    padding: 40px;
     text-align: center;
     position: relative;
   }
@@ -251,7 +251,7 @@
   .cta-heading {
     font-family: 'Playfair Display', serif;
     font-weight: 700;
-    font-size: 52px;
+    font-size: clamp(32px, 3.5vw, 52px);
     line-height: 1.15;
     color: var(--cream);
     margin-bottom: 12px;
