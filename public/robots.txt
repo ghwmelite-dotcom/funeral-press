@@ -1,5 +1,5 @@
 # FuneralPress — Crawl directives
-# Updated: 2026-03-15
+# Updated: 2026-03-16
 
 User-agent: *
 Allow: /
@@ -25,20 +25,103 @@ Disallow: /anniversaries
 Disallow: /api/
 Disallow: /flipbook
 
-# AI Search Crawlers — Allow for AEO visibility
+# AI Search Crawlers — Explicitly welcome with same rules
+# Per robots.txt spec, each user-agent block must include its own rules.
+
 User-agent: GPTBot
 Allow: /
+Disallow: /editor
+Disallow: /poster-editor
+Disallow: /invitation-editor
+Disallow: /thankyou-editor
+Disallow: /booklet-editor
+Disallow: /banner-editor
+Disallow: /collage-maker
+Disallow: /my-designs
+Disallow: /partner-dashboard
+Disallow: /admin
+Disallow: /receipt
+Disallow: /preview
+Disallow: /slideshow
+Disallow: /aseda-editor
+Disallow: /gallery-editor/
+Disallow: /guest-book-creator
+Disallow: /obituary-creator
+Disallow: /oneweek-editor
+Disallow: /anniversaries
+Disallow: /api/
+Disallow: /flipbook
 
 User-agent: ClaudeBot
 Allow: /
+Disallow: /editor
+Disallow: /poster-editor
+Disallow: /invitation-editor
+Disallow: /thankyou-editor
+Disallow: /booklet-editor
+Disallow: /banner-editor
+Disallow: /collage-maker
+Disallow: /my-designs
+Disallow: /partner-dashboard
+Disallow: /admin
+Disallow: /receipt
+Disallow: /preview
+Disallow: /slideshow
+Disallow: /aseda-editor
+Disallow: /gallery-editor/
+Disallow: /guest-book-creator
+Disallow: /obituary-creator
+Disallow: /oneweek-editor
+Disallow: /anniversaries
+Disallow: /api/
+Disallow: /flipbook
 
 User-agent: PerplexityBot
 Allow: /
+Disallow: /editor
+Disallow: /poster-editor
+Disallow: /invitation-editor
+Disallow: /thankyou-editor
+Disallow: /booklet-editor
+Disallow: /banner-editor
+Disallow: /collage-maker
+Disallow: /my-designs
+Disallow: /partner-dashboard
+Disallow: /admin
+Disallow: /receipt
+Disallow: /preview
+Disallow: /slideshow
+Disallow: /aseda-editor
+Disallow: /gallery-editor/
+Disallow: /guest-book-creator
+Disallow: /obituary-creator
+Disallow: /oneweek-editor
+Disallow: /anniversaries
+Disallow: /api/
+Disallow: /flipbook
 
 User-agent: Applebot
 Allow: /
-
-User-agent: Bingbot
-Allow: /
+Disallow: /editor
+Disallow: /poster-editor
+Disallow: /invitation-editor
+Disallow: /thankyou-editor
+Disallow: /booklet-editor
+Disallow: /banner-editor
+Disallow: /collage-maker
+Disallow: /my-designs
+Disallow: /partner-dashboard
+Disallow: /admin
+Disallow: /receipt
+Disallow: /preview
+Disallow: /slideshow
+Disallow: /aseda-editor
+Disallow: /gallery-editor/
+Disallow: /guest-book-creator
+Disallow: /obituary-creator
+Disallow: /oneweek-editor
+Disallow: /anniversaries
+Disallow: /api/
+Disallow: /flipbook
 
 Sitemap: https://funeralpress.org/sitemap.xml

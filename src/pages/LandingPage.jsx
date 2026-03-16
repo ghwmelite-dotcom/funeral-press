@@ -40,7 +40,6 @@ import {
   QrCode,
   Receipt,
   Calendar,
-  ChevronDown,
   HelpCircle,
 } from 'lucide-react'
 import { Sun, Moon } from 'lucide-react'
@@ -88,6 +87,7 @@ import ExampleBrochureDialog from '../components/landing/ExampleBrochureDialog'
 import ThemePreviewCard from '../components/landing/ThemePreviewCard'
 import LoadSharedDialog from '../components/layout/LoadSharedDialog'
 import PartnerBanner from '../components/landing/PartnerBanner'
+import FAQSection from '../components/seo/FAQSection'
 import { captureReferralCode } from '../utils/referralTracker'
 
 const FEATURES = [
@@ -170,30 +170,6 @@ const LANDING_FAQS = [
     answer: 'Yes. Your designs are encrypted and stored securely in the cloud. You sign in with your Google account, and your designs auto-save and sync across all your devices. Only you can access your designs.',
   },
 ]
-
-function FAQItem({ question, answer }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="border border-border rounded-xl overflow-hidden transition-all">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 sm:px-6 py-4 text-left text-foreground font-medium hover:bg-card transition-colors"
-      >
-        <span className="pr-4">{question}</span>
-        <ChevronDown className={`w-5 h-5 shrink-0 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-      </button>
-      <div
-        className={`grid transition-all duration-200 ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
-      >
-        <div className="overflow-hidden">
-          <div className="px-5 sm:px-6 pb-4 text-muted-foreground leading-relaxed text-sm">
-            {answer}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export default function LandingPage() {
   const navigate = useNavigate()
@@ -1820,11 +1796,7 @@ export default function LandingPage() {
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Frequently Asked Questions</h2>
             <p className="text-base text-muted-foreground mt-3 max-w-xl mx-auto">Everything you need to know about designing funeral materials with FuneralPress</p>
           </div>
-          <div className="space-y-3">
-            {LANDING_FAQS.map((faq) => (
-              <FAQItem key={faq.question} question={faq.question} answer={faq.answer} />
-            ))}
-          </div>
+          <FAQSection faqs={LANDING_FAQS} />
         </div>
       </div>
 

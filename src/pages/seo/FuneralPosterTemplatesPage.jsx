@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageMeta from '../../components/seo/PageMeta'
-import { ChevronDown, ArrowRight } from 'lucide-react'
+import FAQSection from '../../components/seo/FAQSection'
+import { ArrowRight } from 'lucide-react'
 
 const posterStyles = [
   { name: 'Tribute Portrait', description: 'A large centred portrait with bold name typography and key dates. The most popular format for Ghanaian death announcements.' },
@@ -30,26 +30,6 @@ const faqs = [
   },
 ]
 
-
-function FAQItem({ question, answer }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="border border-border rounded-xl overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-6 py-4 text-left text-foreground font-medium hover:bg-card transition-colors"
-      >
-        <span>{question}</span>
-        <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="px-6 pb-4 text-muted-foreground leading-relaxed">
-          {answer}
-        </div>
-      )}
-    </div>
-  )
-}
 
 export default function FuneralPosterTemplatesPage() {
   const navigate = useNavigate()
@@ -110,11 +90,7 @@ export default function FuneralPosterTemplatesPage() {
       {/* FAQ */}
       <section className="max-w-3xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-8 text-center">Frequently Asked Questions</h2>
-        <div className="space-y-3">
-          {faqs.map((faq) => (
-            <FAQItem key={faq.question} question={faq.question} answer={faq.answer} />
-          ))}
-        </div>
+        <FAQSection faqs={faqs} />
       </section>
 
       {/* Footer CTA */}
