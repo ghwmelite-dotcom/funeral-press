@@ -60,12 +60,21 @@ export default function RegionPage() {
 
   useEffect(() => {
     if (!region) return
-    setVenuesLoading(true)
-    fetch(`/api/venues?region=${slug}&verified=1`)
-      .then((r) => r.json())
-      .then((data) => setVenues(Array.isArray(data) ? data : []))
-      .catch(() => setVenues([]))
-      .finally(() => setVenuesLoading(false))
+    const controller = new AbortController()
+    async function loadVenues() {
+      setVenuesLoading(true)
+      try {
+        const r = await fetch(`/api/venues?region=${slug}&verified=1`, { signal: controller.signal })
+        const data = await r.json()
+        setVenues(Array.isArray(data) ? data : [])
+      } catch {
+        if (!controller.signal.aborted) setVenues([])
+      } finally {
+        if (!controller.signal.aborted) setVenuesLoading(false)
+      }
+    }
+    loadVenues()
+    return () => controller.abort()
   }, [slug, region])
 
   if (!region) {
