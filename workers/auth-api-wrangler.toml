@@ -5,6 +5,8 @@ compatibility_date = "2024-01-01"
 [vars]
 GOOGLE_CLIENT_ID = "820118502550-4cju49bcbn2btvr3d31k5cpgdefpv0j1.apps.googleusercontent.com"
 CORS_ORIGIN = "https://funeralpress.org"
+PAYSTACK_PLAN_MONTHLY = "PLN_placeholder_monthly"
+PAYSTACK_PLAN_ANNUAL = "PLN_placeholder_annual"
 
 [[d1_databases]]
 binding = "DB"

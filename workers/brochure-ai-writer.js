@@ -57,13 +57,96 @@ Write 1-2 paragraphs (100-200 words) thanking everyone who supported the family.
   return 'Write a heartfelt message for a funeral brochure.'
 }
 
+function buildWizardPrompt(data) {
+  const { name, age, dob, dateOfPassing, placeOfPassing, occupation, hobbies, traits, achievements, survivedBy, specialRelationships, familyMotto, denomination, churchName, favoriteHymns, culturalCustoms, tone, specialInstructions } = data
+
+  return `You are an expert funeral content writer specializing in Ghanaian funeral traditions. Write THREE pieces of content for a funeral programme.
+
+DECEASED INFORMATION:
+- Full Name: ${name || 'the deceased'}
+- Age: ${age || 'unknown'}
+- Date of Birth: ${dob || 'unknown'}
+- Date of Passing: ${dateOfPassing || 'unknown'}
+- Place of Passing: ${placeOfPassing || 'unknown'}
+
+LIFE & PERSONALITY:
+- Occupation: ${occupation || 'unknown'}
+- Hobbies: ${hobbies || 'none specified'}
+- Personality Traits: ${traits || 'none specified'}
+- Key Achievements: ${achievements || 'none specified'}
+
+FAMILY:
+- Survived By: ${survivedBy || 'family members'}
+- Special Relationships: ${specialRelationships || 'none specified'}
+- Family Motto: ${familyMotto || 'none'}
+
+FAITH & CULTURE:
+- Denomination: ${denomination || 'Christian'}
+- Church: ${churchName || 'not specified'}
+- Favorite Hymns: ${favoriteHymns || 'none specified'}
+- Cultural Customs: ${culturalCustoms || 'Ghanaian traditions'}
+
+TONE: ${tone || 'warm'}
+${specialInstructions ? `SPECIAL INSTRUCTIONS: ${specialInstructions}` : ''}
+
+Respond ONLY with valid JSON in this exact format (no markdown, no code blocks):
+{"obituary":"[~300 words obituary]","eulogy":"[~500 words eulogy]","programme_intro":"[~150 words programme introduction]"}
+
+Write with warmth, dignity, and cultural sensitivity. Include references to faith and Ghanaian customs where appropriate.`
+}
+
 async function handlePost(request, env) {
   try {
     const body = await request.json()
+
+    // New wizard mode
+    if (body.mode === 'wizard') {
+      const prompt = buildWizardPrompt(body)
+
+      const result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+        messages: [
+          {
+            role: "system",
+            content: "You are a compassionate funeral content writer. You MUST respond with valid JSON only. No markdown, no code blocks, no extra text. Just the JSON object with obituary, eulogy, and programme_intro fields."
+          },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 2000,
+      })
+
+      if (!result || !result.response) {
+        return new Response(JSON.stringify({ error: "AI service returned no response" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        })
+      }
+
+      // Parse the JSON response
+      let parsed
+      try {
+        // Strip any markdown code block wrappers the model might add
+        const cleaned = result.response.trim().replace(/^```json\s*/, '').replace(/```\s*$/, '').trim()
+        parsed = JSON.parse(cleaned)
+      } catch {
+        // If JSON parse fails, return the raw text as obituary
+        parsed = {
+          obituary: result.response.trim(),
+          eulogy: '',
+          programme_intro: '',
+        }
+      }
+
+      return new Response(JSON.stringify(parsed), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      })
+    }
+
+    // Legacy single-type mode (existing behavior)
     const { type, ...data } = body
 
     if (!type || !['tribute', 'biography', 'acknowledgements'].includes(type)) {
-      return new Response(JSON.stringify({ error: "Invalid type. Use: tribute, biography, or acknowledgements" }), {
+      return new Response(JSON.stringify({ error: "Invalid type. Use: tribute, biography, acknowledgements, or mode: 'wizard'" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders }
       })

@@ -15,3 +15,22 @@ export async function generateAIText(type, data) {
   const result = await response.json()
   return result.text
 }
+
+/**
+ * Generate structured funeral content via the AI wizard.
+ * Returns { obituary, eulogy, programme_intro }
+ */
+export async function generateWizardContent(wizardData) {
+  const response = await fetch(AI_WRITER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode: 'wizard', ...wizardData }),
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(err.error || 'AI service unavailable')
+  }
+
+  return await response.json()
+}

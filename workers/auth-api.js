@@ -737,6 +737,25 @@ async function getUserPurchaseData(env, userId) {
   }
 }
 
+async function getUserSubscription(env, userId) {
+  return await env.DB.prepare(
+    "SELECT * FROM subscriptions WHERE user_id = ? AND status IN ('active', 'past_due') ORDER BY created_at DESC LIMIT 1"
+  ).bind(userId).first()
+}
+
+function resolveCredit(user, subscription) {
+  if (subscription && subscription.status === 'active' && subscription.monthly_credits_remaining > 0) {
+    return { source: 'subscription', deduct: 'subscription' }
+  }
+  if (user.credits_remaining === -1) {
+    return { source: 'unlimited_suite', deduct: null }
+  }
+  if (user.credits_remaining > 0) {
+    return { source: 'credit', deduct: 'user' }
+  }
+  return null
+}
+
 async function handlePaymentInitialize(request, env, userId) {
   const { plan } = await request.json()
   if (!plan || !PLANS[plan]) return error('Invalid plan', 400, request)
@@ -909,32 +928,40 @@ async function handleUnlockDesign(request, env, userId) {
   if (!designId || !productType) return error('Missing designId or productType', 400, request)
 
   // Check if already unlocked (idempotent)
-  const existing = await env.DB.prepare('SELECT id FROM unlocked_designs WHERE user_id = ? AND design_id = ?').bind(userId, designId).first()
+  const existing = await env.DB.prepare(
+    'SELECT id FROM unlocked_designs WHERE user_id = ? AND design_id = ?'
+  ).bind(userId, designId).first()
   if (existing) {
     const purchaseData = await getUserPurchaseData(env, userId)
-    return json({ unlocked: true, ...purchaseData }, 200, request)
+    return json(purchaseData, 200, request)
   }
 
-  // Check credits
+  // Credit resolution waterfall
   const user = await env.DB.prepare('SELECT credits_remaining FROM users WHERE id = ?').bind(userId).first()
-  const credits = user?.credits_remaining ?? 0
-  if (credits === 0) return error('No credits remaining', 402, request)
+  const subscription = await getUserSubscription(env, userId)
+  const resolution = resolveCredit(user, subscription)
 
-  // Find most recent successful order for this user
-  const order = await env.DB.prepare("SELECT id FROM orders WHERE user_id = ? AND status = 'success' ORDER BY paid_at DESC LIMIT 1").bind(userId).first()
-  if (!order) return error('No valid order found', 402, request)
+  if (!resolution) return error('No credits available', 403, request)
 
-  // Decrement credits (only if not unlimited)
-  if (credits > 0) {
-    const result = await env.DB.prepare('UPDATE users SET credits_remaining = credits_remaining - 1 WHERE id = ? AND credits_remaining > 0').bind(userId).run()
-    if (!result.meta.changes) return error('No credits remaining', 402, request)
+  // Deduct credit from appropriate source
+  if (resolution.deduct === 'subscription') {
+    await env.DB.prepare(
+      'UPDATE subscriptions SET monthly_credits_remaining = monthly_credits_remaining - 1 WHERE id = ?'
+    ).bind(subscription.id).run()
+  } else if (resolution.deduct === 'user') {
+    const result = await env.DB.prepare(
+      'UPDATE users SET credits_remaining = credits_remaining - 1 WHERE id = ? AND credits_remaining > 0'
+    ).bind(userId).run()
+    if (!result.meta.changes) return error('No credits available', 403, request)
   }
+  // unlimited_suite: no deduction
 
-  await env.DB.prepare('INSERT INTO unlocked_designs (id, user_id, order_id, design_id, product_type) VALUES (?, ?, ?, ?, ?)')
-    .bind(generateId(), userId, order.id, designId, productType).run()
+  await env.DB.prepare(
+    "INSERT INTO unlocked_designs (id, user_id, design_id, product_type) VALUES (?, ?, ?, ?)"
+  ).bind(generateId(), userId, designId, productType).run()
 
   const purchaseData = await getUserPurchaseData(env, userId)
-  return json({ unlocked: true, ...purchaseData }, 200, request)
+  return json(purchaseData, 200, request)
 }
 
 async function handlePaymentStatus(request, env, userId) {
@@ -1559,6 +1586,180 @@ async function handleListUserGalleries(request, env, userId) {
   return json({ galleries: rows.results }, 200, request)
 }
 
+// ─── Subscription handlers ───────────────────────────────────────────────────
+
+async function handleSubscriptionCreate(request, env, userId) {
+  const { plan } = await request.json()
+  if (!plan || !['pro_monthly', 'pro_annual'].includes(plan)) {
+    return error('Invalid plan. Use pro_monthly or pro_annual', 400, request)
+  }
+
+  // Check if user already has active subscription
+  const existing = await getUserSubscription(env, userId)
+  if (existing && existing.status === 'active') {
+    return error('Already have an active subscription', 400, request)
+  }
+
+  const user = await env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(userId).first()
+  if (!user) return error('User not found', 404, request)
+
+  const planCode = plan === 'pro_monthly' ? env.PAYSTACK_PLAN_MONTHLY : env.PAYSTACK_PLAN_ANNUAL
+
+  // Initialize Paystack subscription via transaction
+  const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: user.email,
+      plan: planCode,
+      callback_url: `${env.CORS_ORIGIN}/subscription/callback`,
+      metadata: { userId, plan },
+    }),
+  })
+  const psData = await psRes.json()
+
+  if (!psData.status) {
+    return error('Failed to initialize subscription', 500, request)
+  }
+
+  return json({
+    authorization_url: psData.data.authorization_url,
+    access_code: psData.data.access_code,
+    reference: psData.data.reference,
+  }, 200, request)
+}
+
+async function handleSubscriptionStatus(request, env, userId) {
+  const sub = await getUserSubscription(env, userId)
+  if (!sub) {
+    return json({ hasSubscription: false }, 200, request)
+  }
+  return json({
+    hasSubscription: true,
+    plan: sub.plan,
+    status: sub.status,
+    monthlyCreditsRemaining: sub.monthly_credits_remaining,
+    currentPeriodEnd: sub.current_period_end,
+    cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+  }, 200, request)
+}
+
+async function handleSubscriptionCancel(request, env, userId) {
+  const sub = await getUserSubscription(env, userId)
+  if (!sub || sub.status !== 'active') {
+    return error('No active subscription', 400, request)
+  }
+
+  // Tell Paystack to cancel at period end
+  if (sub.paystack_email_token && sub.paystack_subscription_code) {
+    await fetch(`https://api.paystack.co/subscription/disable`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        code: sub.paystack_subscription_code,
+        token: sub.paystack_email_token,
+      }),
+    })
+  }
+
+  await env.DB.prepare(
+    "UPDATE subscriptions SET cancel_at_period_end = 1, cancelled_at = datetime('now'), updated_at = datetime('now') WHERE id = ?"
+  ).bind(sub.id).run()
+
+  await env.DB.prepare(
+    "INSERT INTO subscription_events (subscription_id, event_type, detail) VALUES (?, 'cancelled', ?)"
+  ).bind(sub.id, JSON.stringify({ userId, reason: 'user_requested' })).run()
+
+  await logAudit(env.DB, {
+    userId,
+    action: 'subscription.cancelled',
+    resourceType: 'subscription',
+    resourceId: sub.id,
+    ipAddress: getClientIP(request),
+  })
+
+  return json({ ok: true, cancelAtPeriodEnd: true }, 200, request)
+}
+
+async function handleSubscriptionWebhook(request, env) {
+  // Reuse the same Paystack HMAC verification as payment webhook
+  const signature = request.headers.get('x-paystack-signature')
+  if (!signature) return error('Missing signature', 400, request)
+
+  const body = await request.text()
+  const enc = new TextEncoder()
+  const key = await crypto.subtle.importKey('raw', enc.encode(env.PAYSTACK_SECRET_KEY), { name: 'HMAC', hash: 'SHA-512' }, false, ['sign'])
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(body))
+  const expected = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('')
+  if (expected !== signature) return error('Invalid signature', 401, request)
+
+  const event = JSON.parse(body)
+  const data = event.data || {}
+
+  if (event.event === 'subscription.create') {
+    const userId = data.metadata?.userId
+    if (!userId) return json({ ok: true }, 200, request)
+
+    const id = generateId()
+    const plan = data.plan?.plan_code === env.PAYSTACK_PLAN_ANNUAL ? 'pro_annual' : 'pro_monthly'
+    const now = new Date().toISOString()
+    const periodEnd = data.next_payment_date || new Date(Date.now() + 30 * 86400000).toISOString()
+
+    await env.DB.prepare(
+      `INSERT INTO subscriptions (id, user_id, plan, status, paystack_subscription_code, paystack_customer_code, paystack_email_token, current_period_start, current_period_end, monthly_credits_remaining)
+       VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, 15)`
+    ).bind(id, userId, plan, data.subscription_code || null, data.customer?.customer_code || null, data.email_token || null, now, periodEnd).run()
+
+    await env.DB.prepare(
+      "INSERT INTO subscription_events (subscription_id, event_type, detail) VALUES (?, 'created', ?)"
+    ).bind(id, JSON.stringify({ plan, reference: data.reference })).run()
+
+    return json({ ok: true }, 200, request)
+  }
+
+  if (event.event === 'charge.success' && data.plan) {
+    // Subscription renewal — reset monthly credits
+    const subCode = data.subscription_code
+    if (!subCode) return json({ ok: true }, 200, request)
+
+    const sub = await env.DB.prepare(
+      'SELECT id FROM subscriptions WHERE paystack_subscription_code = ?'
+    ).bind(subCode).first()
+
+    if (sub) {
+      const periodEnd = data.next_payment_date || new Date(Date.now() + 30 * 86400000).toISOString()
+      await env.DB.prepare(
+        "UPDATE subscriptions SET monthly_credits_remaining = 15, current_period_start = datetime('now'), current_period_end = ?, status = 'active', updated_at = datetime('now') WHERE id = ?"
+      ).bind(periodEnd, sub.id).run()
+
+      await env.DB.prepare(
+        "INSERT INTO subscription_events (subscription_id, event_type, detail) VALUES (?, 'renewed', ?)"
+      ).bind(sub.id, JSON.stringify({ reference: data.reference })).run()
+    }
+
+    return json({ ok: true }, 200, request)
+  }
+
+  if (event.event === 'subscription.not_renew' || event.event === 'subscription.disable') {
+    const subCode = data.subscription_code
+    if (!subCode) return json({ ok: true }, 200, request)
+
+    await env.DB.prepare(
+      "UPDATE subscriptions SET status = 'cancelled', updated_at = datetime('now') WHERE paystack_subscription_code = ?"
+    ).bind(subCode).run()
+
+    return json({ ok: true }, 200, request)
+  }
+
+  return json({ ok: true }, 200, request)
+}
+
 // ─── Router ─────────────────────────────────────────────────────────────────
 
 export default {
@@ -1604,6 +1805,7 @@ export default {
       if (method === 'POST' && path === '/auth/refresh') return await handleRefresh(request, env)
       if (method === 'GET' && path.startsWith('/images/')) return await handleImageServe(request, env, path.slice(8))
       if (method === 'POST' && path === '/payments/webhook') return await handlePaymentWebhook(request, env)
+      if (method === 'POST' && path === '/subscriptions/webhook') return await handleSubscriptionWebhook(request, env)
       const publicPartnerMatch = method === 'GET' && path.match(/^\/partner\/public\/([^/]+)$/)
       if (publicPartnerMatch) return await handlePublicPartnerPage(request, env, publicPartnerMatch[1])
 
@@ -1693,6 +1895,9 @@ export default {
       if (method === 'POST' && path === '/payments/verify') return await handlePaymentVerify(request, env, userId)
       if (method === 'POST' && path === '/payments/unlock-design') return await handleUnlockDesign(request, env, userId)
       if (method === 'GET' && path === '/payments/status') return await handlePaymentStatus(request, env, userId)
+      if (method === 'POST' && path === '/subscriptions/create') return await handleSubscriptionCreate(request, env, userId)
+      if (method === 'GET' && path === '/subscriptions/status') return await handleSubscriptionStatus(request, env, userId)
+      if (method === 'POST' && path === '/subscriptions/cancel') return await handleSubscriptionCancel(request, env, userId)
       if (method === 'POST' && path === '/print-orders/calculate') return await handlePrintCalculate(request, env, userId)
       if (method === 'POST' && path === '/print-orders/create') return await handlePrintOrderCreate(request, env, userId)
       if (method === 'POST' && path === '/print-orders/verify') return await handlePrintOrderVerify(request, env, userId)
