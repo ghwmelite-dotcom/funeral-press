@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { getStoredReferralCode, clearStoredReferralCode } from '../utils/referralTracker'
+import { trackEvent } from '../utils/trackEvent'
 
 const AUTH_KEY = 'fp-auth'
 const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
@@ -84,6 +85,8 @@ export const useAuthStore = create((set, get) => ({
       set({ ...state, isLoading: false })
       saveAuth({ ...state, hasMigrated: get().hasMigrated })
 
+      trackEvent('signup_completed', { method: 'google' })
+
       // Hydrate purchase data from login response
       import('../stores/purchaseStore').then(({ usePurchaseStore }) => {
         usePurchaseStore.getState().hydrateFromUser(data.user)
@@ -155,6 +158,7 @@ export const useAuthStore = create((set, get) => ({
         })
       }
     } catch { /* best effort */ }
+    trackEvent('user_logout')
     get().clearAuth()
   },
 

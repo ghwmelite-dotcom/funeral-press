@@ -1,0 +1,38 @@
+/**
+ * Log an action to the audit_log table.
+ * Fire-and-forget — errors are silently caught so audit logging never breaks the request.
+ * @param {D1Database} db - D1 database binding
+ * @param {Object} params
+ * @param {string} [params.userId] - user who performed the action
+ * @param {string} params.action - action identifier (e.g. 'payment.verified')
+ * @param {string} [params.resourceType] - resource type (e.g. 'order', 'design')
+ * @param {string} [params.resourceId] - resource identifier
+ * @param {Object} [params.detail] - additional JSON context
+ * @param {string} [params.ipAddress] - request IP
+ */
+export async function logAudit(db, { userId = null, action, resourceType = null, resourceId = null, detail = {}, ipAddress = null }) {
+  try {
+    await db.prepare(
+      `INSERT INTO audit_log (user_id, action, resource_type, resource_id, detail, ip_address)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(
+      userId,
+      action,
+      resourceType,
+      resourceId,
+      JSON.stringify(detail),
+      ipAddress
+    ).run()
+  } catch {
+    // Audit logging must never break a request
+  }
+}
+
+/**
+ * Extract the client IP from a Cloudflare Workers request.
+ * @param {Request} request
+ * @returns {string}
+ */
+export function getClientIP(request) {
+  return request.headers.get('CF-Connecting-IP') || 'unknown'
+}

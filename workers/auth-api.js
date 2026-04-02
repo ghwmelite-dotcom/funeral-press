@@ -1,3 +1,8 @@
+import { checkRateLimit, getRouteGroup } from './utils/rateLimiter.js'
+import { sanitizeInput } from './utils/sanitize.js'
+import { withSecurityHeaders } from './utils/securityHeaders.js'
+import { logAudit, getClientIP } from './utils/auditLog.js'
+
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
 
@@ -28,10 +33,10 @@ function corsHeaders(request) {
 }
 
 function json(data, status = 200, request) {
-  return new Response(JSON.stringify(data), {
+  return withSecurityHeaders(new Response(JSON.stringify(data), {
     status,
     headers: { 'Content-Type': 'application/json', ...corsHeaders(request) },
-  })
+  }))
 }
 
 function error(message, status = 400, request) {
@@ -445,7 +450,7 @@ async function handleLogout(request, env, userId) {
 }
 
 async function handleGetMe(request, env, userId) {
-  const user = await env.DB.prepare('SELECT id, email, name, picture, is_partner, referral_code, partner_name, partner_type, partner_logo_url, partner_denomination FROM users WHERE id = ?').bind(userId).first()
+  const user = await env.DB.prepare('SELECT id, email, name, picture, is_partner, referral_code, partner_name, partner_type, partner_logo_url, partner_denomination FROM users WHERE id = ? AND deleted_at IS NULL').bind(userId).first()
   if (!user) return error('User not found', 404, request)
   const purchaseData = await getUserPurchaseData(env, userId)
   return json({
@@ -468,10 +473,10 @@ async function handleListDesigns(request, env, userId) {
   const type = url.searchParams.get('type')
   let rows
   if (type) {
-    rows = await env.DB.prepare('SELECT id, product_type, name, updated_at FROM designs WHERE user_id = ? AND product_type = ? ORDER BY updated_at DESC')
+    rows = await env.DB.prepare('SELECT id, product_type, name, updated_at FROM designs WHERE user_id = ? AND product_type = ? AND deleted_at IS NULL ORDER BY updated_at DESC')
       .bind(userId, type).all()
   } else {
-    rows = await env.DB.prepare('SELECT id, product_type, name, updated_at FROM designs WHERE user_id = ? ORDER BY updated_at DESC')
+    rows = await env.DB.prepare('SELECT id, product_type, name, updated_at FROM designs WHERE user_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC')
       .bind(userId).all()
   }
   return json({ designs: rows.results }, 200, request)
@@ -481,11 +486,12 @@ async function handleUpsertDesign(request, env, userId, designId) {
   const { product_type, name, data, updated_at } = await request.json()
   if (!product_type || !data) return error('Missing product_type or data', 400, request)
 
+  const safeName = sanitizeInput(name)
   const updatedAt = updated_at || new Date().toISOString()
   await env.DB.prepare(
     `INSERT INTO designs (id, user_id, product_type, name, data, updated_at) VALUES (?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET name = excluded.name, data = excluded.data, updated_at = excluded.updated_at`
-  ).bind(designId, userId, product_type, name || 'Untitled', typeof data === 'string' ? data : JSON.stringify(data), updatedAt).run()
+  ).bind(designId, userId, product_type, safeName || 'Untitled', typeof data === 'string' ? data : JSON.stringify(data), updatedAt).run()
 
   return json({ ok: true, id: designId }, 200, request)
 }
@@ -500,7 +506,16 @@ async function handleGetDesign(request, env, userId, designId) {
 }
 
 async function handleDeleteDesign(request, env, userId, designId) {
-  await env.DB.prepare('DELETE FROM designs WHERE id = ? AND user_id = ?').bind(designId, userId).run()
+  await env.DB.prepare(
+    "UPDATE designs SET deleted_at = datetime('now') WHERE id = ? AND user_id = ?"
+  ).bind(designId, userId).run()
+  await logAudit(env.DB, {
+    userId,
+    action: 'design.deleted',
+    resourceType: 'design',
+    resourceId: designId,
+    ipAddress: getClientIP(request),
+  })
   return json({ ok: true }, 200, request)
 }
 
@@ -664,9 +679,12 @@ async function handleUpdatePartnerProfile(request, env, userId) {
     return error('partnerType must be church or funeral_home', 400, request)
   }
 
+  const safeWelcome = sanitizeInput(welcomeMsg)
+  const safeDenomination = sanitizeInput(denomination)
+
   await env.DB.prepare(
     "UPDATE users SET partner_type = ?, partner_welcome_msg = ?, partner_denomination = ?, updated_at = datetime('now') WHERE id = ?"
-  ).bind(partnerType || null, welcomeMsg || null, denomination || null, userId).run()
+  ).bind(partnerType || null, safeWelcome || null, safeDenomination || null, userId).run()
 
   return json({ ok: true }, 200, request)
 }
@@ -806,6 +824,14 @@ async function handlePaymentVerify(request, env, userId) {
   }
 
   await markOrderPaid(env, order)
+  await logAudit(env.DB, {
+    userId,
+    action: 'payment.verified',
+    resourceType: 'order',
+    resourceId: order.id,
+    detail: { plan: order.plan, amount: order.amount_pesewas, reference },
+    ipAddress: getClientIP(request),
+  })
   const purchaseData = await getUserPurchaseData(env, userId)
 
   const user = await env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(userId).first()
@@ -815,6 +841,18 @@ async function handlePaymentVerify(request, env, userId) {
 }
 
 async function handlePaymentWebhook(request, env) {
+  // Paystack webhook IP allowlist
+  const PAYSTACK_IPS = ['52.31.139.75', '52.49.173.169', '52.214.14.220']
+  const clientIP = getClientIP(request)
+  if (!PAYSTACK_IPS.includes(clientIP)) {
+    await logAudit(env.DB, {
+      action: 'webhook.blocked',
+      detail: { ip: clientIP, reason: 'IP not in Paystack allowlist' },
+      ipAddress: clientIP,
+    })
+    return error('Forbidden', 403, request)
+  }
+
   const signature = request.headers.get('x-paystack-signature')
   if (!signature) return error('Missing signature', 400, request)
 
@@ -834,6 +872,14 @@ async function handlePaymentWebhook(request, env) {
   const reference = event.data?.reference
   if (!reference) return json({ ok: true }, 200, request)
 
+  // Idempotency check — skip if already processed
+  const existing = await env.DB.prepare(
+    'SELECT status FROM orders WHERE paystack_reference = ?'
+  ).bind(reference).first()
+  if (existing && existing.status === 'success') {
+    return json({ ok: true, message: 'Already processed' }, 200, request)
+  }
+
   // Check if this is a print order (fp-print- prefix) or a credit order
   if (reference.startsWith('fp-print-')) {
     const printOrder = await env.DB.prepare('SELECT * FROM print_orders WHERE paystack_reference = ?').bind(reference).first()
@@ -847,6 +893,13 @@ async function handlePaymentWebhook(request, env) {
   if (!order) return json({ ok: true }, 200, request)
 
   await markOrderPaid(env, order)
+  await logAudit(env.DB, {
+    action: 'webhook.payment',
+    resourceType: 'order',
+    resourceId: order.id,
+    detail: { reference, event: event.event },
+    ipAddress: clientIP,
+  })
   notifyAdmin(env, 'payment', `Payment webhook confirmed`, { reference: event.data?.reference || 'unknown' })
   return json({ ok: true }, 200, request)
 }
@@ -936,7 +989,7 @@ async function handleAdminUsers(request, env) {
   const filter = url.searchParams.get('filter') || 'all'
   const offset = (page - 1) * perPage
 
-  let where = '1=1'
+  let where = 'u.deleted_at IS NULL'
   const binds = []
 
   if (search) {
@@ -979,6 +1032,15 @@ async function handleAdminGrantCredits(request, env) {
   const user = await env.DB.prepare('SELECT id, name, email, credits_remaining FROM users WHERE id = ?').bind(userId).first()
   if (!user) return error('User not found', 404, request)
 
+  await logAudit(env.DB, {
+    userId: auth.user.sub,
+    action: 'admin.grant_credits',
+    resourceType: 'user',
+    resourceId: userId,
+    detail: { credits, reason: reason || null },
+    ipAddress: getClientIP(request),
+  })
+
   return json({ ok: true, user }, 200, request)
 }
 
@@ -994,7 +1056,7 @@ async function handleAdminOrders(request, env) {
   const days = url.searchParams.get('days') || 'all'
   const offset = (page - 1) * perPage
 
-  let where = '1=1'
+  let where = 'o.deleted_at IS NULL'
   const binds = []
 
   if (status !== 'all') {
@@ -1064,6 +1126,15 @@ async function handleAdminPromotePartner(request, env) {
   await env.DB.prepare('UPDATE users SET is_partner = 1, referral_code = ?, partner_name = ? WHERE id = ?')
     .bind(code, partnerName, userId).run()
 
+  await logAudit(env.DB, {
+    userId: auth.user.sub,
+    action: 'admin.promote_partner',
+    resourceType: 'user',
+    resourceId: userId,
+    detail: { partnerName, referralCode: code },
+    ipAddress: getClientIP(request),
+  })
+
   return json({ ok: true, referralCode: code }, 200, request)
 }
 
@@ -1075,6 +1146,15 @@ async function handleAdminDemotePartner(request, env) {
   if (!userId) return error('Missing userId', 400, request)
 
   await env.DB.prepare('UPDATE users SET is_partner = 0 WHERE id = ?').bind(userId).run()
+
+  await logAudit(env.DB, {
+    userId: auth.user.sub,
+    action: 'admin.demote_partner',
+    resourceType: 'user',
+    resourceId: userId,
+    ipAddress: getClientIP(request),
+  })
+
   return json({ ok: true }, 200, request)
 }
 
@@ -1237,7 +1317,7 @@ async function handleAdminPrintOrders(request, env) {
   const payment = url.searchParams.get('payment') || 'all'
   const offset = (page - 1) * perPage
 
-  let where = '1=1'
+  let where = 'po.deleted_at IS NULL'
   const binds = []
 
   if (fulfillment !== 'all') {
@@ -1340,10 +1420,13 @@ async function handleSignGuestBook(request, env, slug) {
   const { name, message, photoUrl } = await request.json()
   if (!name) return error('Name is required', 400, request)
 
+  const safeName = sanitizeInput(name)
+  const safeMessage = sanitizeInput(message)
+
   const id = generateId()
   await env.DB.prepare(
     'INSERT INTO guest_entries (id, book_id, name, message, photo_url) VALUES (?, ?, ?, ?, ?)'
-  ).bind(id, book.id, name, message || null, photoUrl || null).run()
+  ).bind(id, book.id, safeName, safeMessage || null, photoUrl || null).run()
 
   notifyAdmin(env, 'guest_book_sign', `Guest book signed: ${name}`, { guestBookSlug: slug, signerName: name, message: (message || '').slice(0, 100) })
 
@@ -1490,6 +1573,32 @@ export default {
     }
 
     try {
+      // Health check (no rate limit, no auth)
+      if (method === 'GET' && path === '/health') {
+        try {
+          await env.DB.prepare('SELECT 1').first()
+          return json({ status: 'ok', db: true, timestamp: new Date().toISOString() }, 200, request)
+        } catch (e) {
+          return json({ status: 'degraded', db: false, error: e.message }, 503, request)
+        }
+      }
+
+      // Rate limiting
+      const [routeGroup, limit] = getRouteGroup(path, false)
+      const rateLimited = await checkRateLimit(request, env.RATE_LIMITS, routeGroup, limit)
+      if (rateLimited) return withSecurityHeaders(rateLimited)
+
+      // Analytics event tracking
+      if (method === 'POST' && path === '/analytics/event') {
+        const jwtPayload = await authenticate(request, env)
+        const userId = jwtPayload ? jwtPayload.sub : null
+        const body = await request.json()
+        await env.DB.prepare(
+          'INSERT INTO analytics_events (event_type, user_id, session_id, metadata) VALUES (?, ?, ?, ?)'
+        ).bind(body.event_type, userId, body.session_id || null, JSON.stringify(body.metadata || {})).run()
+        return json({ ok: true }, 200, request)
+      }
+
       // Public routes
       if (method === 'POST' && path === '/auth/google') return await handleGoogleLogin(request, env)
       if (method === 'POST' && path === '/auth/refresh') return await handleRefresh(request, env)

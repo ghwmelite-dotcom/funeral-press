@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { apiFetch } from '../utils/apiClient'
+import { trackEvent } from '../utils/trackEvent'
 
 const CACHE_KEY = 'fp-purchases'
 
@@ -79,6 +80,7 @@ export const usePurchaseStore = create((set, get) => ({
     }
     set(state)
     saveCache(state)
+    trackEvent('payment_completed', { credits: data.credits, isUnlimited: data.isUnlimited })
     return data
   },
 

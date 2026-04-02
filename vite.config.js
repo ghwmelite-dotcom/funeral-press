@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import path from 'path'
 
 export default defineConfig({
@@ -43,6 +44,12 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api/, /\.\w+$/],
       },
     }),
+    // Sentry source map upload (only in production build with auth token)
+    process.env.SENTRY_AUTH_TOKEN && sentryVitePlugin({
+      org: process.env.SENTRY_ORG || 'funeralpress',
+      project: process.env.SENTRY_PROJECT || 'funeralpress-frontend',
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+    }),
   ],
   resolve: {
     alias: {
@@ -51,7 +58,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false,
+    sourcemap: 'hidden',
     minify: 'esbuild',
     target: 'es2020',
     chunkSizeWarningLimit: 2000,
