@@ -3,6 +3,11 @@ import { sanitizeInput } from './utils/sanitize.js'
 import { withSecurityHeaders } from './utils/securityHeaders.js'
 import { logAudit, getClientIP } from './utils/auditLog.js'
 import { signJWT, verifyJWT } from './utils/jwt.js'
+import { generateOtp, hashOtp, verifyOtp } from './utils/otp.js'
+import { selectProvider, normalisePhone } from './utils/phoneRouter.js'
+import { sendTermiiOtp } from './utils/termii.js'
+import { sendTwilioOtp } from './utils/twilioVerify.js'
+import { featureFlag } from './utils/featureFlag.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -1963,6 +1968,107 @@ export default {
       // Public routes
       if (method === 'POST' && path === '/auth/google') return await handleGoogleLogin(request, env)
       if (method === 'POST' && path === '/auth/refresh') return await handleRefresh(request, env)
+
+      // ─── Phone OTP routes ───────────────────────────────────────────────────────
+
+      if (path === '/auth/phone/send-otp' && request.method === 'POST') {
+        if (!featureFlag(env, 'PHONE_AUTH_ENABLED')) {
+          return error('Phone auth temporarily unavailable', 503, request)
+        }
+
+        const body = await request.json().catch(() => ({}))
+        const phone = body.phone
+        const purpose = body.purpose
+        const VALID_PURPOSES = ['login', 'link', 'family_head_approval']
+
+        if (!phone || !/^\+\d{6,15}$/.test(phone)) {
+          return error('Invalid phone format. Use E.164 (e.g. +233241234567).', 400, request)
+        }
+        if (!VALID_PURPOSES.includes(purpose)) {
+          return error('Invalid purpose', 400, request)
+        }
+
+        const ip = getClientIP(request)
+
+        // Rate limits — per-phone (3/10min, 10/24h), per-IP (20/hour), per-IP-per-phone (5/hour)
+        const tenMin = 600
+        const oneHour = 3600
+        const oneDay = 86400
+
+        const phoneCount10m = parseInt(await env.RATE_LIMITS.get(`otp:phone:10m:${phone}`)) || 0
+        if (phoneCount10m >= 3) {
+          return error('Too many requests. Try again in 10 minutes.', 429, request)
+        }
+        const phoneCount24h = parseInt(await env.RATE_LIMITS.get(`otp:phone:24h:${phone}`)) || 0
+        if (phoneCount24h >= 10) {
+          return error('Daily limit reached.', 429, request)
+        }
+        const ipCount1h = parseInt(await env.RATE_LIMITS.get(`otp:ip:1h:${ip}`)) || 0
+        if (ipCount1h >= 20) {
+          return error('Too many requests from this network.', 429, request)
+        }
+        const ipPhoneCount1h = parseInt(await env.RATE_LIMITS.get(`otp:ipphone:1h:${ip}:${phone}`)) || 0
+        if (ipPhoneCount1h >= 5) {
+          return error('Too many requests.', 429, request)
+        }
+
+        // Lockout check
+        const locked = await env.RATE_LIMITS.get(`otp:lockout:${phone}`)
+        if (locked) {
+          return error('Phone temporarily locked due to too many failed attempts.', 429, request)
+        }
+
+        // Provider routing
+        let provider
+        try {
+          provider = selectProvider(phone)
+        } catch {
+          return error('Unsupported phone number', 400, request)
+        }
+
+        // Generate code, store hash
+        const code = generateOtp()
+        const codeHash = await hashOtp(code, env.OTP_PEPPER)
+        const expiresAt = Date.now() + 10 * 60 * 1000
+
+        await env.DB.prepare(
+          `INSERT INTO phone_otps (phone_e164, code_hash, provider, purpose, ip_address, user_agent, expires_at, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+          phone,
+          codeHash,
+          provider,
+          purpose,
+          ip,
+          request.headers.get('User-Agent') || '',
+          expiresAt,
+          Date.now()
+        ).run()
+
+        // Send via provider
+        const sendResult = provider === 'termii'
+          ? await sendTermiiOtp({ apiKey: env.TERMII_API_KEY, toE164: phone, code })
+          : await sendTwilioOtp({
+              accountSid: env.TWILIO_ACCOUNT_SID,
+              authToken: env.TWILIO_AUTH_TOKEN,
+              fromNumber: env.TWILIO_FROM_NUMBER,
+              toE164: phone,
+              code,
+            })
+
+        if (!sendResult.ok) {
+          console.error('OTP send failed', { provider, status: sendResult.status })
+          return error('Could not send code right now. Please try again.', 503, request)
+        }
+
+        // Increment rate-limit counters (after successful send)
+        await env.RATE_LIMITS.put(`otp:phone:10m:${phone}`, String(phoneCount10m + 1), { expirationTtl: tenMin })
+        await env.RATE_LIMITS.put(`otp:phone:24h:${phone}`, String(phoneCount24h + 1), { expirationTtl: oneDay })
+        await env.RATE_LIMITS.put(`otp:ip:1h:${ip}`, String(ipCount1h + 1), { expirationTtl: oneHour })
+        await env.RATE_LIMITS.put(`otp:ipphone:1h:${ip}:${phone}`, String(ipPhoneCount1h + 1), { expirationTtl: oneHour })
+
+        return json({ ok: true, provider, expires_in: 600, resend_after: 30 }, 200, request)
+      }
       if (method === 'GET' && path.startsWith('/images/')) return await handleImageServe(request, env, path.slice(8))
       if (method === 'POST' && path === '/payments/webhook') return await handlePaymentWebhook(request, env)
       if (method === 'POST' && path === '/subscriptions/webhook') return await handleSubscriptionWebhook(request, env)
