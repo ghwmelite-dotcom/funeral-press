@@ -27,7 +27,9 @@
     "clsx": "^2.1.1",
     "html-to-image": "^1.11.13",
     "idb": "^8.0.3",
+    "libphonenumber-js": "^1.12.42",
     "lucide-react": "^0.575.0",
+    "obscenity": "^0.4.6",
     "pdfjs-dist": "^5.4.624",
     "puppeteer": "^24.39.0",
     "qrcode": "^1.5.4",
@@ -38,10 +40,12 @@
     "react-router-dom": "^7.13.0",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0",
+    "uuid": "^14.0.0",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/typography": "^0.5.19",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
