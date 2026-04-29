@@ -59,6 +59,11 @@ async function sha256Hex(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+function maskMomo(num) {
+  if (!num) return ''
+  return num.slice(0, 4) + '*'.repeat(Math.max(0, num.length - 7)) + num.slice(-3)
+}
+
 // Token + OTP gate shared by approve and reject. Returns { ok: true, memRow, user } or
 // { ok: false, response } where response is a finalised error Response.
 async function verifyApprovalRequest(env, request, memorialId, token, otpCode, phone) {
@@ -405,6 +410,120 @@ export default {
           })
 
           return json({ ok: true, approval_status: 'approved' }, 200, request)
+        }
+
+        if (action === 'settings' && request.method === 'PATCH') {
+          const auth = await authenticate(request, env)
+          if (!auth) return error('Auth required', 401, request)
+
+          const memRow = await env.DB.prepare(
+            `SELECT id, family_head_user_id, payout_momo_number FROM memorials WHERE id = ? AND deleted_at IS NULL`
+          ).bind(memorialId).first()
+          if (!memRow) return error('Memorial not found', 404, request)
+          if (Number(memRow.family_head_user_id) !== Number(auth.sub)) {
+            return error('Only the family head can change settings', 403, request)
+          }
+
+          const body = await request.json().catch(() => ({}))
+          const updates = []
+          const args = []
+          const kvUpdates = {}
+
+          if (body.wall_mode !== undefined) {
+            if (!['full', 'names_only', 'private'].includes(body.wall_mode)) {
+              return error('Invalid wall_mode', 400, request)
+            }
+            updates.push('wall_mode = ?'); args.push(body.wall_mode)
+            kvUpdates.wall_mode = body.wall_mode
+            await logDonationAudit(env.DB, {
+              memorialId, actorUserId: Number(auth.sub),
+              action: 'memorial.wall_mode_changed',
+              detail: { new_mode: body.wall_mode },
+              ipAddress: getClientIP(request),
+            })
+          }
+          if (body.goal_amount_pesewas !== undefined) {
+            if (body.goal_amount_pesewas !== null) {
+              if (!Number.isInteger(body.goal_amount_pesewas) || body.goal_amount_pesewas < 100) {
+                return error('Invalid goal', 400, request)
+              }
+            }
+            updates.push('goal_amount_pesewas = ?'); args.push(body.goal_amount_pesewas)
+            kvUpdates.goal_amount_pesewas = body.goal_amount_pesewas
+          }
+          if (body.donation_paused !== undefined) {
+            updates.push('donation_paused = ?'); args.push(body.donation_paused ? 1 : 0)
+            await logDonationAudit(env.DB, {
+              memorialId, actorUserId: Number(auth.sub),
+              action: 'memorial.pause',
+              detail: { paused: !!body.donation_paused },
+              ipAddress: getClientIP(request),
+            })
+          }
+
+          if (body.payout_momo_number || body.payout_momo_provider || body.payout_account_name) {
+            if (!body.otp_code || !body.phone) {
+              return error('Changing payout requires fresh OTP verification', 401, request, 'otp_required')
+            }
+            const otpRow = await env.DB.prepare(
+              `SELECT id, code_hash, expires_at, attempts, consumed_at
+               FROM phone_otps
+               WHERE phone_e164 = ? AND purpose = 'link' AND consumed_at IS NULL
+               ORDER BY created_at DESC LIMIT 1`
+            ).bind(body.phone).first()
+            if (!otpRow) return error('No verification code pending', 401, request)
+            if (otpRow.expires_at < Date.now()) return error('Code expired', 401, request)
+            if (otpRow.attempts >= 5) return error('Too many wrong attempts', 429, request)
+
+            const codeOk = await verifyOtp(body.otp_code, otpRow.code_hash, env.OTP_PEPPER)
+            if (!codeOk) {
+              await env.DB.prepare(`UPDATE phone_otps SET attempts = attempts + 1 WHERE id = ?`).bind(otpRow.id).run()
+              return error('Wrong code', 401, request)
+            }
+            await env.DB.prepare(`UPDATE phone_otps SET consumed_at = ? WHERE id = ?`).bind(Date.now(), otpRow.id).run()
+
+            const effectiveAt = Date.now() + 24 * 3600 * 1000
+            updates.push(
+              'pending_payout_momo_number = ?',
+              'pending_payout_momo_provider = ?',
+              'pending_payout_account_name = ?',
+              'pending_payout_effective_at = ?'
+            )
+            args.push(
+              body.payout_momo_number,
+              body.payout_momo_provider,
+              sanitizeInput(body.payout_account_name || ''),
+              effectiveAt
+            )
+
+            await logDonationAudit(env.DB, {
+              memorialId, actorUserId: Number(auth.sub),
+              action: 'memorial.payout_changed',
+              detail: {
+                old_number_masked: maskMomo(memRow.payout_momo_number),
+                new_number_masked: maskMomo(body.payout_momo_number),
+                effective_at: effectiveAt,
+              },
+              ipAddress: getClientIP(request),
+            })
+          }
+
+          if (updates.length === 0) return error('No updates provided', 400, request)
+          updates.push('updated_at = ?'); args.push(Date.now())
+          args.push(memorialId)
+
+          await env.DB.prepare(`UPDATE memorials SET ${updates.join(', ')} WHERE id = ?`).bind(...args).run()
+
+          if (Object.keys(kvUpdates).length > 0) {
+            const kvRaw = await env.MEMORIAL_PAGES_KV.get(memorialId)
+            if (kvRaw) {
+              const memData = JSON.parse(kvRaw)
+              memData.donation = { ...(memData.donation || {}), ...kvUpdates }
+              await env.MEMORIAL_PAGES_KV.put(memorialId, JSON.stringify(memData))
+            }
+          }
+
+          return json({ ok: true }, 200, request)
         }
 
         if (action === 'reject' && request.method === 'POST') {
