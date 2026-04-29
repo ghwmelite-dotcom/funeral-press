@@ -418,6 +418,97 @@ export default {
           return json({ ok: true, approval_status: 'approved' }, 200, request)
         }
 
+        if (action === 'totals' && request.method === 'GET') {
+          const cacheKey = `wall:totals:${memorialId}`
+          const cached = await env.MEMORIAL_PAGES_KV.get(cacheKey)
+          if (cached) return json(JSON.parse(cached), 200, request)
+
+          const row = await env.DB.prepare(
+            `SELECT total_raised_pesewas, total_donor_count, goal_amount_pesewas, last_donation_at, wall_mode
+             FROM memorials WHERE id = ? AND approval_status = 'approved' AND deleted_at IS NULL`
+          ).bind(memorialId).first()
+
+          if (!row) return error('Memorial not found', 404, request)
+
+          const out = {
+            total_raised_pesewas: row.total_raised_pesewas,
+            total_donor_count: row.total_donor_count,
+            goal_amount_pesewas: row.goal_amount_pesewas,
+            last_donation_at: row.last_donation_at,
+            wall_mode: row.wall_mode,
+          }
+          await env.MEMORIAL_PAGES_KV.put(cacheKey, JSON.stringify(out), { expirationTtl: 30 })
+          return json(out, 200, request)
+        }
+
+        if (action === 'wall' && request.method === 'GET') {
+          const cursor = url.searchParams.get('cursor') || null
+          const limit = Math.min(parseInt(url.searchParams.get('limit')) || 20, 50)
+
+          // Validate cursor early — return 400 for garbage rather than caching the noise
+          let cursorTs
+          if (cursor) {
+            try { cursorTs = Number(atob(cursor)) } catch { return error('Invalid cursor', 400, request) }
+            if (Number.isNaN(cursorTs)) return error('Invalid cursor', 400, request)
+          } else {
+            cursorTs = Date.now()
+          }
+
+          const cacheKey = `wall:list:${memorialId}:${cursor || 'start'}:${limit}`
+          const cached = await env.MEMORIAL_PAGES_KV.get(cacheKey)
+          if (cached) return json(JSON.parse(cached), 200, request)
+
+          const memRow = await env.DB.prepare(
+            `SELECT wall_mode, total_raised_pesewas, total_donor_count, goal_amount_pesewas
+             FROM memorials WHERE id = ? AND approval_status = 'approved' AND deleted_at IS NULL`
+          ).bind(memorialId).first()
+          if (!memRow) return error('Memorial not found', 404, request)
+
+          const wall_mode = memRow.wall_mode
+          let donations = []
+          let nextCursor = null
+
+          if (wall_mode !== 'private') {
+            const result = await env.DB.prepare(
+              `SELECT id, donor_display_name, amount_pesewas, visibility, created_at
+               FROM donations
+               WHERE memorial_id = ? AND status = 'succeeded' AND created_at < ?
+               ORDER BY created_at DESC LIMIT ?`
+            ).bind(memorialId, cursorTs, limit + 1).all()
+
+            const rows = result.results || []
+            if (rows.length > limit) {
+              const last = rows[limit - 1]
+              nextCursor = btoa(String(last.created_at))
+              rows.length = limit
+            }
+
+            donations = rows.map(r => {
+              const isAnon = r.visibility === 'anonymous'
+              const base = {
+                id: r.id,
+                display_name: isAnon ? 'Anonymous' : r.donor_display_name,
+                created_at: r.created_at,
+              }
+              if (wall_mode === 'full' && !isAnon) {
+                return { ...base, amount_pesewas: r.amount_pesewas }
+              }
+              return base
+            })
+          }
+
+          const out = {
+            wall_mode,
+            total_raised_pesewas: memRow.total_raised_pesewas,
+            total_donor_count: memRow.total_donor_count,
+            goal_amount_pesewas: memRow.goal_amount_pesewas,
+            donations,
+            next_cursor: nextCursor,
+          }
+          await env.MEMORIAL_PAGES_KV.put(cacheKey, JSON.stringify(out), { expirationTtl: 30 })
+          return json(out, 200, request)
+        }
+
         if (action === 'charge' && request.method === 'POST') {
           // Per-IP and per-IP+memorial rate limits
           const ip = getClientIP(request)
