@@ -10,7 +10,7 @@ import { sanitizeInput } from './utils/sanitize.js'
 import { logDonationAudit, getClientIP } from './utils/auditLog.js'
 import { verifyJWT, signJWT } from './utils/jwt.js'
 import { featureFlag } from './utils/featureFlag.js'
-import { createSubaccount, resolveAccount, initialiseTransaction } from './utils/paystack.js'
+import { createSubaccount, resolveAccount, initialiseTransaction, verifyWebhookSignature, PAYSTACK_WEBHOOK_IPS } from './utils/paystack.js'
 import { verifyOtp } from './utils/otp.js'
 import { getFxRate } from './utils/fxRate.js'
 import { containsProfanity } from './utils/profanity.js'
@@ -149,6 +149,107 @@ export default {
     }
 
     try {
+      // Paystack webhook — must run before any auth/JSON paths and not be wrapped in CORS.
+      if (path === '/paystack/webhook' && request.method === 'POST') {
+        const cfIp = request.headers.get('CF-Connecting-IP')
+        if (!PAYSTACK_WEBHOOK_IPS.includes(cfIp)) {
+          return new Response('forbidden', { status: 401 })
+        }
+
+        const sig = request.headers.get('x-paystack-signature')
+        const rawBody = await request.text()
+        const valid = await verifyWebhookSignature(rawBody, sig, env.PAYSTACK_WEBHOOK_SECRET)
+        if (!valid) {
+          return new Response('forbidden', { status: 401 })
+        }
+
+        let event
+        try { event = JSON.parse(rawBody) } catch { return new Response('bad request', { status: 400 }) }
+
+        const eventId = event.id || event.data?.reference || crypto.randomUUID()
+
+        // Idempotency: have we processed this event already?
+        const existing = await env.DB.prepare(
+          `SELECT event_id FROM processed_webhooks WHERE event_id = ?`
+        ).bind(eventId).first()
+        if (existing) return new Response('ok', { status: 200 })
+
+        await env.DB.prepare(
+          `INSERT INTO processed_webhooks (event_id, source, processed_at) VALUES (?, ?, ?)`
+        ).bind(eventId, 'paystack', Date.now()).run()
+
+        if (event.event === 'charge.success') {
+          const ref = event.data?.reference
+          const donation = await env.DB.prepare(
+            `SELECT id, memorial_id, amount_pesewas, status FROM donations WHERE paystack_reference = ?`
+          ).bind(ref).first()
+          if (!donation) return new Response('ok', { status: 200 })            // not ours
+          if (donation.status === 'succeeded') return new Response('ok', { status: 200 })
+
+          const fees = event.data.fees || 0
+          const netToFamily = donation.amount_pesewas - fees
+
+          await env.DB.prepare(
+            `UPDATE donations
+             SET status = 'succeeded', succeeded_at = ?, paystack_fee_pesewas = ?, net_to_family_pesewas = ?, paystack_transaction_id = ?
+             WHERE id = ? AND status = 'pending'`
+          ).bind(Date.now(), fees, netToFamily, String(event.data.id || ''), donation.id).run()
+
+          await env.DB.prepare(
+            `UPDATE memorials
+             SET total_raised_pesewas = total_raised_pesewas + ?,
+                 total_donor_count = total_donor_count + 1,
+                 last_donation_at = ?,
+                 updated_at = ?
+             WHERE id = ?`
+          ).bind(donation.amount_pesewas, Date.now(), Date.now(), donation.memorial_id).run()
+
+          // Goal crossing check
+          const memNow = await env.DB.prepare(
+            `SELECT total_raised_pesewas, goal_amount_pesewas FROM memorials WHERE id = ?`
+          ).bind(donation.memorial_id).first()
+          if (memNow?.goal_amount_pesewas && memNow.total_raised_pesewas >= memNow.goal_amount_pesewas) {
+            try {
+              await env.DB.prepare(
+                `INSERT INTO admin_notifications (type, title, detail, created_at) VALUES (?, ?, ?, ?)`
+              ).bind(
+                'donation.goal_crossed',
+                `Memorial reached its donation goal`,
+                JSON.stringify({ memorial_id: donation.memorial_id, total: memNow.total_raised_pesewas, goal: memNow.goal_amount_pesewas }),
+                Date.now()
+              ).run()
+            } catch { /* admin alert never blocks webhook */ }
+          }
+
+          // KV write-through to memorial cache
+          const kvRaw = await env.MEMORIAL_PAGES_KV.get(donation.memorial_id)
+          if (kvRaw) {
+            try {
+              const memData = JSON.parse(kvRaw)
+              memData.donation = {
+                ...(memData.donation || {}),
+                total_raised_pesewas: (memData.donation?.total_raised_pesewas || 0) + donation.amount_pesewas,
+                total_donor_count: (memData.donation?.total_donor_count || 0) + 1,
+              }
+              await env.MEMORIAL_PAGES_KV.put(donation.memorial_id, JSON.stringify(memData))
+            } catch { /* KV miss tolerated */ }
+          }
+
+          // Invalidate wall totals cache so the donation appears immediately on next fetch
+          try { await env.MEMORIAL_PAGES_KV.delete(`wall:totals:${donation.memorial_id}`) } catch {}
+
+          // Receipt + thank-you email — wired in Task 26
+          ctx.waitUntil(queueDonationReceipt(env, donation.id))
+        } else if (event.event === 'charge.failed') {
+          await env.DB.prepare(
+            `UPDATE donations SET status = 'failed', failure_reason = ? WHERE paystack_reference = ? AND status = 'pending'`
+          ).bind(event.data?.gateway_response || 'failed', event.data?.reference).run()
+        }
+        // refund/dispute events handled in Task 26
+
+        return new Response('ok', { status: 200 })
+      }
+
       const claimMatch = path.match(/^\/donations\/([^/]+)\/claim$/)
       if (claimMatch && request.method === 'POST') {
         const donationId = claimMatch[1]
@@ -845,4 +946,9 @@ export default {
     if (!featureFlag(env, 'RECONCILIATION_ENABLED')) return
     // Reconciliation logic added in Task 27
   },
+}
+
+// Wired with full Resend integration in Task 26.
+async function queueDonationReceipt(_env, _donationId) {
+  // no-op stub
 }
