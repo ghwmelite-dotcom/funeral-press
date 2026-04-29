@@ -99,18 +99,22 @@ async function verifyApprovalRequest(env, request, memorialId, token, otpCode, p
 
   await env.DB.prepare(`UPDATE phone_otps SET consumed_at = ? WHERE id = ?`).bind(Date.now(), otpRow.id).run()
 
-  // Find or create user for this phone
+  // Find or create user for this phone. users.id is TEXT PRIMARY KEY (UUID), not autoincrement.
   let user = await env.DB.prepare(`SELECT id FROM users WHERE phone_e164 = ?`).bind(phone).first()
   if (!user) {
-    const result = await env.DB.prepare(
-      `INSERT INTO users (email, name, phone_e164, phone_verified_at, auth_methods, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
+    const newId = crypto.randomUUID()
+    // google_id is NOT NULL in production; phone-only users get a synthesised value.
+    await env.DB.prepare(
+      `INSERT INTO users (id, google_id, email, name, phone_e164, phone_verified_at, auth_methods, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(
+      newId,
+      `phone:${phone}`,
       `phone-${phone}@phone.funeralpress.org`,
       memRow.family_head_name || 'Family head',
       phone, Date.now(), 'phone', Date.now()
     ).run()
-    user = { id: result.meta.last_row_id }
+    user = { id: newId }
   }
 
   return { ok: true, memRow, user }

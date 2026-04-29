@@ -38,12 +38,11 @@ function makeMockDb({ memorial, otp, user = null }) {
             if (state.otp && state.otp.id === args[1]) state.otp.consumed_at = args[0]
             return { meta: { changes: 1, last_row_id: 0 } }
           }
-          // INSERT INTO users
+          // INSERT INTO users — args = (id, google_id, email, name, phone_e164, phone_verified_at, auth_methods, created_at)
           if (sql.includes('INSERT INTO users')) {
-            const id = (state.user?.id || 0) + 100
-            state.user = { id, phone_e164: args[2] }
+            state.user = { id: args[0], phone_e164: args[4] }
             state.inserts.push({ table: 'users', args })
-            return { meta: { last_row_id: id } }
+            return { meta: { last_row_id: 0 } }
           }
           // UPDATE memorials ... WHERE id = ? AND approval_status = 'pending'
           if (sql.includes('UPDATE memorials')) {
