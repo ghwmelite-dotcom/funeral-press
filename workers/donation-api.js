@@ -11,6 +11,7 @@ import { logDonationAudit, getClientIP } from './utils/auditLog.js'
 import { verifyJWT, signJWT } from './utils/jwt.js'
 import { featureFlag } from './utils/featureFlag.js'
 import { createSubaccount, resolveAccount } from './utils/paystack.js'
+import { verifyOtp } from './utils/otp.js'
 
 const ALLOWED_ORIGINS = [
   'https://funeral-brochure-app.pages.dev',
@@ -51,6 +52,63 @@ async function authenticate(request, env) {
   if (!h.startsWith('Bearer ')) return null
   const payload = await verifyJWT(h.slice(7), env.JWT_SECRET)
   return payload
+}
+
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// Token + OTP gate shared by approve and reject. Returns { ok: true, memRow, user } or
+// { ok: false, response } where response is a finalised error Response.
+async function verifyApprovalRequest(env, request, memorialId, token, otpCode, phone) {
+  const tokenPayload = await verifyJWT(token, env.JWT_SECRET)
+  if (!tokenPayload) return { ok: false, response: error('Invalid or expired approval link', 401, request) }
+  if (tokenPayload.scope !== 'family_head_approval') return { ok: false, response: error('Wrong token scope', 401, request) }
+  if (tokenPayload.memorial_id !== memorialId) return { ok: false, response: error('Token does not match memorial', 401, request) }
+  if (tokenPayload.sub !== phone) return { ok: false, response: error('Phone does not match invite', 401, request) }
+
+  const tokenHash = await sha256Hex(token)
+
+  const memRow = await env.DB.prepare(
+    `SELECT * FROM memorials WHERE id = ? AND approval_status = 'pending' AND approval_token_hash = ?`
+  ).bind(memorialId, tokenHash).first()
+  if (!memRow) return { ok: false, response: error('Approval link is no longer valid', 401, request) }
+  if (memRow.approval_token_expires_at < Date.now()) return { ok: false, response: error('Approval link expired', 401, request) }
+
+  const otpRow = await env.DB.prepare(
+    `SELECT id, code_hash, expires_at, attempts, consumed_at
+     FROM phone_otps
+     WHERE phone_e164 = ? AND purpose = ? AND consumed_at IS NULL
+     ORDER BY created_at DESC LIMIT 1`
+  ).bind(phone, 'family_head_approval').first()
+
+  if (!otpRow) return { ok: false, response: error('No verification code pending', 401, request) }
+  if (otpRow.expires_at < Date.now()) return { ok: false, response: error('Verification code expired', 401, request) }
+  if (otpRow.attempts >= 5) return { ok: false, response: error('Too many wrong attempts', 429, request) }
+
+  await env.DB.prepare(`UPDATE phone_otps SET attempts = attempts + 1 WHERE id = ?`).bind(otpRow.id).run()
+
+  const codeOk = await verifyOtp(otpCode, otpRow.code_hash, env.OTP_PEPPER)
+  if (!codeOk) return { ok: false, response: error('Wrong code', 401, request) }
+
+  await env.DB.prepare(`UPDATE phone_otps SET consumed_at = ? WHERE id = ?`).bind(Date.now(), otpRow.id).run()
+
+  // Find or create user for this phone
+  let user = await env.DB.prepare(`SELECT id FROM users WHERE phone_e164 = ?`).bind(phone).first()
+  if (!user) {
+    const result = await env.DB.prepare(
+      `INSERT INTO users (email, name, phone_e164, phone_verified_at, auth_methods, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(
+      `phone-${phone}@phone.funeralpress.org`,
+      memRow.family_head_name || 'Family head',
+      phone, Date.now(), 'phone', Date.now()
+    ).run()
+    user = { id: result.meta.last_row_id }
+  }
+
+  return { ok: true, memRow, user }
 }
 
 export default {
@@ -300,6 +358,89 @@ export default {
             invite_sent_to: family_head.phone,
             expires_at: tokenPayload.exp * 1000,
           }, 200, request)
+        }
+
+        if (action === 'approve' && request.method === 'POST') {
+          const body = await request.json().catch(() => ({}))
+          const { token, otp_code, phone } = body
+          if (!token || !otp_code || !phone) return error('Missing fields', 400, request)
+
+          const verification = await verifyApprovalRequest(env, request, memorialId, token, otp_code, phone)
+          if (!verification.ok) return verification.response
+          const { user } = verification
+
+          const updateRes = await env.DB.prepare(
+            `UPDATE memorials
+             SET approval_status = 'approved',
+                 approved_at = ?,
+                 family_head_user_id = ?,
+                 approval_token_hash = NULL,
+                 updated_at = ?
+             WHERE id = ? AND approval_status = 'pending'`
+          ).bind(Date.now(), user.id, Date.now(), memorialId).run()
+
+          if (updateRes.meta.changes !== 1) {
+            return error('Memorial state changed; reload and try again', 409, request)
+          }
+
+          // Update KV cache
+          const kvRaw = await env.MEMORIAL_PAGES_KV.get(memorialId)
+          if (kvRaw) {
+            const memData = JSON.parse(kvRaw)
+            memData.donation = {
+              ...(memData.donation || {}),
+              enabled: true,
+              approval_status: 'approved',
+            }
+            await env.MEMORIAL_PAGES_KV.put(memorialId, JSON.stringify(memData))
+          }
+
+          await logDonationAudit(env.DB, {
+            memorialId,
+            actorUserId: user.id,
+            actorPhone: phone,
+            action: 'memorial.approve',
+            detail: {},
+            ipAddress: getClientIP(request),
+          })
+
+          return json({ ok: true, approval_status: 'approved' }, 200, request)
+        }
+
+        if (action === 'reject' && request.method === 'POST') {
+          const body = await request.json().catch(() => ({}))
+          const { token, otp_code, phone, reason } = body
+          if (!token || !otp_code || !phone) return error('Missing fields', 400, request)
+          if (reason && reason.length > 500) return error('Reason too long', 400, request)
+
+          const verification = await verifyApprovalRequest(env, request, memorialId, token, otp_code, phone)
+          if (!verification.ok) return verification.response
+
+          await env.DB.prepare(
+            `UPDATE memorials
+             SET approval_status = 'rejected',
+                 rejected_at = ?,
+                 rejection_reason = ?,
+                 approval_token_hash = NULL,
+                 updated_at = ?
+             WHERE id = ? AND approval_status = 'pending'`
+          ).bind(Date.now(), sanitizeInput(reason || ''), Date.now(), memorialId).run()
+
+          const kvRaw = await env.MEMORIAL_PAGES_KV.get(memorialId)
+          if (kvRaw) {
+            const memData = JSON.parse(kvRaw)
+            memData.donation = { ...(memData.donation || {}), enabled: false, approval_status: 'rejected' }
+            await env.MEMORIAL_PAGES_KV.put(memorialId, JSON.stringify(memData))
+          }
+
+          await logDonationAudit(env.DB, {
+            memorialId, actorPhone: phone,
+            action: 'memorial.reject',
+            detail: { reason: reason || null },
+            ipAddress: getClientIP(request),
+          })
+
+          return json({ ok: true, approval_status: 'rejected' }, 200, request)
         }
       }
 
