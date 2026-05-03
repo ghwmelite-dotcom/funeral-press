@@ -4,7 +4,7 @@ import { donationApi } from '../utils/donationApi.js'
 // Powers two surfaces:
 //  1. Tokenized approval page (/approve/:token) — anonymous, calls approve/reject with token+otp+phone
 //  2. Authenticated family-head dashboard — load totals/wall, update settings, change payout
-export const useFamilyHeadStore = create((set, get) => ({
+export const useFamilyHeadStore = create((set) => ({
   // Approval flow (token-based, no JWT)
   approvalStatus: 'idle',          // 'idle' | 'submitting' | 'approved' | 'rejected' | 'error'
   approvalError: null,
