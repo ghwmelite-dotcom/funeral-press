@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { getStoredReferralCode, clearStoredReferralCode } from '../utils/referralTracker'
 import { trackEvent } from '../utils/trackEvent'
+import { usePurchaseStore } from './purchaseStore'
 
 const AUTH_KEY = 'fp-auth'
 const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
@@ -88,9 +89,7 @@ export const useAuthStore = create((set, get) => ({
       trackEvent('signup_completed', { method: 'google' })
 
       // Hydrate purchase data from login response
-      import('../stores/purchaseStore').then(({ usePurchaseStore }) => {
-        usePurchaseStore.getState().hydrateFromUser(data.user)
-      }).catch(() => {})
+      usePurchaseStore.getState().hydrateFromUser(data.user)
 
       // Track referral (fire-and-forget)
       const refCode = getStoredReferralCode()
@@ -136,9 +135,7 @@ export const useAuthStore = create((set, get) => ({
       saveAuth({ user: refreshedUser, accessToken: data.accessToken, refreshToken: data.refreshToken, hasMigrated: get().hasMigrated })
 
       // Hydrate purchase data from refresh response
-      import('../stores/purchaseStore').then(({ usePurchaseStore }) => {
-        usePurchaseStore.getState().hydrateFromUser(data.user)
-      }).catch(() => {})
+      usePurchaseStore.getState().hydrateFromUser(data.user)
 
       return data.accessToken
     } catch {
@@ -165,9 +162,7 @@ export const useAuthStore = create((set, get) => ({
   clearAuth: () => {
     set({ user: null, accessToken: null, refreshToken: null })
     saveAuth(null)
-    import('../stores/purchaseStore').then(({ usePurchaseStore }) => {
-      usePurchaseStore.getState().clear()
-    }).catch(() => {})
+    usePurchaseStore.getState().clear()
   },
 
   setMigrated: () => {
@@ -198,9 +193,7 @@ export const useAuthStore = create((set, get) => ({
     saveAuth({ ...state, hasMigrated: get().hasMigrated })
 
     // Hydrate purchase state from the user payload (best-effort, same as Google flow)
-    import('../stores/purchaseStore').then(({ usePurchaseStore }) => {
-      usePurchaseStore.getState().hydrateFromUser(data.user)
-    }).catch(() => {})
+    usePurchaseStore.getState().hydrateFromUser(data.user)
   },
 
   // Link a verified phone to the currently-authenticated account.
