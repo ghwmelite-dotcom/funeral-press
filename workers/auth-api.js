@@ -153,7 +153,34 @@ function generateReferralCode() {
 
 // ─── Super admin ─────────────────────────────────────────────────────────────
 
-const SUPER_ADMINS = ['oh84dev@gmail.com', 'oh84dev@funeralpress.org']
+const SUPER_ADMINS = ['oh84dev@gmail.com', 'oh84dev@funeralpress.org', 'funeralpress.org@gmail.com']
+
+/**
+ * True if userEmail is in the hardcoded super-admin list.
+ * Super admins can do everything regular admins can, PLUS grant/revoke admin role.
+ */
+function isSuperAdmin(userEmail) {
+  return SUPER_ADMINS.includes(userEmail)
+}
+
+/**
+ * True if user has the 'admin' role in user_roles table (DB-managed).
+ */
+async function hasAdminRole(userId, env) {
+  const row = await env.DB.prepare(
+    `SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+     WHERE ur.user_id = ? AND r.name = 'admin'`
+  ).bind(userId).first()
+  return !!row
+}
+
+/**
+ * True if user is either a super admin or has admin role.
+ */
+async function isAdmin(userId, userEmail, env) {
+  if (isSuperAdmin(userEmail)) return true
+  return await hasAdminRole(userId, env)
+}
 
 // ─── Admin notification helpers ─────────────────────────────────────────────
 
@@ -198,10 +225,28 @@ async function requireAdmin(request, env) {
   const jwtPayload = await authenticate(request, env)
   if (!jwtPayload) return { error: new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders(request) } }) }
   const user = await env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(jwtPayload.sub).first()
-  if (!user || !SUPER_ADMINS.includes(user.email)) {
+  if (!user) {
     return { error: new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders(request) } }) }
   }
-  return { userId: jwtPayload.sub }
+  const allowed = await isAdmin(jwtPayload.sub, user.email, env)
+  if (!allowed) {
+    return { error: new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders(request) } }) }
+  }
+  return { userId: jwtPayload.sub, email: user.email, isSuperAdmin: isSuperAdmin(user.email) }
+}
+
+/**
+ * Stricter check — only super admins (hardcoded list) pass.
+ * Use for endpoints that manage other admins.
+ */
+async function requireSuperAdmin(request, env) {
+  const jwtPayload = await authenticate(request, env)
+  if (!jwtPayload) return { error: new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders(request) } }) }
+  const user = await env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(jwtPayload.sub).first()
+  if (!user || !isSuperAdmin(user.email)) {
+    return { error: new Response(JSON.stringify({ error: 'Super admin only' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders(request) } }) }
+  }
+  return { userId: jwtPayload.sub, email: user.email }
 }
 
 // ─── Payment constants ───────────────────────────────────────────────────────
@@ -362,12 +407,14 @@ async function handleGoogleLogin(request, env) {
     notifyAdmin(env, 'signup', `New user signed up: ${googleUser.name}`, { email: googleUser.email, name: googleUser.name })
   }
 
+  const hasAdminPriv = await isAdmin(user.id, user.email, env)
   return json({
     user: {
       id: user.id, email: user.email, name: user.name, picture: user.picture,
       isPartner: !!(user.is_partner), referralCode: user.referral_code || null,
       partnerType: user.partner_type || null, partnerLogoUrl: user.partner_logo_url || null, partnerDenomination: user.partner_denomination || null,
-      isAdmin: SUPER_ADMINS.includes(user.email),
+      isAdmin: hasAdminPriv,
+      isSuperAdmin: isSuperAdmin(user.email),
       credits: purchaseData.credits,
       isUnlimited: purchaseData.isUnlimited,
       unlockedDesigns: purchaseData.unlockedDesigns,
@@ -404,12 +451,14 @@ async function handleRefresh(request, env) {
 
   const purchaseData = await getUserPurchaseData(env, user.id)
 
+  const hasAdminPriv = await isAdmin(user.id, user.email, env)
   return json({
     user: {
       id: user.id, email: user.email, name: user.name, picture: user.picture,
       isPartner: !!(user.is_partner), referralCode: user.referral_code || null,
       partnerType: user.partner_type || null, partnerLogoUrl: user.partner_logo_url || null, partnerDenomination: user.partner_denomination || null,
-      isAdmin: SUPER_ADMINS.includes(user.email),
+      isAdmin: hasAdminPriv,
+      isSuperAdmin: isSuperAdmin(user.email),
       credits: purchaseData.credits,
       isUnlimited: purchaseData.isUnlimited,
       unlockedDesigns: purchaseData.unlockedDesigns,
@@ -432,12 +481,14 @@ async function handleGetMe(request, env, userId) {
   const user = await env.DB.prepare('SELECT id, email, name, picture, is_partner, referral_code, partner_name, partner_type, partner_logo_url, partner_denomination FROM users WHERE id = ? AND deleted_at IS NULL').bind(userId).first()
   if (!user) return error('User not found', 404, request)
   const purchaseData = await getUserPurchaseData(env, userId)
+  const hasAdminPriv = await isAdmin(userId, user.email, env)
   return json({
     user: {
       id: user.id, email: user.email, name: user.name, picture: user.picture,
       isPartner: !!(user.is_partner), referralCode: user.referral_code || null, partnerName: user.partner_name || null,
       partnerType: user.partner_type || null, partnerLogoUrl: user.partner_logo_url || null, partnerDenomination: user.partner_denomination || null,
-      isAdmin: SUPER_ADMINS.includes(user.email),
+      isAdmin: hasAdminPriv,
+      isSuperAdmin: isSuperAdmin(user.email),
       credits: purchaseData.credits,
       isUnlimited: purchaseData.isUnlimited,
       unlockedDesigns: purchaseData.unlockedDesigns,
@@ -1013,13 +1064,21 @@ async function handleAdminUsers(request, env) {
   const rows = await env.DB.prepare(
     `SELECT u.id, u.name, u.email, u.picture, u.credits_remaining, u.is_partner, u.created_at,
             (SELECT COUNT(*) FROM orders WHERE user_id = u.id AND status = 'success') as order_count,
-            (SELECT COUNT(*) FROM unlocked_designs WHERE user_id = u.id) as unlock_count
+            (SELECT COUNT(*) FROM unlocked_designs WHERE user_id = u.id) as unlock_count,
+            EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role_id = 'role_admin') as is_admin
      FROM users u WHERE ${where}
      ORDER BY u.created_at DESC LIMIT ? OFFSET ?`
   ).bind(...binds, perPage, offset).all()
 
+  // Mark super admins (hardcoded by email) so the UI can suppress revoke-admin on them
+  const enriched = rows.results.map(u => ({
+    ...u,
+    is_admin: !!u.is_admin,
+    is_super_admin: SUPER_ADMINS.includes(u.email),
+  }))
+
   return json({
-    users: rows.results,
+    users: enriched,
     total: countResult.total,
     page,
     perPage,
@@ -2326,6 +2385,61 @@ const handler = {
         if (method === 'POST' && path === '/admin/venues') return await handleAdminCreateVenue(request, env)
         const adminVenueMatch = path.match(/^\/admin\/venues\/([^/]+)$/)
         if (adminVenueMatch && method === 'PUT') return await handleAdminUpdateVenue(request, env, adminVenueMatch[1])
+
+        // Admin role management (super admin only)
+        const grantAdminMatch = path.match(/^\/admin\/users\/([^/]+)\/grant-admin$/)
+        if (grantAdminMatch && method === 'POST') {
+          const auth = await requireSuperAdmin(request, env)
+          if (auth.error) return auth.error
+          const targetUserId = grantAdminMatch[1]
+
+          const target = await env.DB.prepare('SELECT id, email FROM users WHERE id = ? AND deleted_at IS NULL').bind(targetUserId).first()
+          if (!target) return error('User not found', 404, request)
+
+          await env.DB.prepare(
+            `INSERT OR IGNORE INTO user_roles (user_id, role_id, granted_by) VALUES (?, 'role_admin', ?)`
+          ).bind(targetUserId, auth.userId).run()
+
+          await logAudit(env.DB, {
+            userId: auth.userId,
+            action: 'admin.grant',
+            resourceType: 'user',
+            resourceId: targetUserId,
+            detail: { targetEmail: target.email, grantedBy: auth.email },
+            ipAddress: getClientIP(request),
+          })
+
+          return json({ ok: true, userId: targetUserId, role: 'admin' }, 200, request)
+        }
+
+        const revokeAdminMatch = path.match(/^\/admin\/users\/([^/]+)\/revoke-admin$/)
+        if (revokeAdminMatch && method === 'POST') {
+          const auth = await requireSuperAdmin(request, env)
+          if (auth.error) return auth.error
+          const targetUserId = revokeAdminMatch[1]
+
+          const target = await env.DB.prepare('SELECT id, email FROM users WHERE id = ? AND deleted_at IS NULL').bind(targetUserId).first()
+          if (!target) return error('User not found', 404, request)
+
+          if (isSuperAdmin(target.email)) {
+            return error('Cannot revoke admin from super admin (super admin status is configured in code, not the database)', 400, request)
+          }
+
+          await env.DB.prepare(
+            `DELETE FROM user_roles WHERE user_id = ? AND role_id = 'role_admin'`
+          ).bind(targetUserId).run()
+
+          await logAudit(env.DB, {
+            userId: auth.userId,
+            action: 'admin.revoke',
+            resourceType: 'user',
+            resourceId: targetUserId,
+            detail: { targetEmail: target.email, revokedBy: auth.email },
+            ipAddress: getClientIP(request),
+          })
+
+          return json({ ok: true, userId: targetUserId }, 200, request)
+        }
 
         // Admin notifications
         if (method === 'GET' && path === '/admin/notifications') {
