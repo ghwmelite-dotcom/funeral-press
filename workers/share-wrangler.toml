@@ -5,3 +5,7 @@ compatibility_date = "2024-01-01"
 [[kv_namespaces]]
 binding = "BROCHURES_KV"
 id = "25fef518037b4423a7176a0b4a533734"
+
+[[routes]]
+pattern = "share-api.funeralpress.org/*"
+zone_name = "funeralpress.org"

@@ -10,3 +10,7 @@ id = "314cc22d0bb6497d85280eccf10e54bb"
 binding = "DB"
 database_name = "funeralpress-db"
 database_id = "eab2488e-18cd-4920-adf8-7db724facee5"
+
+[[routes]]
+pattern = "memorial-api.funeralpress.org/*"
+zone_name = "funeralpress.org"

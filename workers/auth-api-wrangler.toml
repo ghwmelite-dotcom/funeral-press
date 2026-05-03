@@ -36,3 +36,7 @@ id = "REPLACE_BEFORE_DEPLOY_OTP_KV"
 # OTP_PEPPER                — 32-byte random secret; generate with:
 #                             node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 # JWT_SECRET                — already set (existing); shared with donation-api worker
+
+[[routes]]
+pattern = "auth-api.funeralpress.org/*"
+zone_name = "funeralpress.org"

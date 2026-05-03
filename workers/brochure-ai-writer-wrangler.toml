@@ -14,3 +14,7 @@ binding = "AI"
 [[kv_namespaces]]
 binding = "RATE_LIMITS"
 id = "3cf6b47818c04ca8828461650478a6c1"
+
+[[routes]]
+pattern = "ai.funeralpress.org/*"
+zone_name = "funeralpress.org"

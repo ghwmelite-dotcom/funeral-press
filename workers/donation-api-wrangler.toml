@@ -42,3 +42,7 @@ TIP_DEFAULT_PERCENT = "5"
 
 [triggers]
 crons = ["0 4 * * *"]    # Daily reconciliation 04:00 UTC
+
+[[routes]]
+pattern = "donation-api.funeralpress.org/*"
+zone_name = "funeralpress.org"
