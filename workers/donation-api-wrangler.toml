@@ -1,6 +1,9 @@
 name = "funeralpress-donation-api"
 main = "donation-api.js"
-compatibility_date = "2025-01-01"
+compatibility_date = "2026-04-01"
+
+[observability]
+enabled = true
 
 [[d1_databases]]
 binding = "DB"
