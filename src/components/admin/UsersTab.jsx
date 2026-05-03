@@ -191,7 +191,7 @@ export default function UsersTab() {
                             title="Make this user an admin"
                           >
                             <Shield size={12} />
-                            <span className="hidden sm:inline">Admin</span>
+                            <span className="hidden sm:inline">Promote</span>
                           </button>
                         )
                       )}
