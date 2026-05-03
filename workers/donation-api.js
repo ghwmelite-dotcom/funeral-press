@@ -648,7 +648,7 @@ const handler = {
 
           // Send SMS via routed provider
           const { selectProvider } = await import('./utils/phoneRouter.js')
-          const { sendTermiiSms } = await import('./utils/termii.js')
+          const { sendHubtelSms } = await import('./utils/hubtel.js')
           const { sendTwilioSms } = await import('./utils/twilioVerify.js')
 
           let provider
@@ -658,8 +658,14 @@ const handler = {
           const approvalLink = `https://funeralpress.org/approve/${approvalToken}`
           const smsMessage = `${family_head.name}: You've been named family head for ${memorialData.deceased_name || 'a memorial'} on FuneralPress. Review and approve: ${approvalLink}`
 
-          const sendResult = provider === 'termii'
-            ? await sendTermiiSms({ apiKey: env.TERMII_API_KEY, toE164: family_head.phone, message: smsMessage })
+          const sendResult = provider === 'hubtel'
+            ? await sendHubtelSms({
+                clientId: env.HUBTEL_CLIENT_ID,
+                clientSecret: env.HUBTEL_CLIENT_SECRET,
+                fromSenderId: env.HUBTEL_SENDER_ID,
+                toE164: family_head.phone,
+                message: smsMessage,
+              })
             : await sendTwilioSms({
                 accountSid: env.TWILIO_ACCOUNT_SID,
                 authToken: env.TWILIO_AUTH_TOKEN,

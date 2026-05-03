@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { selectProvider, normalisePhone } from '../utils/phoneRouter.js'
 
 describe('selectProvider', () => {
-  it('routes Ghana (+233) to termii', () => {
-    expect(selectProvider('+233241234567')).toBe('termii')
+  it('routes Ghana (+233) to hubtel', () => {
+    expect(selectProvider('+233241234567')).toBe('hubtel')
   })
 
   it('routes UK (+44) to twilio', () => {

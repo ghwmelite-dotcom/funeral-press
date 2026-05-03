@@ -36,8 +36,10 @@ TIP_DEFAULT_PERCENT = "5"
 # PAYSTACK_WEBHOOK_SECRET   — secret used to HMAC-verify Paystack webhooks
 # JWT_SECRET                — same as auth-api worker (verifies JWTs issued there)
 # OTP_PEPPER                — same as auth-api worker
-# TERMII_API_KEY            — for SMS to family head invite
-# TWILIO_ACCOUNT_SID
+# HUBTEL_CLIENT_ID          — Hubtel API Client ID (Ghana SMS for family head invites)
+# HUBTEL_CLIENT_SECRET      — Hubtel API Client Secret
+# HUBTEL_SENDER_ID          — Approved Hubtel Sender ID (max 11 alphanumeric)
+# TWILIO_ACCOUNT_SID        — international SMS fallback
 # TWILIO_AUTH_TOKEN
 # TWILIO_FROM_NUMBER
 # RESEND_API_KEY            — for receipt emails

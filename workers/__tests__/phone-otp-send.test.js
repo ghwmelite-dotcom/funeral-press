@@ -7,7 +7,9 @@ function mockEnv(overrides = {}) {
   const dbRows = []
   return {
     PHONE_AUTH_ENABLED: 'true',
-    TERMII_API_KEY: 'fake-termii',
+    HUBTEL_CLIENT_ID: 'fake-client-id',
+    HUBTEL_CLIENT_SECRET: 'fake-client-secret',
+    HUBTEL_SENDER_ID: 'FuneralPress',
     TWILIO_ACCOUNT_SID: 'AC_fake',
     TWILIO_AUTH_TOKEN: 'fake',
     TWILIO_FROM_NUMBER: '+15005550006',
@@ -47,9 +49,12 @@ function makeReq(body, headers = {}) {
 
 describe('POST /auth/phone/send-otp', () => {
   beforeEach(() => {
+    // Hubtel responds with Status: 0 + MessageId on success.
+    // Twilio responds with sid; Hubtel mock works for both since the worker only
+    // checks sendResult.ok which both helpers normalize to true on 2xx + Status=0.
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ code: 'ok', message_id: 'm_1', balance: 10 }),
+      json: async () => ({ Status: 0, MessageId: 'm_1', sid: 'VE_fake' }),
     })
   })
 
@@ -71,15 +76,15 @@ describe('POST /auth/phone/send-otp', () => {
     expect(res.status).toBe(400)
   })
 
-  it('routes Ghana phone to Termii', async () => {
+  it('routes Ghana phone to Hubtel', async () => {
     const env = mockEnv()
     const res = await worker.fetch(makeReq({ phone: '+233241234567', purpose: 'login' }), env)
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.provider).toBe('termii')
+    expect(body.provider).toBe('hubtel')
     expect(body.expires_in).toBe(600)
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('termii'),
+      expect.stringContaining('hubtel'),
       expect.any(Object)
     )
   })

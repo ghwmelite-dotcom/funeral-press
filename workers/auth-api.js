@@ -6,7 +6,7 @@ import { logAudit, getClientIP } from './utils/auditLog.js'
 import { signJWT, verifyJWT } from './utils/jwt.js'
 import { generateOtp, hashOtp, verifyOtp } from './utils/otp.js'
 import { selectProvider } from './utils/phoneRouter.js'
-import { sendTermiiOtp } from './utils/termii.js'
+import { sendHubtelOtp } from './utils/hubtel.js'
 import { sendTwilioOtp } from './utils/twilioVerify.js'
 import { featureFlag } from './utils/featureFlag.js'
 
@@ -2124,8 +2124,14 @@ const handler = {
         ).run()
 
         // Send via provider
-        const sendResult = provider === 'termii'
-          ? await sendTermiiOtp({ apiKey: env.TERMII_API_KEY, toE164: phone, code })
+        const sendResult = provider === 'hubtel'
+          ? await sendHubtelOtp({
+              clientId: env.HUBTEL_CLIENT_ID,
+              clientSecret: env.HUBTEL_CLIENT_SECRET,
+              fromSenderId: env.HUBTEL_SENDER_ID,
+              toE164: phone,
+              code,
+            })
           : await sendTwilioOtp({
               accountSid: env.TWILIO_ACCOUNT_SID,
               authToken: env.TWILIO_AUTH_TOKEN,

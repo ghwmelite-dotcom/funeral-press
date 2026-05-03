@@ -14,7 +14,9 @@ function mockEnv(overrides = {}) {
     PAYSTACK_WEBHOOK_SECRET: 'whsec_fake',
     OTP_PEPPER: 'test-pepper',
     TIP_DEFAULT_PERCENT: '5',
-    TERMII_API_KEY: 'fake-termii',
+    HUBTEL_CLIENT_ID: 'fake-client-id',
+    HUBTEL_CLIENT_SECRET: 'fake-client-secret',
+    HUBTEL_SENDER_ID: 'FuneralPress',
     DB: makeMockDb(dbState),
     MEMORIAL_PAGES_KV: {
       get: async (k) => memorialKv.get(k) || null,
@@ -173,7 +175,7 @@ describe('POST /memorials/:id/donation/init — invite mode', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ status: true, data: { account_name: 'AKOSUA' } }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ status: true, data: { subaccount_code: 'ACCT_xyz' } }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ code: 'ok', message_id: 'm1' }) })  // Termii SMS
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ Status: 0, MessageId: 'm1' }) })  // Hubtel SMS
   })
 
   it('sends SMS invite and returns pending status', async () => {
@@ -194,9 +196,9 @@ describe('POST /memorials/:id/donation/init — invite mode', () => {
     const body = await res.json()
     expect(body.approval_status).toBe('pending')
     expect(body.invite_sent_to).toContain('+233')
-    // Termii fetch was called
-    const termiiCalled = global.fetch.mock.calls.some(c => String(c[0]).includes('termii'))
-    expect(termiiCalled).toBe(true)
+    // Hubtel fetch was called
+    const hubtelCalled = global.fetch.mock.calls.some(c => String(c[0]).includes('hubtel'))
+    expect(hubtelCalled).toBe(true)
   })
 
   it('rejects invite mode without family_head.phone', async () => {

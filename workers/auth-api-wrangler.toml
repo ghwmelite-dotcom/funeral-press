@@ -32,13 +32,18 @@ binding = "OTP_KV"
 id = "a1ac0eaccf854a688954d90859570738"
 
 # ─── Secrets required for phone-auth routes (set via `wrangler secret put`) ───
-# TERMII_API_KEY            — Termii API key for Ghana SMS
-# TWILIO_ACCOUNT_SID        — Twilio Account SID for international SMS
+# HUBTEL_CLIENT_ID          — Hubtel API Client ID (Ghana SMS, +233 routes)
+# HUBTEL_CLIENT_SECRET      — Hubtel API Client Secret
+# HUBTEL_SENDER_ID          — Approved Hubtel Sender ID (max 11 alphanumeric)
+# TWILIO_ACCOUNT_SID        — Twilio Account SID for international SMS (+44, +1, etc.)
 # TWILIO_AUTH_TOKEN         — Twilio Auth Token
 # TWILIO_FROM_NUMBER        — Twilio phone number (E.164) used as SMS sender
 # OTP_PEPPER                — 32-byte random secret; generate with:
 #                             node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 # JWT_SECRET                — already set (existing); shared with donation-api worker
+# Note: TERMII_API_KEY (Nigerian provider) was the previous Ghana route. Replaced
+#       by Hubtel for better delivery + lower cost on +233 numbers. Termii code
+#       remains in workers/utils/termii.js for emergency rollback.
 
 [[routes]]
 pattern = "auth-api.funeralpress.org/*"
