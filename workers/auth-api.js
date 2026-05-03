@@ -1756,6 +1756,18 @@ async function handleSubscriptionCancel(request, env, userId) {
 }
 
 async function handleSubscriptionWebhook(request, env) {
+  // Paystack webhook IP allowlist (matches handlePaymentWebhook + donation-api pattern)
+  const PAYSTACK_IPS = ['52.31.139.75', '52.49.173.169', '52.214.14.220']
+  const clientIP = getClientIP(request)
+  if (!PAYSTACK_IPS.includes(clientIP)) {
+    await logAudit(env.DB, {
+      action: 'subscription_webhook.blocked',
+      detail: { ip: clientIP, reason: 'IP not in Paystack allowlist' },
+      ipAddress: clientIP,
+    })
+    return error('Forbidden', 403, request)
+  }
+
   // Reuse the same Paystack HMAC verification as payment webhook
   const signature = request.headers.get('x-paystack-signature')
   if (!signature) return error('Missing signature', 400, request)
