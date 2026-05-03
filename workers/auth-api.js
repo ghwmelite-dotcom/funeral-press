@@ -1064,13 +1064,21 @@ async function handleAdminUsers(request, env) {
   const rows = await env.DB.prepare(
     `SELECT u.id, u.name, u.email, u.picture, u.credits_remaining, u.is_partner, u.created_at,
             (SELECT COUNT(*) FROM orders WHERE user_id = u.id AND status = 'success') as order_count,
-            (SELECT COUNT(*) FROM unlocked_designs WHERE user_id = u.id) as unlock_count
+            (SELECT COUNT(*) FROM unlocked_designs WHERE user_id = u.id) as unlock_count,
+            EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role_id = 'role_admin') as is_admin
      FROM users u WHERE ${where}
      ORDER BY u.created_at DESC LIMIT ? OFFSET ?`
   ).bind(...binds, perPage, offset).all()
 
+  // Mark super admins (hardcoded by email) so the UI can suppress revoke-admin on them
+  const enriched = rows.results.map(u => ({
+    ...u,
+    is_admin: !!u.is_admin,
+    is_super_admin: SUPER_ADMINS.includes(u.email),
+  }))
+
   return json({
-    users: rows.results,
+    users: enriched,
     total: countResult.total,
     page,
     perPage,
