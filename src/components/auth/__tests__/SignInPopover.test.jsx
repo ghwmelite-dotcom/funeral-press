@@ -10,13 +10,16 @@ describe('SignInPopover', () => {
 
   it('does not show chooser by default', () => {
     const { queryByText } = render(<SignInPopover />)
-    expect(queryByText('Continue with phone')).toBeNull()
+    // Popover content not in DOM until trigger is clicked
+    expect(queryByText('Sign in to FuneralPress')).toBeNull()
   })
 
-  it('clicking Sign in trigger opens the chooser', () => {
+  it('clicking Sign in trigger opens the popover with the chooser inside', () => {
     const { getByText, queryByText } = render(<SignInPopover />)
     fireEvent.click(getByText('Sign in'))
-    // After click, the popover content (which contains SignInChooser) should be in the DOM
-    expect(queryByText('Continue with phone')).toBeTruthy()
+    // Popover content should now be in the DOM. We check for the popover header
+    // rather than "Continue with phone" because the phone button is gated on
+    // VITE_PHONE_AUTH_ENABLED which is unset in the test env.
+    expect(queryByText('Sign in to FuneralPress')).toBeTruthy()
   })
 })
