@@ -73,7 +73,11 @@ function AnimatedNumber({ value, prefix = '', suffix = '', decimals = 0, duratio
   const [display, setDisplay] = useState(0)
 
   useEffect(() => {
-    if (value === 0) { setDisplay(0); return }
+    let raf
+    if (value === 0) {
+      raf = requestAnimationFrame(() => setDisplay(0))
+      return () => cancelAnimationFrame(raf)
+    }
     const start = Date.now()
     const from = 0
     const step = () => {
@@ -81,9 +85,10 @@ function AnimatedNumber({ value, prefix = '', suffix = '', decimals = 0, duratio
       const progress = Math.min(elapsed / duration, 1)
       const eased = 1 - Math.pow(1 - progress, 3) // ease-out cubic
       setDisplay(from + (value - from) * eased)
-      if (progress < 1) requestAnimationFrame(step)
+      if (progress < 1) raf = requestAnimationFrame(step)
     }
-    requestAnimationFrame(step)
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
   }, [value, duration])
 
   return <span>{prefix}{display.toFixed(decimals)}{suffix}</span>

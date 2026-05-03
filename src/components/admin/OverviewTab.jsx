@@ -74,16 +74,21 @@ function KpiCard({ icon: Icon, label, value, pctChange, iconColor = 'text-primar
 function AnimatedNumber({ value, prefix = '', suffix = '', decimals = 0, duration = 800 }) {
   const [display, setDisplay] = useState(0)
   useEffect(() => {
-    if (value === 0) { setDisplay(0); return }
+    let raf
+    if (value === 0) {
+      raf = requestAnimationFrame(() => setDisplay(0))
+      return () => cancelAnimationFrame(raf)
+    }
     const start = Date.now()
     const step = () => {
       const elapsed = Date.now() - start
       const progress = Math.min(elapsed / duration, 1)
       const eased = 1 - Math.pow(1 - progress, 3)
       setDisplay(value * eased)
-      if (progress < 1) requestAnimationFrame(step)
+      if (progress < 1) raf = requestAnimationFrame(step)
     }
-    requestAnimationFrame(step)
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
   }, [value, duration])
   return <span>{prefix}{display.toFixed(decimals)}{suffix}</span>
 }

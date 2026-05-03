@@ -48,17 +48,21 @@ export default function CheckoutDialog() {
   // Determine initial stage when dialog opens
   useEffect(() => {
     if (!checkoutOpen) {
-      setStage('idle')
-      setErrorMsg('')
+      queueMicrotask(() => {
+        setStage('idle')
+        setErrorMsg('')
+      })
       return
     }
-    if (!isLoggedIn()) {
-      setStage('not-logged-in')
-    } else if (isUnlimited || credits > 0) {
-      setStage('has-credits')
-    } else {
-      setStage('idle')
-    }
+    queueMicrotask(() => {
+      if (!isLoggedIn()) {
+        setStage('not-logged-in')
+      } else if (isUnlimited || credits > 0) {
+        setStage('has-credits')
+      } else {
+        setStage('idle')
+      }
+    })
   }, [checkoutOpen, credits, isUnlimited, isLoggedIn])
 
   const handleUseCredit = useCallback(async () => {
