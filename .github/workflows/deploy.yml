@@ -68,6 +68,7 @@ jobs:
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ea2eb3a9813660dfca2a60e594858538
           command: pages deploy dist --project-name=funeral-brochure-app
 
   deploy-workers:
@@ -80,28 +81,35 @@ jobs:
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ea2eb3a9813660dfca2a60e594858538
           command: deploy --config workers/auth-api-wrangler.toml
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ea2eb3a9813660dfca2a60e594858538
           command: deploy --config workers/memorial-wrangler.toml
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ea2eb3a9813660dfca2a60e594858538
           command: deploy --config workers/live-service-wrangler.toml
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ea2eb3a9813660dfca2a60e594858538
           command: deploy --config workers/share-wrangler.toml
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ea2eb3a9813660dfca2a60e594858538
           command: deploy --config workers/twitter-bot-wrangler.toml
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ea2eb3a9813660dfca2a60e594858538
           command: deploy --config workers/donation-api-wrangler.toml
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ea2eb3a9813660dfca2a60e594858538
           command: deploy --config workers/brochure-ai-writer-wrangler.toml
