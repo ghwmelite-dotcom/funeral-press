@@ -77,6 +77,31 @@ export const useAdminStore = create((set, get) => ({
     return data
   },
 
+  grantAdmin: async (userId) => {
+    const data = await apiFetch(`/admin/users/${userId}/grant-admin`, { method: 'POST' })
+    // Optimistically update local user list to reflect the new role
+    const { users } = get()
+    set({
+      users: {
+        ...users,
+        data: users.data.map(u => u.id === userId ? { ...u, is_admin: true } : u),
+      },
+    })
+    return data
+  },
+
+  revokeAdmin: async (userId) => {
+    const data = await apiFetch(`/admin/users/${userId}/revoke-admin`, { method: 'POST' })
+    const { users } = get()
+    set({
+      users: {
+        ...users,
+        data: users.data.map(u => u.id === userId ? { ...u, is_admin: false } : u),
+      },
+    })
+    return data
+  },
+
   fetchOrders: async (params = {}) => {
     set({ isLoading: true })
     try {

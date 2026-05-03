@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Search, ChevronLeft, ChevronRight, Gift, Loader2 } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Gift, Loader2, Shield, ShieldCheck, ShieldOff } from 'lucide-react'
 import { useAdminStore } from '../../stores/adminStore'
+import { useAuthStore } from '../../stores/authStore'
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,9 @@ import {
 } from '../ui/dialog'
 
 export default function UsersTab() {
-  const { users, fetchUsers, grantCredits, isLoading } = useAdminStore()
+  const { users, fetchUsers, grantCredits, grantAdmin, revokeAdmin, isLoading } = useAdminStore()
+  const currentUser = useAuthStore((s) => s.user)
+  const isSuperAdmin = !!currentUser?.isSuperAdmin
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [page, setPage] = useState(1)
@@ -23,6 +26,35 @@ export default function UsersTab() {
   const [grantAmount, setGrantAmount] = useState(1)
   const [grantReason, setGrantReason] = useState('')
   const [granting, setGranting] = useState(false)
+
+  // Admin role dialog
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false)
+  const [adminTarget, setAdminTarget] = useState(null)
+  const [adminAction, setAdminAction] = useState('grant') // 'grant' | 'revoke'
+  const [adminBusy, setAdminBusy] = useState(false)
+
+  const openAdminDialog = (user, action) => {
+    setAdminTarget(user)
+    setAdminAction(action)
+    setAdminDialogOpen(true)
+  }
+
+  const confirmAdminAction = async () => {
+    if (!adminTarget) return
+    setAdminBusy(true)
+    try {
+      if (adminAction === 'grant') {
+        await grantAdmin(adminTarget.id)
+      } else {
+        await revokeAdmin(adminTarget.id)
+      }
+      setAdminDialogOpen(false)
+      setAdminTarget(null)
+    } catch (err) {
+      console.error('Admin role action failed:', err)
+    }
+    setAdminBusy(false)
+  }
 
   useEffect(() => {
     fetchUsers({ search, filter, page, per_page: 20 })
@@ -141,14 +173,49 @@ export default function UsersTab() {
                     {user.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => openGrant(user)}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded transition-colors"
-                      title="Grant Credits"
-                    >
-                      <Gift size={12} />
-                      <span className="hidden sm:inline">Grant</span>
-                    </button>
+                    <div className="inline-flex items-center gap-1">
+                      {isSuperAdmin && !user.is_super_admin && (
+                        user.is_admin ? (
+                          <button
+                            onClick={() => openAdminDialog(user, 'revoke')}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-amber-600 hover:bg-amber-500/10 rounded transition-colors"
+                            title="Revoke admin role"
+                          >
+                            <ShieldOff size={12} />
+                            <span className="hidden sm:inline">Revoke</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => openAdminDialog(user, 'grant')}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-emerald-600 hover:bg-emerald-500/10 rounded transition-colors"
+                            title="Make this user an admin"
+                          >
+                            <Shield size={12} />
+                            <span className="hidden sm:inline">Admin</span>
+                          </button>
+                        )
+                      )}
+                      {user.is_admin && !user.is_super_admin && (
+                        <span className="hidden sm:inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded font-semibold">
+                          <ShieldCheck size={10} />
+                          Admin
+                        </span>
+                      )}
+                      {user.is_super_admin && (
+                        <span className="hidden sm:inline-flex items-center gap-1 text-[10px] bg-purple-500/10 text-purple-600 px-1.5 py-0.5 rounded font-semibold">
+                          <ShieldCheck size={10} />
+                          Super
+                        </span>
+                      )}
+                      <button
+                        onClick={() => openGrant(user)}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded transition-colors"
+                        title="Grant Credits"
+                      >
+                        <Gift size={12} />
+                        <span className="hidden sm:inline">Grant</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -236,6 +303,41 @@ export default function UsersTab() {
             >
               {granting && <Loader2 size={14} className="animate-spin" />}
               Grant {grantAmount} Credit{grantAmount !== 1 ? 's' : ''}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin Role Dialog */}
+      <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {adminAction === 'grant' ? 'Grant admin role' : 'Revoke admin role'}
+            </DialogTitle>
+            <DialogDescription>
+              {adminAction === 'grant'
+                ? `Grant admin privileges to ${adminTarget?.name || adminTarget?.email}? They will gain full access to the admin dashboard.`
+                : `Revoke admin privileges from ${adminTarget?.name || adminTarget?.email}? They will lose access to the admin dashboard.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              onClick={() => setAdminDialogOpen(false)}
+              disabled={adminBusy}
+              className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted disabled:opacity-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmAdminAction}
+              disabled={adminBusy}
+              className={`px-4 py-2 text-sm text-white rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2 ${
+                adminAction === 'grant' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700'
+              }`}
+            >
+              {adminBusy && <Loader2 size={14} className="animate-spin" />}
+              {adminAction === 'grant' ? 'Grant Admin' : 'Revoke Admin'}
             </button>
           </DialogFooter>
         </DialogContent>
