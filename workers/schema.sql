@@ -85,12 +85,3 @@ CREATE INDEX idx_orders_user ON orders(user_id);
 CREATE INDEX idx_orders_ref ON orders(paystack_reference);
 CREATE INDEX idx_unlocked_user ON unlocked_designs(user_id);
 CREATE INDEX idx_unlocked_lookup ON unlocked_designs(user_id, design_id);
-
--- Payment/purchase system (migration-purchases.sql)
--- users table also has: credits_remaining INTEGER DEFAULT 0
--- credits_remaining: -1 = unlimited (Suite), 0 = none, N = credits left
-
-CREATE INDEX idx_orders_user ON orders(user_id);
-CREATE INDEX idx_orders_ref ON orders(paystack_reference);
-CREATE INDEX idx_unlocked_user ON unlocked_designs(user_id);
-CREATE INDEX idx_unlocked_lookup ON unlocked_designs(user_id, design_id);
