@@ -43,6 +43,7 @@ export default function GalleryCreatorPage() {
 
   useEffect(() => {
     fetchGalleries()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function fetchGalleries() {

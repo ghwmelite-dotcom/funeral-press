@@ -11,6 +11,7 @@ import SlideshowControls from '../components/memorial/SlideshowControls'
 export default function MemorialSlideshowPage() {
   const store = useBrochureStore()
   const canvasRef = useRef(null)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const slides = useMemo(() => generateSlides(store), [
     store.title, store.fullName, store.coverPhoto, store.biography,
     store.tributes, store.galleryPhotos, store.biographyPhotos,

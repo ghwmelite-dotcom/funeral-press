@@ -14,6 +14,7 @@ export default function ObituaryPage() {
 
   useEffect(() => {
     fetchObituary()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
 
   // Countdown timer

@@ -3,23 +3,31 @@ import { useAuthStore } from '../stores/authStore'
 const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
 
 export async function apiFetch(path, options = {}) {
-  const token = await useAuthStore.getState().getToken()
-  if (!token) throw new Error('Not authenticated')
+  const { auth = true, ...rest } = options
 
-  const headers = { ...options.headers }
-  headers['Authorization'] = `Bearer ${token}`
-  if (!(options.body instanceof FormData)) {
+  // Absolute URLs (e.g. donation-api on a different worker) bypass API_BASE.
+  const url = /^https?:\/\//.test(path) ? path : `${API_BASE}${path}`
+
+  const headers = { ...rest.headers }
+  if (!(rest.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json'
   }
 
-  let res = await fetch(`${API_BASE}${path}`, { ...options, headers })
+  let token = null
+  if (auth) {
+    token = await useAuthStore.getState().getToken()
+    if (!token) throw new Error('Not authenticated')
+    headers['Authorization'] = `Bearer ${token}`
+  }
 
-  // Retry once on 401 (token may have just expired)
-  if (res.status === 401) {
+  let res = await fetch(url, { ...rest, headers })
+
+  // Retry once on 401 (token may have just expired) — only for authed calls
+  if (auth && res.status === 401) {
     const newToken = await useAuthStore.getState().getToken()
     if (newToken && newToken !== token) {
       headers['Authorization'] = `Bearer ${newToken}`
-      res = await fetch(`${API_BASE}${path}`, { ...options, headers })
+      res = await fetch(url, { ...rest, headers })
     }
   }
 

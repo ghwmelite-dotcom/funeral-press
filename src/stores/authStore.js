@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { getStoredReferralCode, clearStoredReferralCode } from '../utils/referralTracker'
 import { trackEvent } from '../utils/trackEvent'
+import { usePurchaseStore } from './purchaseStore'
 
 const AUTH_KEY = 'fp-auth'
 const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
@@ -88,9 +89,7 @@ export const useAuthStore = create((set, get) => ({
       trackEvent('signup_completed', { method: 'google' })
 
       // Hydrate purchase data from login response
-      import('../stores/purchaseStore').then(({ usePurchaseStore }) => {
-        usePurchaseStore.getState().hydrateFromUser(data.user)
-      }).catch(() => {})
+      usePurchaseStore.getState().hydrateFromUser(data.user)
 
       // Track referral (fire-and-forget)
       const refCode = getStoredReferralCode()
@@ -136,9 +135,7 @@ export const useAuthStore = create((set, get) => ({
       saveAuth({ user: refreshedUser, accessToken: data.accessToken, refreshToken: data.refreshToken, hasMigrated: get().hasMigrated })
 
       // Hydrate purchase data from refresh response
-      import('../stores/purchaseStore').then(({ usePurchaseStore }) => {
-        usePurchaseStore.getState().hydrateFromUser(data.user)
-      }).catch(() => {})
+      usePurchaseStore.getState().hydrateFromUser(data.user)
 
       return data.accessToken
     } catch {
@@ -165,9 +162,7 @@ export const useAuthStore = create((set, get) => ({
   clearAuth: () => {
     set({ user: null, accessToken: null, refreshToken: null })
     saveAuth(null)
-    import('../stores/purchaseStore').then(({ usePurchaseStore }) => {
-      usePurchaseStore.getState().clear()
-    }).catch(() => {})
+    usePurchaseStore.getState().clear()
   },
 
   setMigrated: () => {
@@ -184,6 +179,44 @@ export const useAuthStore = create((set, get) => ({
   },
 
   setSyncing: (v) => set({ isSyncing: v }),
+
+  // Establish a session from any auth handshake response (phone OTP verify, etc.)
+  // Mirrors the post-success path of handleGoogleLogin without re-doing Google checks.
+  setSession: (data) => {
+    if (!data || !data.accessToken) return
+    const state = {
+      user: normalizeUser(data.user),
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+    }
+    set({ ...state, isLoading: false })
+    saveAuth({ ...state, hasMigrated: get().hasMigrated })
+
+    // Hydrate purchase state from the user payload (best-effort, same as Google flow)
+    usePurchaseStore.getState().hydrateFromUser(data.user)
+  },
+
+  // Link a verified phone to the currently-authenticated account.
+  // Caller has already collected an OTP code via /auth/phone/send-otp + /auth/phone/verify.
+  linkPhone: async (phone, code) => {
+    const { phoneAuthApi } = await import('../utils/donationApi.js')
+    const res = await phoneAuthApi.link(phone, code)
+    set(s => {
+      const updatedUser = {
+        ...(s.user || {}),
+        phone_e164: res.phone_e164,
+        auth_methods: res.auth_methods,
+      }
+      saveAuth({
+        user: updatedUser,
+        accessToken: s.accessToken,
+        refreshToken: s.refreshToken,
+        hasMigrated: s.hasMigrated,
+      })
+      return { user: updatedUser }
+    })
+    return res
+  },
 
   // Fetch fresh user data from the server (updates isAdmin, isPartner, etc.)
   refreshUser: async () => {

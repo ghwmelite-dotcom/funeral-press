@@ -3,6 +3,7 @@ import { X, CheckCircle, AlertTriangle, AlertCircle, Info } from 'lucide-react'
 
 const NotificationContext = createContext(null)
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useNotification() {
   const ctx = useContext(NotificationContext)
   if (!ctx) throw new Error('useNotification must be used within NotificationProvider')

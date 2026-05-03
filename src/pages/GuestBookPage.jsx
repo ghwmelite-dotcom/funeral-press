@@ -20,6 +20,7 @@ export default function GuestBookPage() {
 
   useEffect(() => {
     fetchBook()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
 
   async function fetchBook() {

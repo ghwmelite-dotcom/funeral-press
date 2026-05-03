@@ -17,6 +17,7 @@ export default function OrdersTab() {
 
   useEffect(() => {
     fetchOrders({ status, plan, days, page, per_page: 20 })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, plan, days, page])
 
   const handleFilter = (setter) => (val) => {

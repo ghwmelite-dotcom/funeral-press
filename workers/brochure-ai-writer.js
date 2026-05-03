@@ -5,15 +5,38 @@
  * Uses Cloudflare Workers AI (no API key needed)
  */
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Max-Age": "86400",
+import * as Sentry from '@sentry/cloudflare'
+
+const ALLOWED_ORIGINS = [
+  'https://funeralpress.org',
+  'https://www.funeralpress.org',
+  'https://funeral-brochure-app.pages.dev',
+]
+
+function corsHeadersFor(origin, env) {
+  const isAllowed = ALLOWED_ORIGINS.includes(origin) ||
+    (origin && origin.endsWith('.funeral-brochure-app.pages.dev'))
+  if (env?.ENVIRONMENT === 'dev' && origin && /^http:\/\/localhost:\d+$/.test(origin)) {
+    return {
+      'Access-Control-Allow-Origin': origin,
+      'Vary': 'Origin',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400',
+    }
+  }
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin : 'https://funeralpress.org',
+    'Vary': 'Origin',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400',
+  }
 }
 
-function handleOptions() {
-  return new Response(null, { status: 204, headers: corsHeaders })
+function handleOptions(request, env) {
+  const origin = request.headers.get('Origin')
+  return new Response(null, { status: 204, headers: corsHeadersFor(origin, env) })
 }
 
 function buildPrompt(type, data) {
@@ -96,6 +119,7 @@ Write with warmth, dignity, and cultural sensitivity. Include references to fait
 }
 
 async function handlePost(request, env) {
+  const corsHeaders = corsHeadersFor(request.headers.get('Origin'), env)
   try {
     const body = await request.json()
 
@@ -185,13 +209,44 @@ async function handlePost(request, env) {
   }
 }
 
-export default {
+const handler = {
   async fetch(request, env) {
-    if (request.method === "OPTIONS") return handleOptions()
+    if (request.method === "OPTIONS") return handleOptions(request, env)
+
+    const url = new URL(request.url)
+
+    // Health check (no auth, no rate limit)
+    if (url.pathname === '/health' && request.method === 'GET') {
+      return new Response(
+        JSON.stringify({
+          status: 'ok',
+          service: 'ai-writer',
+          timestamp: new Date().toISOString(),
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeadersFor(request.headers.get('Origin'), env),
+          },
+        }
+      )
+    }
+
     if (request.method === "POST") return handlePost(request, env)
+    const corsHeaders = corsHeadersFor(request.headers.get('Origin'), env)
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
       headers: { "Content-Type": "application/json", ...corsHeaders }
     })
   }
 }
+
+export default Sentry.withSentry(
+  (env) => ({
+    dsn: env.SENTRY_DSN,
+    environment: env.ENVIRONMENT || 'production',
+    tracesSampleRate: 0.1,
+  }),
+  handler
+)

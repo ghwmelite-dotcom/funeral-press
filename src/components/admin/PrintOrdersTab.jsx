@@ -43,6 +43,7 @@ export default function PrintOrdersTab() {
 
   useEffect(() => {
     fetchPrintOrders({ fulfillment, payment, page, per_page: 20 })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fulfillment, payment, page])
 
   const handleFilter = (setter) => (val) => {

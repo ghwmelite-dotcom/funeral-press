@@ -97,3 +97,11 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           command: deploy --config workers/twitter-bot-wrangler.toml
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          command: deploy --config workers/donation-api-wrangler.toml
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          command: deploy --config workers/brochure-ai-writer-wrangler.toml

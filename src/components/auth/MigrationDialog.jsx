@@ -35,9 +35,11 @@ export default function MigrationDialog() {
     if (!user || hasMigrated) return
     const { counts: c, total: t } = getLocalDesignCounts()
     if (t > 0) {
-      setCounts(c)
-      setTotal(t)
-      setOpen(true)
+      queueMicrotask(() => {
+        setCounts(c)
+        setTotal(t)
+        setOpen(true)
+      })
     } else {
       // No local designs, mark as migrated
       useAuthStore.getState().setMigrated()

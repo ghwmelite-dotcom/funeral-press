@@ -33,6 +33,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (!user) { navigate('/'); return }
     if (!user.isAdmin) { navigate('/'); return }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   if (!user?.isAdmin) return null

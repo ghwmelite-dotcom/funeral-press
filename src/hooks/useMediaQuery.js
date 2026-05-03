@@ -10,7 +10,8 @@ export function useMediaQuery(query) {
 
   useEffect(() => {
     const media = window.matchMedia(query)
-    setMatches(media.matches)
+    // Lazy initializer set the initial value; resync via microtask in case `query` changed after mount
+    queueMicrotask(() => setMatches(media.matches))
     const listener = (e) => setMatches(e.matches)
     media.addEventListener('change', listener)
     return () => media.removeEventListener('change', listener)

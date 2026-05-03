@@ -1,6 +1,13 @@
 name = "brochure-memorial-api"
 main = "memorial-page-api.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[vars]
+ENVIRONMENT = "production"
 
 [[kv_namespaces]]
 binding = "MEMORIAL_PAGES_KV"
@@ -10,3 +17,7 @@ id = "314cc22d0bb6497d85280eccf10e54bb"
 binding = "DB"
 database_name = "funeralpress-db"
 database_id = "eab2488e-18cd-4920-adf8-7db724facee5"
+
+[[routes]]
+pattern = "memorial-api.funeralpress.org/*"
+zone_name = "funeralpress.org"

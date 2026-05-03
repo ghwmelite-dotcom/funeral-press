@@ -13,25 +13,31 @@
  * 6. Set secret: RESEND_API_KEY (for admin email notifications)
  */
 
-const ALLOWED_ORIGINS = [
+import * as Sentry from '@sentry/cloudflare'
+
+const PROD_ORIGINS = [
   'https://funeral-brochure-app.pages.dev',
   'https://funeralpress.org',
   'https://www.funeralpress.org',
-  'http://localhost:5173',
-  'http://localhost:4173',
 ]
+const DEV_ORIGINS = ['http://localhost:5173', 'http://localhost:4173']
+
+function allowedOrigins(env) {
+  return env?.ENVIRONMENT === 'dev' ? [...PROD_ORIGINS, ...DEV_ORIGINS] : PROD_ORIGINS
+}
 
 function getCorsOrigin(request) {
   const origin = request.headers.get('Origin') || ''
-  if (ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.funeral-brochure-app.pages.dev')) {
+  const env = request.__env
+  if (allowedOrigins(env).includes(origin) || origin.endsWith('.funeral-brochure-app.pages.dev')) {
     return origin
   }
-  return ALLOWED_ORIGINS[0]
+  return PROD_ORIGINS[0]
 }
 
 function makeCorsHeaders(request) {
   return {
-    "Access-Control-Allow-Origin": request ? getCorsOrigin(request) : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Origin": request ? getCorsOrigin(request) : PROD_ORIGINS[0],
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
@@ -163,13 +169,31 @@ async function handleGet(id, env, request) {
   }
 }
 
-export default {
+const handler = {
   async fetch(request, env) {
+    // Stash env on request so CORS helpers can gate localhost behind ENVIRONMENT=dev
+    request.__env = env
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: makeCorsHeaders(request) })
     }
 
     const url = new URL(request.url)
+
+    // Health check (no auth, no rate limit)
+    if (url.pathname === '/health' && request.method === 'GET') {
+      return new Response(
+        JSON.stringify({
+          status: 'ok',
+          service: 'live-service-api',
+          timestamp: new Date().toISOString(),
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...makeCorsHeaders(request) },
+        }
+      )
+    }
+
     const path = url.pathname.replace(/^\//, '')
 
     if (request.method === "POST" && (!path || path === '')) {
@@ -186,3 +210,12 @@ export default {
     })
   }
 }
+
+export default Sentry.withSentry(
+  (env) => ({
+    dsn: env.SENTRY_DSN,
+    environment: env.ENVIRONMENT || 'production',
+    tracesSampleRate: 0.1,
+  }),
+  handler
+)
