@@ -71,6 +71,7 @@ export default function FlipbookPage() {
       }
     }
     generate()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Handle file upload

@@ -63,6 +63,7 @@ export default function QRCodePrintPage() {
       }
     }
     gen()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memorialUrl, liveServiceUrl])
 
   const formatDate = (d) => {

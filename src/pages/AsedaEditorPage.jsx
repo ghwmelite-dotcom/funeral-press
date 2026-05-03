@@ -420,16 +420,18 @@ export default function AsedaEditorPage() {
       return
     }
     prevDesignRef.current = currentDesign
-    setHistory(prev => {
-      const newHistory = prev.slice(0, historyIndex + 1)
-      newHistory.push(JSON.parse(JSON.stringify(currentDesign)))
-      // Keep a max of 50 entries
-      if (newHistory.length > 50) newHistory.shift()
-      return newHistory
-    })
-    setHistoryIndex(prev => {
-      const next = prev + 1
-      return next > 49 ? 49 : next
+    queueMicrotask(() => {
+      setHistory(prev => {
+        const newHistory = prev.slice(0, historyIndex + 1)
+        newHistory.push(JSON.parse(JSON.stringify(currentDesign)))
+        // Keep a max of 50 entries
+        if (newHistory.length > 50) newHistory.shift()
+        return newHistory
+      })
+      setHistoryIndex(prev => {
+        const next = prev + 1
+        return next > 49 ? 49 : next
+      })
     })
   }, [currentDesign]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -474,15 +476,17 @@ export default function AsedaEditorPage() {
   useEffect(() => {
     const currentSnapshot = JSON.stringify(currentDesign)
     const dirty = currentSnapshot !== lastSavedSnapshot
-    setIsDirty(dirty)
-    if (dirty) {
-      setAutoSaveLabel('Unsaved')
-      setEditsSinceSave(prev => {
-        const next = prev + 1
-        if (next >= 5) setShowBackupBanner(true)
-        return next
-      })
-    }
+    queueMicrotask(() => {
+      setIsDirty(dirty)
+      if (dirty) {
+        setAutoSaveLabel('Unsaved')
+        setEditsSinceSave(prev => {
+          const next = prev + 1
+          if (next >= 5) setShowBackupBanner(true)
+          return next
+        })
+      }
+    })
   }, [currentDesign]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Auto-save to localStorage every 30s if dirty ──────────────────────────

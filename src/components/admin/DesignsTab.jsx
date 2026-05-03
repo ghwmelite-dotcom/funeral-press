@@ -25,6 +25,7 @@ export default function DesignsTab() {
 
   useEffect(() => {
     fetchDesigns()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (isLoading && Object.keys(designs).length === 0) {

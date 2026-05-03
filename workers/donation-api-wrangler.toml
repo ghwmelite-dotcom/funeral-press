@@ -1,0 +1,51 @@
+name = "funeralpress-donation-api"
+main = "donation-api.js"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "funeralpress-db"
+database_id = "eab2488e-18cd-4920-adf8-7db724facee5"
+
+[[kv_namespaces]]
+binding = "MEMORIAL_PAGES_KV"
+id = "314cc22d0bb6497d85280eccf10e54bb"
+
+[[kv_namespaces]]
+binding = "RATE_LIMITS"
+id = "3cf6b47818c04ca8828461650478a6c1"
+
+[[kv_namespaces]]
+binding = "OTP_KV"
+id = "a1ac0eaccf854a688954d90859570738"
+
+[vars]
+ENVIRONMENT = "production"
+DONATIONS_ENABLED = "false"
+INTERNATIONAL_DONATIONS_ENABLED = "true"
+DONATIONS_GLOBAL_PAUSED = "false"
+RECONCILIATION_ENABLED = "false"
+TIP_DEFAULT_PERCENT = "5"
+
+# ─── Secrets required (set via `wrangler secret put` before deploy) ───
+# PAYSTACK_SECRET_KEY       — Paystack live or test secret key
+# PAYSTACK_WEBHOOK_SECRET   — secret used to HMAC-verify Paystack webhooks
+# JWT_SECRET                — same as auth-api worker (verifies JWTs issued there)
+# OTP_PEPPER                — same as auth-api worker
+# TERMII_API_KEY            — for SMS to family head invite
+# TWILIO_ACCOUNT_SID
+# TWILIO_AUTH_TOKEN
+# TWILIO_FROM_NUMBER
+# RESEND_API_KEY            — for receipt emails
+# OXR_APP_ID                — Open Exchange Rates app id (for FX rate fetch)
+
+[triggers]
+crons = ["0 4 * * *"]    # Daily reconciliation 04:00 UTC
+
+[[routes]]
+pattern = "donation-api.funeralpress.org/*"
+zone_name = "funeralpress.org"

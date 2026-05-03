@@ -26,4 +26,11 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]', destructuredArrayIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    // Node-context files (build config, test setup, scripts) get Node globals.
+    files: ['vite.config.js', 'workers/__tests__/**/*.{js,jsx}', 'scripts/**/*.{js,mjs,cjs}', '*.cjs'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
 ])

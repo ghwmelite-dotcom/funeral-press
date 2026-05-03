@@ -117,6 +117,7 @@ export default function PartnersTab() {
 
   useEffect(() => {
     fetchPartners()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleOpenPromote = () => {

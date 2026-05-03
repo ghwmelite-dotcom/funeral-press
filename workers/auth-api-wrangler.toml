@@ -1,12 +1,18 @@
 name = "funeralpress-auth-api"
 main = "auth-api.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
 
 [vars]
+ENVIRONMENT = "production"
 GOOGLE_CLIENT_ID = "820118502550-4cju49bcbn2btvr3d31k5cpgdefpv0j1.apps.googleusercontent.com"
 CORS_ORIGIN = "https://funeralpress.org"
-PAYSTACK_PLAN_MONTHLY = "PLN_placeholder_monthly"
-PAYSTACK_PLAN_ANNUAL = "PLN_placeholder_annual"
+PAYSTACK_PLAN_MONTHLY = "PLN_e0z9m03nuwd582x"
+PAYSTACK_PLAN_ANNUAL = "PLN_2ijmz43rukw84ql"
+PHONE_AUTH_ENABLED = "false"
 
 [[d1_databases]]
 binding = "DB"
@@ -20,3 +26,20 @@ bucket_name = "funeralpress-images"
 [[kv_namespaces]]
 binding = "RATE_LIMITS"
 id = "3cf6b47818c04ca8828461650478a6c1"
+
+[[kv_namespaces]]
+binding = "OTP_KV"
+id = "a1ac0eaccf854a688954d90859570738"
+
+# ─── Secrets required for phone-auth routes (set via `wrangler secret put`) ───
+# TERMII_API_KEY            — Termii API key for Ghana SMS
+# TWILIO_ACCOUNT_SID        — Twilio Account SID for international SMS
+# TWILIO_AUTH_TOKEN         — Twilio Auth Token
+# TWILIO_FROM_NUMBER        — Twilio phone number (E.164) used as SMS sender
+# OTP_PEPPER                — 32-byte random secret; generate with:
+#                             node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+# JWT_SECRET                — already set (existing); shared with donation-api worker
+
+[[routes]]
+pattern = "auth-api.funeralpress.org/*"
+zone_name = "funeralpress.org"

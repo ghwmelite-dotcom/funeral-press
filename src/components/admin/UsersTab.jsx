@@ -26,6 +26,7 @@ export default function UsersTab() {
 
   useEffect(() => {
     fetchUsers({ search, filter, page, per_page: 20 })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, filter, page])
 
   const handleSearch = (e) => {

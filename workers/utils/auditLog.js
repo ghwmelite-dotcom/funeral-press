@@ -36,3 +36,44 @@ export async function logAudit(db, { userId = null, action, resourceType = null,
 export function getClientIP(request) {
   return request.headers.get('CF-Connecting-IP') || 'unknown'
 }
+
+/**
+ * Log a donation-rail-specific action to the donation_audit table.
+ * Same fire-and-forget contract as logAudit — errors are silently caught.
+ * @param {D1Database} db
+ * @param {Object} params
+ * @param {string} [params.memorialId]
+ * @param {string} [params.donationId]
+ * @param {number} [params.actorUserId]
+ * @param {string} [params.actorPhone]
+ * @param {string} params.action
+ * @param {Object} [params.detail]
+ * @param {string} [params.ipAddress]
+ */
+export async function logDonationAudit(db, {
+  memorialId = null,
+  donationId = null,
+  actorUserId = null,
+  actorPhone = null,
+  action,
+  detail = {},
+  ipAddress = null,
+}) {
+  try {
+    await db.prepare(
+      `INSERT INTO donation_audit (memorial_id, donation_id, actor_user_id, actor_phone, action, detail, ip_address, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(
+      memorialId,
+      donationId,
+      actorUserId,
+      actorPhone,
+      action,
+      JSON.stringify(detail),
+      ipAddress,
+      Date.now()
+    ).run()
+  } catch {
+    // never break a request
+  }
+}

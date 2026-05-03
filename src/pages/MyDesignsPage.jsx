@@ -62,6 +62,7 @@ export default function MyDesignsPage() {
 
   useEffect(() => {
     if (user) fetchPrintOrders()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   // Pull-to-refresh

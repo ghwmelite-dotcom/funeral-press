@@ -2,6 +2,8 @@
 // Bindings: DB (D1), TWITTER_API_KEY, TWITTER_API_SECRET,
 //           TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET, TRIGGER_KEY
 
+import * as Sentry from '@sentry/cloudflare'
+
 // ---------------------------------------------------------------------------
 // Evergreen tips — posted when the queue is empty
 // ---------------------------------------------------------------------------
@@ -246,7 +248,7 @@ async function handleTrigger(request, env) {
 // Worker exports
 // ---------------------------------------------------------------------------
 
-export default {
+const handler = {
   // HTTP handler
   async fetch(request, env) {
     const url = new URL(request.url)
@@ -266,3 +268,12 @@ export default {
     ctx.waitUntil(processTweetQueue(env))
   },
 }
+
+export default Sentry.withSentry(
+  (env) => ({
+    dsn: env.SENTRY_DSN,
+    environment: env.ENVIRONMENT || 'production',
+    tracesSampleRate: 0.1,
+  }),
+  handler
+)

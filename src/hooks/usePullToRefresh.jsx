@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function usePullToRefresh(onRefresh, options = {}) {
   const { threshold = 80 } = options
   const [isPulling, setIsPulling] = useState(false)

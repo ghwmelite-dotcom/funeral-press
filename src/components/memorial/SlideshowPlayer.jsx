@@ -225,6 +225,7 @@ export default function SlideshowPlayer({ slide, transitioning, themeKey, canvas
         break
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slide, theme])
 
   return (
