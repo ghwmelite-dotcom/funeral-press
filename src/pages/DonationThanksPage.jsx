@@ -9,14 +9,8 @@ import GoogleLoginButton from '../components/auth/GoogleLoginButton.jsx'
 // credentials are wired AND PHONE_AUTH_ENABLED worker var is true.
 const PHONE_AUTH_ENABLED = import.meta.env.VITE_PHONE_AUTH_ENABLED === 'true'
 
-// TODO: backend route GET /api/donation-by-ref/:reference does not exist
-// yet. The donation-api worker stores donations by ID, not by Paystack
-// reference, but it does have a webhook handler that records the reference.
-// A small follow-up task should add a public lookup endpoint so this page
-// can display the post-payment summary. For now this page degrades
-// gracefully — if the fetch fails, the success heading + soft-capture
-// CTAs still render; only the donation-specific details are missing.
-const DONATION_BY_REF_URL = (ref) => `/api/donation-by-ref/${ref}`
+const DONATION_API = import.meta.env.VITE_DONATION_API_URL || 'https://donation-api.funeralpress.org'
+const DONATION_BY_REF_URL = (ref) => `${DONATION_API}/donations/by-ref/${encodeURIComponent(ref)}`
 
 export default function DonationThanksPage() {
   const { slug } = useParams()

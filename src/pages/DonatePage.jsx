@@ -5,12 +5,8 @@ import { DonationAmountStep } from '../components/donation/DonationAmountStep.js
 import { DonationDonorStep } from '../components/donation/DonationDonorStep.jsx'
 import { DonationReviewStep } from '../components/donation/DonationReviewStep.jsx'
 
-// TODO: backend route GET /memorial-by-slug/:slug does not exist yet on
-// memorial-page-api worker. The current memorial-page-api only exposes
-// GET /:id (where id is the memorial UUID). A separate follow-up task
-// must add a slug→id lookup endpoint before this page works end-to-end.
-// For now this page assumes the endpoint will exist; tests mock fetch.
-const MEMORIAL_BY_SLUG_URL = (slug) => `/api/memorial-by-slug/${slug}`
+const DONATION_API = import.meta.env.VITE_DONATION_API_URL || 'https://donation-api.funeralpress.org'
+const MEMORIAL_BY_SLUG_URL = (slug) => `${DONATION_API}/memorials/by-slug/${encodeURIComponent(slug)}`
 
 export default function DonatePage() {
   const { slug } = useParams()
