@@ -165,9 +165,20 @@ const handler = {
       return json({ ok: true, service: 'donation-api' }, 200, request)
     }
 
-    // Master feature flag — donation rail not enabled yet
+    // Master feature flag — gates only the active donor-facing flow
+    // (charge/init/wall/totals/claim). Admin tools, lookup routes, donation-status,
+    // approval-lookup, and the Paystack webhook should always be reachable so
+    // that admins can configure things and pre-existing data can be inspected.
     if (!featureFlag(env, 'DONATIONS_ENABLED')) {
-      return error('Donation rail not enabled', 503, request)
+      const isDonorFlowPath =
+        path.includes('/donation/init') ||
+        path.includes('/donation/charge') ||
+        path.includes('/donation/wall') ||
+        path.includes('/donation/totals') ||
+        path.includes('/donation/claim')
+      if (isDonorFlowPath) {
+        return error('Donation rail not enabled', 503, request)
+      }
     }
 
     try {
