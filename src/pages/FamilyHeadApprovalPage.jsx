@@ -2,15 +2,9 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { FamilyHeadApprovalView } from '../components/family-head/FamilyHeadApprovalView.jsx'
 
-// TODO: backend route GET /memorials/approval-lookup?token=<token> does not
-// exist yet on donation-api. The plan calls it /api/approval/lookup but the
-// canonical worker path should be /memorials/approval-lookup. A small follow-up
-// task should add this read-only endpoint to donation-api.js. It decodes the
-// approval JWT, looks up the memorial, and returns the public details needed
-// for the approval page (deceased name, dates, donation settings, family head
-// name + masked phone). Tests mock fetch.
+const DONATION_API = import.meta.env.VITE_DONATION_API_URL || 'https://donation-api.funeralpress.org'
 const APPROVAL_LOOKUP_URL = (token) =>
-  `/api/approval/lookup?token=${encodeURIComponent(token)}`
+  `${DONATION_API}/memorials/approval-lookup?token=${encodeURIComponent(token)}`
 
 export default function FamilyHeadApprovalPage() {
   const { token } = useParams()

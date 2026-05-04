@@ -150,8 +150,11 @@ const handler = {
     const url = new URL(request.url)
     const path = url.pathname
 
-    // Global kill switch — applies to charge/init only; admin and read paths still work.
-    if (featureFlag(env, 'DONATIONS_GLOBAL_PAUSED')) {
+    // Global kill switch — KV flag (admin-toggled) wins over the static env var.
+    // Applies to charge/init only; admin and read paths still work.
+    const kvKill = await env.RATE_LIMITS.get('kill_switch:donations_paused')
+    const isPaused = kvKill === '1' || featureFlag(env, 'DONATIONS_GLOBAL_PAUSED')
+    if (isPaused) {
       if (path.includes('/donation/charge') || path.includes('/donation/init')) {
         return error('Donations are temporarily paused.', 503, request)
       }
@@ -422,6 +425,214 @@ const handler = {
         })
 
         return json({ ok: true, refund_pending: true }, 200, request)
+      }
+
+      // Admin kill-switch — toggles the donations_paused KV flag (read at the
+      // top of fetch). Stored in RATE_LIMITS KV: '1' = paused, '0'/missing = live.
+      if (path === '/admin/donations/kill-switch' && request.method === 'POST') {
+        const auth = await requireAdmin(request, env)
+        if (auth.error) return auth.error
+        const body = await request.json().catch(() => ({}))
+        if (typeof body.paused !== 'boolean') {
+          return error('Body must include {paused: boolean}', 400, request)
+        }
+        await env.RATE_LIMITS.put('kill_switch:donations_paused', body.paused ? '1' : '0')
+        await logDonationAudit(env.DB, {
+          memorialId: null,
+          actorUserId: Number(auth.userId) || null,
+          action: 'admin.kill_switch',
+          detail: { paused: body.paused },
+          ipAddress: getClientIP(request),
+        })
+        return json({ ok: true, paused: body.paused }, 200, request)
+      }
+
+      // Public read: GET /memorials/by-slug/:slug — used by DonatePage
+      // The memorials D1 table is a donation-side mirror without deceased_name/dates;
+      // both come from the KV memorial record. We fall back gracefully when KV is missing.
+      const bySlugMatch = path.match(/^\/memorials\/by-slug\/([^/]+)$/)
+      if (bySlugMatch && request.method === 'GET') {
+        const slug = decodeURIComponent(bySlugMatch[1])
+        const row = await env.DB.prepare(
+          `SELECT id, slug, approval_status, wall_mode, goal_amount_pesewas,
+                  payout_momo_provider, payout_momo_number, payout_account_name,
+                  donation_paused, total_raised_pesewas, total_donor_count
+             FROM memorials WHERE slug = ? AND deleted_at IS NULL LIMIT 1`
+        ).bind(slug).first()
+        if (!row) return error('Memorial not found', 404, request)
+
+        // Pull deceased_name + dates from KV (donation-side D1 doesn't carry them)
+        let deceased_name = null
+        let dates = null
+        try {
+          const kvRaw = await env.MEMORIAL_PAGES_KV.get(row.id)
+          if (kvRaw) {
+            const memData = JSON.parse(kvRaw)
+            deceased_name = memData.deceased_name || memData.fullName || null
+            dates = memData.dates ||
+              (memData.birthDate && memData.deathDate ? `${memData.birthDate} — ${memData.deathDate}` : null)
+          }
+        } catch { /* KV miss tolerated */ }
+
+        return json({
+          id: row.id,
+          slug: row.slug,
+          deceased_name,
+          dates,
+          donation: {
+            enabled: !row.donation_paused,
+            approval_status: row.approval_status,
+            wall_mode: row.wall_mode,
+            fx_rate: 1,
+            goal_amount_pesewas: row.goal_amount_pesewas,
+            payout_momo_provider: row.payout_momo_provider,
+            payout_momo_number: row.payout_momo_number,
+            payout_account_name: row.payout_account_name,
+            total_raised_pesewas: row.total_raised_pesewas || 0,
+            total_donor_count: row.total_donor_count || 0,
+          },
+        }, 200, request)
+      }
+
+      // Public read: GET /donations/by-ref/:reference — used by DonationThanksPage
+      const byRefMatch = path.match(/^\/donations\/by-ref\/([^/]+)$/)
+      if (byRefMatch && request.method === 'GET') {
+        const reference = decodeURIComponent(byRefMatch[1])
+        const row = await env.DB.prepare(
+          `SELECT d.id, d.memorial_id, d.amount_pesewas, d.display_amount_minor, d.display_currency,
+                  d.donor_display_name, d.status,
+                  m.payout_momo_provider, m.slug
+             FROM donations d JOIN memorials m ON m.id = d.memorial_id
+             WHERE d.paystack_reference = ? LIMIT 1`
+        ).bind(reference).first()
+        if (!row) return error('Donation not found', 404, request)
+
+        // Look up deceased_name + dates from the memorial KV
+        let deceased_name = null
+        let dates = null
+        try {
+          const kvRaw = await env.MEMORIAL_PAGES_KV.get(row.memorial_id)
+          if (kvRaw) {
+            const memData = JSON.parse(kvRaw)
+            deceased_name = memData.deceased_name || memData.fullName || null
+            dates = memData.dates ||
+              (memData.birthDate && memData.deathDate ? `${memData.birthDate} — ${memData.deathDate}` : null)
+          }
+        } catch { /* tolerated */ }
+
+        const minor = row.display_amount_minor || row.amount_pesewas
+        return json({
+          id: row.id,
+          deceased_name,
+          dates,
+          donor_display_name: row.donor_display_name,
+          display_amount_minor: minor,
+          display_currency: row.display_currency,
+          amount_display: `${row.display_currency || 'GHS'} ${(minor / 100).toFixed(2)}`,
+          momo_provider: row.payout_momo_provider,
+        }, 200, request)
+      }
+
+      // Public read: GET /memorials/approval-lookup?token=... — used by FamilyHeadApprovalPage
+      // Decodes the family_head_approval JWT and returns the public-safe details
+      // needed for the approval form.
+      if (path === '/memorials/approval-lookup' && request.method === 'GET') {
+        const token = url.searchParams.get('token')
+        if (!token) return error('Missing token', 400, request)
+        const payload = await verifyJWT(token, env.JWT_SECRET)
+        if (!payload || payload.scope !== 'family_head_approval') {
+          return error('Invalid or expired link', 401, request)
+        }
+        const memorialId = payload.memorial_id
+        const row = await env.DB.prepare(
+          `SELECT id, slug, family_head_name, family_head_phone, creator_user_id,
+                  wall_mode, goal_amount_pesewas,
+                  payout_momo_provider, payout_momo_number, payout_account_name,
+                  approval_status
+             FROM memorials WHERE id = ? AND deleted_at IS NULL LIMIT 1`
+        ).bind(memorialId).first()
+        if (!row) return error('Memorial not found', 404, request)
+        if (row.approval_status !== 'pending') {
+          return error('This approval link has already been used', 410, request)
+        }
+
+        // Pull deceased_name + dates from KV
+        let deceased_name = null
+        let dates = null
+        try {
+          const kvRaw = await env.MEMORIAL_PAGES_KV.get(row.id)
+          if (kvRaw) {
+            const memData = JSON.parse(kvRaw)
+            deceased_name = memData.deceased_name || memData.fullName || null
+            dates = memData.dates ||
+              (memData.birthDate && memData.deathDate ? `${memData.birthDate} — ${memData.deathDate}` : null)
+          }
+        } catch { /* tolerated */ }
+
+        // Look up creator name from users table for display in the approval form
+        const creator = await env.DB.prepare(
+          `SELECT name, email FROM users WHERE id = ? LIMIT 1`
+        ).bind(row.creator_user_id).first()
+
+        return json({
+          id: row.id,
+          slug: row.slug,
+          deceased_name,
+          dates,
+          family_head_name: row.family_head_name,
+          // Not masked — the family head needs to see their full number to match
+          // it against the SMS they received.
+          family_head_phone: row.family_head_phone,
+          creator_name: creator?.name || creator?.email || 'A FuneralPress user',
+          donation: {
+            wall_mode: row.wall_mode,
+            fx_rate: 1,
+            goal_amount_pesewas: row.goal_amount_pesewas,
+            payout_momo_provider: row.payout_momo_provider,
+            payout_momo_number: row.payout_momo_number,
+            payout_account_name: row.payout_account_name,
+          },
+        }, 200, request)
+      }
+
+      // Public read: GET /memorials/:id/donation-status — used by DonatePanel
+      // when embedded in MemorialPage (camelCase data lacks `donation`).
+      // Returns minimal payload — enough for the panel to decide whether to render.
+      const statusMatch = path.match(/^\/memorials\/([^/]+)\/donation-status$/)
+      if (statusMatch && request.method === 'GET') {
+        const memorialId = statusMatch[1]
+        const row = await env.DB.prepare(
+          `SELECT id, slug, approval_status, wall_mode, donation_paused,
+                  goal_amount_pesewas, total_raised_pesewas, total_donor_count
+             FROM memorials WHERE id = ? AND deleted_at IS NULL LIMIT 1`
+        ).bind(memorialId).first()
+        if (!row) {
+          // No donation row at all → memorial may not have set up donations.
+          return json({ enabled: false }, 200, request)
+        }
+
+        let deceased_name = null
+        try {
+          const kvRaw = await env.MEMORIAL_PAGES_KV.get(memorialId)
+          if (kvRaw) {
+            const memData = JSON.parse(kvRaw)
+            deceased_name = memData.deceased_name || memData.fullName || null
+          }
+        } catch { /* tolerated */ }
+
+        return json({
+          id: memorialId,
+          slug: row.slug,
+          deceased_name,
+          donation: {
+            enabled: !row.donation_paused,
+            approval_status: row.approval_status,
+            wall_mode: row.wall_mode,
+            goal_amount_pesewas: row.goal_amount_pesewas,
+            total_raised_pesewas: row.total_raised_pesewas || 0,
+            total_donor_count: row.total_donor_count || 0,
+          },
+        }, 200, request)
       }
 
       const claimMatch = path.match(/^\/donations\/([^/]+)\/claim$/)
