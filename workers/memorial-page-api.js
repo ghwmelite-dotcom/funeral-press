@@ -106,9 +106,25 @@ async function handlePost(request, env) {
       id = generateId() + id.slice(0, 2)
     }
 
+    // Generate slug from fullName for human-readable donation URLs (/m/:slug/donate).
+    // Format: lowercase, hyphenated, ASCII-only, max 60 chars, suffix with last 6
+    // chars of memorial id to guarantee uniqueness.
+    const slug =
+      body.slug ||
+      `${(body.fullName || 'memorial')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .slice(0, 50)}-${id.slice(-6)}`
+
     // Store with 1-year TTL (365 days in seconds)
     await env.MEMORIAL_PAGES_KV.put(id, JSON.stringify({
       ...body,
+      slug,
       publishedAt: new Date().toISOString(),
     }), { expirationTtl: 365 * 24 * 60 * 60 })
 
