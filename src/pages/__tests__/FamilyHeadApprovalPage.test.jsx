@@ -31,6 +31,7 @@ describe('FamilyHeadApprovalPage', () => {
   it('shows the approval view when memorial loads', async () => {
     globalThis.fetch.mockResolvedValue({
       ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
       json: async () => ({
         id: 'mem_abc',
         family_head_name: 'Akosua',

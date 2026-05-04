@@ -27,6 +27,7 @@ function renderRoute(initialEntry = '/m/akua-mensah/thanks?ref=ref_abc') {
 beforeEach(() => {
   globalThis.fetch = vi.fn().mockResolvedValue({
     ok: true,
+    headers: new Headers({ 'content-type': 'application/json' }),
     json: async () => DONATION,
   })
 })
@@ -84,6 +85,7 @@ describe('DonationThanksPage with VITE_PHONE_AUTH_ENABLED=true', () => {
     vi.resetModules()
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
       json: async () => DONATION,
     })
   })

@@ -29,7 +29,13 @@ export default function DonationThanksPage() {
     if (!reference) return
     let cancelled = false
     fetch(DONATION_BY_REF_URL(reference))
-      .then((r) => (r.ok ? r.json() : null))
+      .then(async (r) => {
+        if (!r.ok) return null
+        // Guard against SPA fallback returning HTML when backend route is missing
+        const ct = r.headers.get('content-type') || ''
+        if (!ct.includes('application/json')) return null
+        return r.json()
+      })
       .then((data) => {
         if (!cancelled && data) setDonation(data)
       })

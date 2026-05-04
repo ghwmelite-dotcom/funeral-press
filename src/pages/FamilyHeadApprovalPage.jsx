@@ -20,7 +20,13 @@ export default function FamilyHeadApprovalPage() {
   useEffect(() => {
     let cancelled = false
     fetch(APPROVAL_LOOKUP_URL(token))
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('Invalid or expired link'))))
+      .then(async (r) => {
+        if (!r.ok) throw new Error('Invalid or expired link')
+        // Guard against SPA fallback returning HTML when backend route is missing
+        const ct = r.headers.get('content-type') || ''
+        if (!ct.includes('application/json')) throw new Error('Invalid or expired link')
+        return r.json()
+      })
       .then((data) => {
         if (!cancelled) setMemorial(data)
       })

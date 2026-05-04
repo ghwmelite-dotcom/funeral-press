@@ -27,15 +27,22 @@ export default function DonatePage() {
   useEffect(() => {
     let cancelled = false
     fetch(MEMORIAL_BY_SLUG_URL(slug))
-      .then((r) => {
+      .then(async (r) => {
         if (!r.ok) throw new Error('Memorial not found')
+        // Guard against the SPA fallback returning HTML when the backend route
+        // doesn't exist — JSON.parse on '<!doctype html>' produces a confusing
+        // user-facing error otherwise.
+        const ct = r.headers.get('content-type') || ''
+        if (!ct.includes('application/json')) {
+          throw new Error('Memorial not found')
+        }
         return r.json()
       })
       .then((data) => {
         if (!cancelled) setMemorial(data)
       })
-      .catch((e) => {
-        if (!cancelled) setLoadError(e.message)
+      .catch(() => {
+        if (!cancelled) setLoadError('Memorial not found')
       })
     return () => {
       cancelled = true

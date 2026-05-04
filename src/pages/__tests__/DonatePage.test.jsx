@@ -40,6 +40,7 @@ beforeEach(() => {
   })
   globalThis.fetch = vi.fn().mockResolvedValue({
     ok: true,
+    headers: new Headers({ 'content-type': 'application/json' }),
     json: async () => APPROVED_MEMORIAL,
   })
 })
@@ -65,6 +66,7 @@ describe('DonatePage', () => {
   it('shows "donations not available" when donation is not enabled', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
       json: async () => ({ ...APPROVED_MEMORIAL, donation: { enabled: false } }),
     })
     renderRoute()
@@ -76,6 +78,7 @@ describe('DonatePage', () => {
   it('shows "donations not available" when approval is pending', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
       json: async () => ({ ...APPROVED_MEMORIAL, donation: { ...APPROVED_MEMORIAL.donation, approval_status: 'pending' } }),
     })
     renderRoute()
