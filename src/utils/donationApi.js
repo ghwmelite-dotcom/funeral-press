@@ -49,6 +49,18 @@ export const donationApi = {
   async claim(donationId) {
     return apiFetch(`${DONATION_API}/donations/${donationId}/claim`, { method: 'POST' })
   },
+  async adminListDonations({ status, cursor } = {}) {
+    const params = new URLSearchParams()
+    if (status) params.set('status', status)
+    if (cursor) params.set('cursor', cursor)
+    const qs = params.toString()
+    return apiFetch(`${DONATION_API}/admin/donations${qs ? `?${qs}` : ''}`)
+  },
+  async adminRefund(donationId) {
+    return apiFetch(`${DONATION_API}/admin/donations/${donationId}/refund`, {
+      method: 'POST',
+    })
+  },
 }
 
 // Phone-OTP flow — lives in auth-api (relative paths use API_BASE).

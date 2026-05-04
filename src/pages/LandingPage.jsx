@@ -47,7 +47,7 @@ import { useBrochureStore } from '../stores/brochureStore'
 import { useThemeStore } from '../stores/themeStore'
 import { useAuthStore } from '../stores/authStore'
 import { events } from '../utils/analytics'
-import GoogleLoginButton from '../components/auth/GoogleLoginButton'
+import { SignInPopover } from '../components/auth/SignInPopover'
 import UserMenu from '../components/auth/UserMenu'
 import MigrationDialog from '../components/auth/MigrationDialog'
 import { usePosterStore } from '../stores/posterStore'
@@ -487,7 +487,7 @@ export default function LandingPage() {
 
       {/* Top-right controls */}
       <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
-        {user ? <UserMenu /> : <GoogleLoginButton />}
+        {user ? <UserMenu /> : <SignInPopover />}
         <button
           onClick={toggleTheme}
           className="p-2.5 rounded-full bg-card border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shadow-lg"
@@ -725,7 +725,7 @@ export default function LandingPage() {
                     ) : (
                       <div className="flex flex-col items-center lg:items-start gap-3">
                         <p className="text-xs text-muted-foreground">Sign in to apply as a partner</p>
-                        <GoogleLoginButton />
+                        <SignInPopover />
                       </div>
                     )}
                   </div>

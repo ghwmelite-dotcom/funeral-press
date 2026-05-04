@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { Heart, Calendar, MapPin, Clock, BookOpen, Loader2, Download } from 'lucide-react'
 import { getMemorial } from '../utils/memorialApi'
 import { themes } from '../utils/themes'
+import { DonatePanel } from '../components/donation/DonatePanel.jsx'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -190,6 +191,9 @@ export default function MemorialPage() {
             <p className="text-sm font-medium" style={{ color: theme.bodyText }}>{data.funeralVenue}</p>
           </div>
         </div>
+
+        {/* Donation panel — renders null unless donation is enabled & approved */}
+        <DonatePanel memorial={data} />
 
         {/* Biography */}
         {data.biography && (

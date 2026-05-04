@@ -63,6 +63,10 @@ const BrochureDesignerPage = lazy(() => import('./pages/landing/BrochureDesigner
 const PosterMakerPage = lazy(() => import('./pages/landing/PosterMakerPage'))
 const MemorialCreatorPage = lazy(() => import('./pages/landing/MemorialCreatorPage'))
 const ProgrammeBookletPage = lazy(() => import('./pages/landing/ProgrammeBookletPage'))
+const DonatePage = lazy(() => import('./pages/DonatePage.jsx'))
+const DonationThanksPage = lazy(() => import('./pages/DonationThanksPage.jsx'))
+const FamilyHeadApprovalPage = lazy(() => import('./pages/FamilyHeadApprovalPage.jsx'))
+const DonationPrivacyPage = lazy(() => import('./pages/DonationPrivacyPage.jsx'))
 
 function LoadingFallback() {
   return (
@@ -170,6 +174,10 @@ export default function App() {
               <Route path="/funeral-poster-maker" element={<PosterMakerPage />} />
               <Route path="/memorial-page-creator" element={<MemorialCreatorPage />} />
               <Route path="/funeral-programme-booklet" element={<ProgrammeBookletPage />} />
+              <Route path="/m/:slug/donate" element={<DonatePage />} />
+              <Route path="/m/:slug/donation-thanks" element={<DonationThanksPage />} />
+              <Route path="/approve/:token" element={<FamilyHeadApprovalPage />} />
+              <Route path="/privacy/donations" element={<DonationPrivacyPage />} />
             </Routes>
             </PageTransition>
           </Suspense>

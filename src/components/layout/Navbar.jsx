@@ -3,7 +3,7 @@ import { BookOpen, Undo2, Redo2, Save, Download, Upload, History, CalendarCheck,
 import { useBrochureStore } from '../../stores/brochureStore'
 import { useThemeStore } from '../../stores/themeStore'
 import { useAuthStore } from '../../stores/authStore'
-import GoogleLoginButton from '../auth/GoogleLoginButton'
+import { SignInPopover } from '../auth/SignInPopover'
 import UserMenu from '../auth/UserMenu'
 import { useNotification } from '../ui/notification'
 import { useRef, useState, useEffect } from 'react'
@@ -197,7 +197,7 @@ export default function Navbar() {
         )}
 
         <div className="flex items-center gap-1.5">
-          {user ? <UserMenu /> : <GoogleLoginButton compact />}
+          {user ? <UserMenu /> : <SignInPopover />}
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
