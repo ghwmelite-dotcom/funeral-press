@@ -479,7 +479,7 @@ async function handleLogout(request, env, userId) {
 }
 
 async function handleGetMe(request, env, userId) {
-  const user = await env.DB.prepare('SELECT id, email, name, picture, is_partner, referral_code, partner_name, partner_type, partner_logo_url, partner_denomination FROM users WHERE id = ? AND deleted_at IS NULL').bind(userId).first()
+  const user = await env.DB.prepare('SELECT id, email, name, picture, is_partner, referral_code, partner_name, partner_type, partner_logo_url, partner_denomination, onboarded_at FROM users WHERE id = ? AND deleted_at IS NULL').bind(userId).first()
   if (!user) return error('User not found', 404, request)
   const purchaseData = await getUserPurchaseData(env, userId)
   const hasAdminPriv = await isAdmin(userId, user.email, env)
@@ -493,8 +493,16 @@ async function handleGetMe(request, env, userId) {
       credits: purchaseData.credits,
       isUnlimited: purchaseData.isUnlimited,
       unlockedDesigns: purchaseData.unlockedDesigns,
+      onboarded_at: user.onboarded_at || null,
     },
   }, 200, request)
+}
+
+async function handleMarkOnboarded(request, env, userId) {
+  const now = new Date().toISOString()
+  await env.DB.prepare('UPDATE users SET onboarded_at = ? WHERE id = ? AND deleted_at IS NULL')
+    .bind(now, userId).run()
+  return json({ ok: true, onboarded_at: now }, 200, request)
 }
 
 // ─── Design CRUD ────────────────────────────────────────────────────────────
@@ -2516,6 +2524,7 @@ const handler = {
 
       if (method === 'POST' && path === '/auth/logout') return await handleLogout(request, env, userId)
       if (method === 'GET' && path === '/user/me') return await handleGetMe(request, env, userId)
+      if (method === 'POST' && path === '/users/me/onboarded') return await handleMarkOnboarded(request, env, userId)
       if (method === 'POST' && path === '/referrals/track') return await handleTrackReferral(request, env, userId)
       if (method === 'GET' && path === '/partner/me') return await handleGetPartnerProfile(request, env, userId)
       if (method === 'GET' && path === '/partner/referrals') return await handleGetPartnerReferrals(request, env, userId)

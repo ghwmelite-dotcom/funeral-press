@@ -218,6 +218,32 @@ export const useAuthStore = create((set, get) => ({
     return res
   },
 
+  // Mark the welcome tour as completed/dismissed.
+  // Persists onboarded_at to the backend so the tour does not re-show
+  // across devices/sessions; updates the local user object so any
+  // currently-mounted gates re-render past the tour.
+  markOnboarded: async () => {
+    try {
+      const { apiFetch } = await import('../utils/apiClient.js')
+      await apiFetch('/users/me/onboarded', { method: 'POST' })
+    } catch (err) {
+      // Non-fatal — localStorage flag still suppresses the tour for this
+      // device and the backend can be retried on a future session.
+      console.error('markOnboarded failed:', err)
+    }
+    set((s) => {
+      if (!s.user) return s
+      const updatedUser = { ...s.user, onboarded_at: new Date().toISOString() }
+      saveAuth({
+        user: updatedUser,
+        accessToken: s.accessToken,
+        refreshToken: s.refreshToken,
+        hasMigrated: s.hasMigrated,
+      })
+      return { user: updatedUser }
+    })
+  },
+
   // Fetch fresh user data from the server (updates isAdmin, isPartner, etc.)
   refreshUser: async () => {
     const token = await get().getToken()

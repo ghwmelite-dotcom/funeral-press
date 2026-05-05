@@ -68,6 +68,7 @@ const DonationThanksPage = lazy(() => import('./pages/DonationThanksPage.jsx'))
 const FamilyHeadApprovalPage = lazy(() => import('./pages/FamilyHeadApprovalPage.jsx'))
 const FamilyHeadDashboardPage = lazy(() => import('./pages/FamilyHeadDashboardPage.jsx'))
 const DonationPrivacyPage = lazy(() => import('./pages/DonationPrivacyPage.jsx'))
+const OnboardingTour = lazy(() => import('./components/onboarding/OnboardingTour.jsx'))
 
 function LoadingFallback() {
   return (
@@ -186,6 +187,9 @@ export default function App() {
           <InstallPrompt />
           <WhatsAppHelp />
           <BottomNav />
+          <Suspense fallback={null}>
+            <OnboardingTour />
+          </Suspense>
         </BrowserRouter>
       </NotificationProvider>
     </ErrorBoundary>
