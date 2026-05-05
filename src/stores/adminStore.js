@@ -6,6 +6,7 @@ export const useAdminStore = create((set, get) => ({
   analytics: null,
   analyticsRevenue: null,
   analyticsTemplates: null,
+  analyticsFunnel: null,
   analyticsLoading: false,
   users: { data: [], total: 0, page: 1, totalPages: 0 },
   orders: { data: [], total: 0, page: 1, totalPages: 0 },
@@ -33,6 +34,16 @@ export const useAdminStore = create((set, get) => ({
       })
     } catch {
       set({ analyticsLoading: false })
+    }
+  },
+
+  fetchFunnel: async (days = 30) => {
+    try {
+      const data = await apiFetch(`/admin/analytics/funnel?days=${days}`)
+      set({ analyticsFunnel: data })
+    } catch (err) {
+      console.error('fetchFunnel failed:', err)
+      set({ analyticsFunnel: null })
     }
   },
 

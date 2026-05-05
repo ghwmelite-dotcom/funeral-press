@@ -1547,6 +1547,42 @@ async function handleAdminAnalyticsTemplates(request, env) {
   return json({ data: results || [] }, 200, request)
 }
 
+async function handleAdminFunnel(request, env) {
+  const auth = await requireAdmin(request, env)
+  if (auth.error) return auth.error
+
+  const url = new URL(request.url)
+  const days = Math.min(365, Math.max(1, parseInt(url.searchParams.get('days')) || 30))
+  const cutoff = new Date(Date.now() - days * 86400000).toISOString()
+
+  const stages = [
+    { key: 'signup', label: 'Signed up', event_types: ['signup_completed'] },
+    { key: 'start_design', label: 'Started design', event_types: ['brochure_started'] },
+    { key: 'complete_design', label: 'Completed design', event_types: ['brochure_completed'] },
+    { key: 'paid', label: 'Paid', event_types: ['payment_completed'] },
+  ]
+
+  const data = []
+  for (const stage of stages) {
+    const placeholders = stage.event_types.map(() => '?').join(',')
+    const row = await env.DB.prepare(
+      `SELECT COUNT(DISTINCT user_id) as count FROM analytics_events
+       WHERE event_type IN (${placeholders}) AND created_at >= ?`
+    ).bind(...stage.event_types, cutoff).first()
+    data.push({ key: stage.key, label: stage.label, count: row?.count || 0 })
+  }
+
+  // Compute stage-to-stage conversion (relative to previous stage)
+  const enriched = data.map((stage, i) => {
+    if (i === 0) return { ...stage, conversion_pct: 100 }
+    const prev = data[i - 1]
+    const conversion_pct = prev.count > 0 ? Math.round((stage.count / prev.count) * 100) : 0
+    return { ...stage, conversion_pct }
+  })
+
+  return json({ stages: enriched, days, cutoff }, 200, request)
+}
+
 // ─── Guest Book handlers ────────────────────────────────────────────────────
 
 async function handleCreateGuestBook(request, env, userId) {
@@ -2413,6 +2449,7 @@ const handler = {
         if (method === 'GET' && path === '/admin/analytics/overview') return await handleAdminAnalyticsOverview(request, env)
         if (method === 'GET' && path === '/admin/analytics/revenue') return await handleAdminAnalyticsRevenue(request, env)
         if (method === 'GET' && path === '/admin/analytics/templates') return await handleAdminAnalyticsTemplates(request, env)
+        if (method === 'GET' && path === '/admin/analytics/funnel') return await handleAdminFunnel(request, env)
         const adminPrintMatch = path.match(/^\/admin\/print-orders\/([^/]+)$/)
         if (adminPrintMatch && method === 'PUT') return await handleAdminUpdatePrintOrder(request, env, adminPrintMatch[1])
 

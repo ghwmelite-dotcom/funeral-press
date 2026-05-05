@@ -16,6 +16,7 @@ const PartnersTab = lazy(() => import('../components/admin/PartnersTab'))
 const DesignsTab = lazy(() => import('../components/admin/DesignsTab'))
 const PrintOrdersTab = lazy(() => import('../components/admin/PrintOrdersTab'))
 const DonationsTab = lazy(() => import('../components/admin/DonationsTab'))
+const FunnelTab = lazy(() => import('../components/admin/FunnelTab'))
 
 function TabLoader() {
   return (
@@ -89,6 +90,7 @@ export default function AdminDashboardPage() {
             <TabsTrigger value="designs" className="text-xs sm:text-sm">Designs</TabsTrigger>
             <TabsTrigger value="print-orders" className="text-xs sm:text-sm">Print Orders</TabsTrigger>
             <TabsTrigger value="donations" className="text-xs sm:text-sm">Donations</TabsTrigger>
+            <TabsTrigger value="funnel" className="text-xs sm:text-sm">Funnel</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -130,6 +132,12 @@ export default function AdminDashboardPage() {
           <TabsContent value="donations">
             <Suspense fallback={<TabLoader />}>
               <DonationsTab />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="funnel">
+            <Suspense fallback={<TabLoader />}>
+              <FunnelTab />
             </Suspense>
           </TabsContent>
         </Tabs>

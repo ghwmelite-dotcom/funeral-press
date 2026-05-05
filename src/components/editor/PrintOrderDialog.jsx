@@ -11,6 +11,7 @@ import { usePrintOrderStore, GHANA_REGIONS, MIN_QUANTITIES, PRODUCT_SIZES } from
 import { useAuthStore } from '../../stores/authStore'
 import { apiFetch } from '../../utils/apiClient'
 import { loadPaystackInline, PAYSTACK_PUBLIC_KEY } from '../../utils/paystack'
+import { trackEvent } from '../../utils/trackEvent'
 
 function FormField({ label, children, optional }) {
   return (
@@ -107,6 +108,7 @@ export default function PrintOrderDialog() {
               method: 'POST',
               body: JSON.stringify({ reference: transaction.reference }),
             })
+            trackEvent('print_order_placed', { orderId: result.orderId, productType: currentDesign.productType, quantity })
             usePrintOrderStore.setState({ orderId: result.orderId, stage: 'success' })
           } catch (err) {
             setError(err.message || 'Verification failed')
