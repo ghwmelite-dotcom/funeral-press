@@ -11,7 +11,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.js'],
-    include: ['src/**/*.test.{js,jsx}', 'workers/**/*.test.js'],
+    include: ['src/**/*.test.{js,jsx}', 'workers/**/*.test.js', 'vite-plugins/**/*.test.js'],
   },
   resolve: {
     alias: {

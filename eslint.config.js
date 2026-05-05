@@ -28,7 +28,7 @@ export default defineConfig([
   },
   {
     // Node-context files (build config, test setup, scripts) get Node globals.
-    files: ['vite.config.js', 'workers/__tests__/**/*.{js,jsx}', 'scripts/**/*.{js,mjs,cjs}', '*.cjs'],
+    files: ['vite.config.js', 'workers/__tests__/**/*.{js,jsx}', 'scripts/**/*.{js,mjs,cjs}', 'vite-plugins/**/*.{js,mjs,cjs}', '*.cjs'],
     languageOptions: {
       globals: { ...globals.node },
     },
