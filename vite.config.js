@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 import path from 'path'
+import sitemapPlugin from './vite-plugins/sitemap.js'
+import blogPosts from './src/data/blogPosts.js'
 
 export default defineConfig({
   plugins: [
@@ -50,6 +52,9 @@ export default defineConfig({
       project: process.env.SENTRY_PROJECT || 'funeralpress-frontend',
       authToken: process.env.SENTRY_AUTH_TOKEN,
     }),
+    // Generate dist/sitemap.xml at build time so the sitemap stays in sync
+    // with our static routes, region list, and blog posts without manual edits.
+    sitemapPlugin({ blogPosts }),
   ],
   resolve: {
     alias: {
