@@ -126,7 +126,13 @@ async function authenticate(request, env) {
   const authHeader = request.headers.get('Authorization')
   if (!authHeader?.startsWith('Bearer ')) return null
   const token = authHeader.slice(7)
-  return verifyJWT(token, env.JWT_SECRET)
+  const payload = await verifyJWT(token, env.JWT_SECRET)
+  // Tag Sentry events with the authenticated user id so error reports stop
+  // being anonymous. Only the opaque user id (sub) is sent — no email/name.
+  if (payload?.sub) {
+    try { Sentry.setUser({ id: String(payload.sub) }) } catch { /* setUser unavailable in some test envs */ }
+  }
+  return payload
 }
 
 function generateId() {
@@ -1964,8 +1970,12 @@ async function handleSubscriptionWebhook(request, env) {
 
     if (sub) {
       const periodEnd = data.next_payment_date || new Date(Date.now() + 30 * 86400000).toISOString()
+      // Reset dunning_stage + last_dunning_sent_at so a past_due → recovered
+      // user doesn't carry stale dunning state into the next billing cycle.
+      // (charge.failed sets dunning_stage=0 + status='past_due'; this is the
+      // symmetric reset for successful retries.)
       await env.DB.prepare(
-        "UPDATE subscriptions SET monthly_credits_remaining = 15, current_period_start = datetime('now'), current_period_end = ?, status = 'active', updated_at = datetime('now') WHERE id = ?"
+        "UPDATE subscriptions SET monthly_credits_remaining = 15, current_period_start = datetime('now'), current_period_end = ?, status = 'active', dunning_stage = 0, last_dunning_sent_at = NULL, updated_at = datetime('now') WHERE id = ?"
       ).bind(periodEnd, sub.id).run()
 
       await env.DB.prepare(

@@ -58,6 +58,11 @@ async function authenticate(request, env) {
   const h = request.headers.get('Authorization') || ''
   if (!h.startsWith('Bearer ')) return null
   const payload = await verifyJWT(h.slice(7), env.JWT_SECRET)
+  // Tag Sentry events with the user id so error reports stop being anonymous.
+  // Only the opaque user id (sub) is sent — no email/name/phone.
+  if (payload?.sub) {
+    try { Sentry.setUser({ id: String(payload.sub) }) } catch { /* setUser unavailable in some test envs */ }
+  }
   return payload
 }
 
