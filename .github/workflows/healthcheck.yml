@@ -1,0 +1,61 @@
+name: healthcheck
+
+# External synthetic monitor for the 7 production workers. Runs every 5 minutes
+# (independently of the workers themselves, so we still notice if Cloudflare's
+# edge can't reach the origin). Slack alert fires only when SLACK_WEBHOOK_URL
+# is set as a repo secret — otherwise the job logs the failure and exits
+# non-zero so the Actions tab surfaces it.
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Probe each /health endpoint
+        id: probe
+        shell: bash
+        run: |
+          set +e
+          declare -a TARGETS=(
+            "auth-api|https://auth-api.funeralpress.org/health"
+            "donation-api|https://donation-api.funeralpress.org/health"
+            "memorial-api|https://memorial-api.funeralpress.org/health"
+            "live-api|https://live-api.funeralpress.org/health"
+            "share-api|https://share-api.funeralpress.org/health"
+            "ai|https://ai.funeralpress.org/health"
+          )
+          FAILURES=""
+          for T in "${TARGETS[@]}"; do
+            NAME="${T%%|*}"
+            URL="${T##*|}"
+            STATUS=$(curl -sS -o /tmp/body.txt -w "%{http_code}" -m 10 "$URL" || echo "000")
+            if [ "$STATUS" != "200" ]; then
+              echo "::error::$NAME returned HTTP $STATUS for $URL"
+              BODY=$(head -c 200 /tmp/body.txt 2>/dev/null || true)
+              FAILURES="$FAILURES\n- $NAME ($URL): HTTP $STATUS — $BODY"
+            else
+              echo "✓ $NAME OK"
+            fi
+          done
+          if [ -n "$FAILURES" ]; then
+            printf 'failures<<EOF\n%b\nEOF\n' "$FAILURES" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Notify Slack on failure
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          FAILURES: ${{ steps.probe.outputs.failures }}
+        shell: bash
+        run: |
+          PAYLOAD=$(jq -n --arg text ":rotating_light: FuneralPress healthcheck FAILED${FAILURES}" '{text:$text}')
+          curl -sS -X POST -H 'Content-Type: application/json' -d "$PAYLOAD" "$SLACK_WEBHOOK_URL" || true
