@@ -44,4 +44,9 @@ pattern = "auth-api.funeralpress.org/*"
 zone_name = "funeralpress.org"
 
 [triggers]
-crons = ["0 8 * * *"]    # Daily dunning sweep at 08:00 UTC
+# Two daily crons — dispatch lives in auth-api.js scheduled() by cron string.
+#   03:00 UTC  D1 cleanup (analytics_events 90d, phone_otps 48h,
+#              processed_webhooks 30d). Runs an hour before donation-api's
+#              04:00 UTC reconciliation to avoid DELETE/SELECT contention.
+#   08:00 UTC  Subscription dunning sweep (Day 1 / Day 3 / Day 7-downgrade).
+crons = ["0 3 * * *", "0 8 * * *"]
