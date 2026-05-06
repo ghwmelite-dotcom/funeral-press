@@ -37,6 +37,12 @@ function makeMockDb({ donation = null, memorial = null, processedEvents = [] }) 
           if (sql.includes('UPDATE donations')) {
             state.updates.push({ sql, args })
             if (state.donation) {
+              // Honor the WHERE status='pending' clause: if the row is no
+              // longer pending (cron already promoted, or duplicate webhook),
+              // the UPDATE matches 0 rows. Critical for the race-guard test.
+              if (sql.includes("status = 'pending'") && state.donation.status !== 'pending') {
+                return { meta: { changes: 0 } }
+              }
               if (sql.includes("status = 'succeeded'")) {
                 state.donation.status = 'succeeded'
                 state.donation.succeeded_at = args[0]
@@ -219,6 +225,23 @@ describe('POST /paystack/webhook', () => {
     expect(res.status).toBe(200)
     // No update happened
     expect(env.DB._state.donation.status).toBe('pending')
+  })
+
+  it('does NOT double-count memorial totals when reconcileDay already promoted the donation', async () => {
+    // Race: cron flipped status pending → succeeded; webhook arrives later
+    // with a fresh event_id (not a dedupe-candidate). The donation UPDATE has
+    // a status='pending' guard so it matches 0 rows; we must skip the
+    // memorial increment to avoid double-counting.
+    const env = makeEnv({
+      donation: { ...pendingDonation(), status: 'succeeded' },
+      memorial: { id: MEMORIAL_ID, total_raised_pesewas: 5000, total_donor_count: 1 },
+    })
+    const req = await webhookReq({ event: chargeSuccessEvent() })
+    const res = await worker.fetch(req, env, ctx)
+    expect(res.status).toBe(200)
+    // Memorial totals stayed at the cron-promoted values; webhook backed off.
+    expect(env.DB._state.memorial.total_raised_pesewas).toBe(5000)
+    expect(env.DB._state.memorial.total_donor_count).toBe(1)
   })
 
   it('processes charge.failed: marks donation failed', async () => {

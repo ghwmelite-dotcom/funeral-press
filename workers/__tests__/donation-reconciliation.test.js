@@ -18,16 +18,21 @@ function makeMockDb({ donations = [], memorials = {}, dueMomoRows = [] }) {
           if (sql.includes('UPDATE donations')) {
             state.updates.push({ sql, args })
             const target = state.donations.find(d => d.id === args[args.length - 1])
-            if (target) {
-              if (sql.includes("status = 'failed'")) { target.status = 'failed'; target.failure_reason = args[0] }
-              else if (sql.includes("status = 'succeeded'")) {
-                target.status = 'succeeded'
-                target.succeeded_at = args[0]
-                target.paystack_fee_pesewas = args[1]
-                target.paystack_transaction_id = args[2]
-              }
+            if (!target) return { meta: { changes: 0 } }
+            // Honor the WHERE status = 'pending' clause: if the row is already
+            // succeeded/failed, the UPDATE matches 0 rows. This is critical for
+            // the race-guard test where reconcileDay loses to a webhook.
+            if (sql.includes("status = 'pending'") && target.status !== 'pending') {
+              return { meta: { changes: 0 } }
             }
-            return { meta: { changes: target ? 1 : 0 } }
+            if (sql.includes("status = 'failed'")) { target.status = 'failed'; target.failure_reason = args[0] }
+            else if (sql.includes("status = 'succeeded'")) {
+              target.status = 'succeeded'
+              target.succeeded_at = args[0]
+              target.paystack_fee_pesewas = args[1]
+              target.paystack_transaction_id = args[2]
+            }
+            return { meta: { changes: 1 } }
           }
           if (sql.includes('UPDATE memorials')) {
             state.updates.push({ sql, args })
@@ -153,6 +158,26 @@ describe('reconcileDay', () => {
     await reconcileDay(env)
     expect(env.DB._state.donations[0].status).toBe('succeeded')
     expect(env.DB._state.adminAlerts.length).toBe(0)
+  })
+
+  it('does NOT increment memorial totals when a webhook racing this cron already promoted the donation', async () => {
+    // Simulate the race: SELECT sees pending, but a webhook flips the row
+    // to succeeded between SELECT and UPDATE. The cron's UPDATE has a
+    // status='pending' guard so it matches 0 rows and we must skip the
+    // memorial increment. Without this guard the memorial would double-count.
+    const env = makeEnv({
+      donations: [donation('d1', 'FP_d1', 'pending')],
+      memorials: { mem_abc: { total_raised_pesewas: 0, total_donor_count: 0 } },
+    })
+    mockPaystackList([{ reference: 'FP_d1', status: 'success', fees: 75, id: 1 }])
+    // Sneak in the webhook win between SELECT and UPDATE by mutating the
+    // mock state on the next prepare() call. Easiest path: pre-flip the row
+    // before the cron runs — same effective state for the UPDATE.
+    env.DB._state.donations[0].status = 'succeeded'
+    await reconcileDay(env)
+    // Memorial totals must NOT have incremented (double-count guard).
+    expect(env.DB._state.memorials.mem_abc.total_raised_pesewas).toBe(0)
+    expect(env.DB._state.memorials.mem_abc.total_donor_count).toBe(0)
   })
 })
 

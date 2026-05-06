@@ -19,16 +19,15 @@ id = "314cc22d0bb6497d85280eccf10e54bb"
 binding = "RATE_LIMITS"
 id = "3cf6b47818c04ca8828461650478a6c1"
 
-[[kv_namespaces]]
-binding = "OTP_KV"
-id = "a1ac0eaccf854a688954d90859570738"
+# OTP_KV binding intentionally removed — phone OTPs persist to D1
+# `phone_otps`, no code path reads or writes the KV namespace.
 
 [vars]
 ENVIRONMENT = "production"
 DONATIONS_ENABLED = "false"
 INTERNATIONAL_DONATIONS_ENABLED = "true"
 DONATIONS_GLOBAL_PAUSED = "false"
-RECONCILIATION_ENABLED = "false"
+RECONCILIATION_ENABLED = "true"
 TIP_DEFAULT_PERCENT = "5"
 
 # ─── Secrets required (set via `wrangler secret put` before deploy) ───

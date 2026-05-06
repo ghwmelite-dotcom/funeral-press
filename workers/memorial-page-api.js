@@ -122,12 +122,15 @@ async function handlePost(request, env) {
         .replace(/-+/g, '-')
         .slice(0, 50)}-${id.slice(-6)}`
 
-    // Store with 1-year TTL (365 days in seconds)
+    // Store without TTL — memorial pages are marketed as permanent and must
+    // never silently expire. Cloudflare KV with no expirationTtl persists
+    // until manually deleted. If KV bloat becomes a real problem in the
+    // future (years out, given memorial volume), add a soft-delete flow then.
     await env.MEMORIAL_PAGES_KV.put(id, JSON.stringify({
       ...body,
       slug,
       publishedAt: new Date().toISOString(),
-    }), { expirationTtl: 365 * 24 * 60 * 60 })
+    }))
 
     // Queue anonymized tweet for X auto-poster
     if (env.DB) {

@@ -1,6 +1,6 @@
 // FuneralPress Donation API Worker
 // Owns: donations, donor wall, family-head approval, Paystack webhooks.
-// Bindings: DB (D1), MEMORIAL_PAGES_KV, RATE_LIMITS, OTP_KV
+// Bindings: DB (D1), MEMORIAL_PAGES_KV, RATE_LIMITS
 // Secrets: PAYSTACK_SECRET_KEY, PAYSTACK_WEBHOOK_SECRET, JWT_SECRET, OTP_PEPPER,
 //          TERMII_API_KEY, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER,
 //          RESEND_API_KEY, OXR_APP_ID
@@ -227,11 +227,18 @@ const handler = {
           const fees = event.data.fees || 0
           const netToFamily = donation.amount_pesewas - fees
 
-          await env.DB.prepare(
+          const promote = await env.DB.prepare(
             `UPDATE donations
              SET status = 'succeeded', succeeded_at = ?, paystack_fee_pesewas = ?, net_to_family_pesewas = ?, paystack_transaction_id = ?
              WHERE id = ? AND status = 'pending'`
           ).bind(Date.now(), fees, netToFamily, String(event.data.id || ''), donation.id).run()
+
+          // Race guard: if reconcileDay (or a duplicate webhook) already
+          // promoted this donation, the UPDATE above is a no-op and we must
+          // skip the memorial increment to avoid double-counting totals.
+          if ((promote?.meta?.changes ?? 0) !== 1) {
+            return json({ ok: true, deduped: 'donation_already_succeeded' }, 200, request)
+          }
 
           await env.DB.prepare(
             `UPDATE memorials
@@ -1404,10 +1411,14 @@ export async function reconcileDay(env) {
     }
 
     if (ps.status === 'success' && row.status === 'pending') {
-      // Webhook missed — promote and update memorial totals
-      await env.DB.prepare(
-        `UPDATE donations SET status = 'succeeded', succeeded_at = ?, paystack_fee_pesewas = ?, paystack_transaction_id = ? WHERE id = ?`
+      // Webhook missed — promote with a status='pending' guard so a webhook
+      // racing this cron at the same moment can't both apply the memorial
+      // increment. Whichever flips pending → succeeded first owns the
+      // total update; the loser sees changes=0 and skips.
+      const promote = await env.DB.prepare(
+        `UPDATE donations SET status = 'succeeded', succeeded_at = ?, paystack_fee_pesewas = ?, paystack_transaction_id = ? WHERE id = ? AND status = 'pending'`
       ).bind(Date.now(), ps.fees || 0, String(ps.id || ''), row.id).run()
+      if ((promote?.meta?.changes ?? 0) !== 1) continue
 
       await env.DB.prepare(
         `UPDATE memorials

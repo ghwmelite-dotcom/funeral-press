@@ -27,9 +27,8 @@ bucket_name = "funeralpress-images"
 binding = "RATE_LIMITS"
 id = "3cf6b47818c04ca8828461650478a6c1"
 
-[[kv_namespaces]]
-binding = "OTP_KV"
-id = "a1ac0eaccf854a688954d90859570738"
+# OTP_KV binding intentionally removed — phone OTPs persist to D1
+# `phone_otps`, no code path reads or writes the KV namespace.
 
 # ─── Secrets required for phone-auth routes (set via `wrangler secret put`) ───
 # TERMII_API_KEY            — Termii API key for Ghana SMS
