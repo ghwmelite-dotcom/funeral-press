@@ -1,13 +1,19 @@
+import { redactPii } from './redactPii.js'
+
 /**
  * Log an action to the audit_log table.
  * Fire-and-forget — errors are silently caught so audit logging never breaks the request.
+ * The `detail` JSON is run through redactPii() so emails / phones / names are
+ * masked before persistence; the audit row stays useful for "user X did Y" but
+ * does not expand the breach blast radius if the table were exfiltrated.
+ *
  * @param {D1Database} db - D1 database binding
  * @param {Object} params
  * @param {string} [params.userId] - user who performed the action
  * @param {string} params.action - action identifier (e.g. 'payment.verified')
  * @param {string} [params.resourceType] - resource type (e.g. 'order', 'design')
  * @param {string} [params.resourceId] - resource identifier
- * @param {Object} [params.detail] - additional JSON context
+ * @param {Object} [params.detail] - additional JSON context (will be PII-redacted)
  * @param {string} [params.ipAddress] - request IP
  */
 export async function logAudit(db, { userId = null, action, resourceType = null, resourceId = null, detail = {}, ipAddress = null }) {
@@ -20,7 +26,7 @@ export async function logAudit(db, { userId = null, action, resourceType = null,
       action,
       resourceType,
       resourceId,
-      JSON.stringify(detail),
+      JSON.stringify(redactPii(detail)),
       ipAddress
     ).run()
   } catch {
@@ -60,6 +66,8 @@ export async function logDonationAudit(db, {
   ipAddress = null,
 }) {
   try {
+    // Mask the dedicated phone column AND the free-form detail blob.
+    const maskedPhone = actorPhone ? redactPii({ phone: actorPhone }).phone : null
     await db.prepare(
       `INSERT INTO donation_audit (memorial_id, donation_id, actor_user_id, actor_phone, action, detail, ip_address, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
@@ -67,9 +75,9 @@ export async function logDonationAudit(db, {
       memorialId,
       donationId,
       actorUserId,
-      actorPhone,
+      maskedPhone,
       action,
-      JSON.stringify(detail),
+      JSON.stringify(redactPii(detail)),
       ipAddress,
       Date.now()
     ).run()
