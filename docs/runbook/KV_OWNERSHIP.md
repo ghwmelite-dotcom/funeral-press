@@ -142,6 +142,12 @@ A grep across `workers/` finds zero `env.OTP_KV.*` calls in production source �
 
 3. **Audit growth quarterly.** `wrangler kv key list --namespace-id=<id>` to estimate key count. Cloudflare KV has 1 GB free-tier limits per account; the donor-wall cache and brochure store are the most likely growth sources.
 
-4. **Backup recommended (gap).** No automated KV backup exists. Recommended fix: nightly Worker that lists all keys per namespace and writes a JSONL dump to R2 `funeralpress-images` under a `kv-backups/<date>/` prefix.
+4. **No automated KV backup — accepted risk (decision 2026-05-06).** No nightly export exists. Decision: don't build one yet. Reasoning:
+   - `BROCHURES_KV` entries already have a 30-day TTL, so the worst-case data loss is 30 days of share codes. Users regenerate.
+   - `LIVE_SERVICE_KV` entries are short-lived event pages with similar bounded value.
+   - `RATE_LIMITS` and `MEMORIAL_PAGES_KV` are recoverable (counters refill, D1 is source of truth).
+   - The realistic threat is **accidental deletion** (rogue `wrangler kv:key delete`, compromised CI token), not regional failure (KV is multi-region replicated).
+   - Mitigation lives in `DEPLOY_AND_ROLLBACK.md` § "Cloudflare API token scoping" — the CI token excludes `Workers KV Storage: Edit` so a compromised pipeline cannot bulk-delete.
+   - Revisit if (a) data semantics change so loss matters, or (b) we hit a real incident.
 
 5. **When rotating bindings, write-through caches need warming.** After recreating `MEMORIAL_PAGES_KV`, donor walls will show empty totals until a donation event triggers a write-through. A manual warming pass (replay D1 → KV) is recommended for high-traffic memorials.

@@ -273,11 +273,40 @@ After any deploy or rollback, run through this checklist:
 
 ---
 
-## 9. Known gaps
+## 9. Cloudflare API token scoping (CI token used by `deploy.yml`)
+
+The `CLOUDFLARE_API_TOKEN` repo secret authenticates every `wrangler-action` step. Scope it deliberately so a compromised pipeline cannot do disproportionate damage. Recommended template (Cloudflare dashboard → My Profile → API Tokens → Create Token → Custom token):
+
+| Permission group | Permission | Why |
+|------------------|------------|-----|
+| Account | Workers Scripts: **Edit** | Required — deploys worker code |
+| Account | Workers KV Storage: **Read** | Required for read paths during deploy validation |
+| Account | Workers R2 Storage: **Edit** | Required for `funeralpress-images` writes from auth-api |
+| Account | D1: **Edit** | Required for `wrangler d1 execute` migrations |
+| Account | Workers Routes: **Edit** | Required for the `[[routes]]` blocks in each `*-wrangler.toml` |
+| Zone | Cache Purge | Optional — only if you add a post-deploy cache purge |
+
+**Explicitly omit:**
+
+- ❌ `Workers KV Storage: Edit` — prevents `wrangler kv:key delete` and `wrangler kv:namespace delete` from CI. Manual deletes from a developer's local creds still work.
+- ❌ `User: Memberships: Read` — wrangler-action needs `accountId` set explicitly anyway (see `deploy.yml` per-step `accountId` input). Including this scope is unnecessary and was the cause of the original CI failure (issue from 2026-05-03).
+- ❌ Zone permissions beyond Cache Purge unless DNS automation is added.
+
+**TTL and rotation:**
+
+1. Set the token's expiry to **180 days** maximum. The token is in 1Password / your password manager; rotation is a 5-minute task (regenerate, paste new value into the GitHub repo secret).
+2. Rotate immediately if any of: a contributor leaves the project, a laptop with `~/.wrangler/config/default.toml` is lost, or `gh secret list` shows access from an unfamiliar IP.
+3. **Revoke the old token in Cloudflare immediately after rotating** — adding the new secret in GitHub does not invalidate the old one server-side.
+
+**Why this matters more than KV backups.** The realistic threat to `BROCHURES_KV` and `LIVE_SERVICE_KV` is accidental deletion (rogue script, compromised CI). A scoped token without `KV: Edit` is cheaper to maintain than a backup pipeline and addresses the actual risk surface. See `KV_OWNERSHIP.md` § 6.4 for the risk-acceptance reasoning.
+
+---
+
+## 10. Known gaps
 
 1. **No staging environment.** All deploys go straight to production. Recommended: `[env.staging]` blocks + a `staging-db` D1 instance + branch-based deploys for `staging` branch.
 2. **No migration tracking.** Operator is responsible for knowing applied state. Recommended: `schema_migrations` table + CI assertion.
 3. **No automated post-deploy smoke tests.** Health checks and synthetic user-flow probes should run after `deploy-workers` succeeds. Recommended: `playwright` smoke job appended to `deploy.yml`.
 4. **No deploy notification.** Slack/Discord webhook to announce deploys would shorten "is this related to a deploy?" investigations.
-5. **`wrangler.toml` at the workers root** (`workers/wrangler.toml`) duplicates `brochure-ai-writer` config with stale `compatibility_date = "2024-01-01"`. It is not referenced by CI. Recommended: delete to avoid confusion.
+5. ~~`wrangler.toml` at the workers root duplicates brochure-ai-writer config~~ — **fixed** in commit `bf634d7` (2026-05-06).
 6. **Account ID is hardcoded in `deploy.yml`** (`ea2eb3a9813660dfca2a60e594858538`). Acceptable, but means anyone running deploys locally must use the same account; document this.

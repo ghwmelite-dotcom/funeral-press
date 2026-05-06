@@ -10,6 +10,7 @@ import { sendTermiiOtp } from './utils/termii.js'
 import { sendTwilioOtp } from './utils/twilioVerify.js'
 import { featureFlag } from './utils/featureFlag.js'
 import { runDunningCron } from './utils/dunning.js'
+import { runD1Cleanup } from './utils/dbCleanup.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -2668,12 +2669,25 @@ const handler = {
   },
 
   async scheduled(controller, env, ctx) {
-    // Daily 08:00 UTC dunning sweep — walks past_due subscriptions through
-    // Day 1 / Day 3 / Day 7-downgrade emails. See workers/utils/dunning.js.
-    ctx.waitUntil(runDunningCron(env).catch((e) => {
-      console.error('[scheduled] runDunningCron failed:', e?.message || e)
-      Sentry.captureException(e)
-    }))
+    // auth-api carries two daily crons. Dispatch by the cron expression that
+    // fired so we only run the relevant job:
+    //   "0 3 * * *"  → 03:00 UTC D1 cleanup (analytics / OTPs / webhooks)
+    //   "0 8 * * *"  → 08:00 UTC subscription dunning sweep
+    const cron = controller.cron
+    if (cron === '0 3 * * *') {
+      ctx.waitUntil(runD1Cleanup(env).catch((e) => {
+        console.error('[scheduled] runD1Cleanup failed:', e?.message || e)
+        Sentry.captureException(e)
+      }))
+    } else if (cron === '0 8 * * *') {
+      ctx.waitUntil(runDunningCron(env).catch((e) => {
+        console.error('[scheduled] runDunningCron failed:', e?.message || e)
+        Sentry.captureException(e)
+      }))
+    } else {
+      // Unknown cron — log so we notice if a wrangler.toml change drifts.
+      console.warn('[scheduled] unrecognized cron expression:', cron)
+    }
   },
 }
 
