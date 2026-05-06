@@ -46,7 +46,7 @@ export default function FuneralBookletTemplatesPage() {
       />
 
       {/* Hero */}
-      <section className="max-w-5xl mx-auto px-4 pt-16 pb-12 text-center">
+      <section className="max-w-7xl mx-auto px-4 pt-16 pb-12 text-center">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
           Funeral Booklet Templates
         </h1>
@@ -60,7 +60,7 @@ export default function FuneralBookletTemplatesPage() {
       </section>
 
       {/* Denomination Grid */}
-      <section className="max-w-6xl mx-auto px-4 pb-16">
+      <section className="max-w-7xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-8 text-center">Denomination-Specific Templates</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {denominationTemplates.map((t) => (

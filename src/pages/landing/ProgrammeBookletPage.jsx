@@ -132,7 +132,7 @@ export default function ProgrammeBookletPage() {
       />
 
       {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="max-w-5xl mx-auto px-4 pt-6">
+      <nav aria-label="Breadcrumb" className="max-w-7xl mx-auto px-4 pt-6">
         <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <li><Link to="/" className="hover:text-foreground transition-colors">Home</Link></li>
           <li><ChevronRight className="w-3.5 h-3.5" /></li>
@@ -141,7 +141,7 @@ export default function ProgrammeBookletPage() {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-5xl mx-auto px-4 pt-10 pb-16 text-center">
+      <section className="max-w-7xl mx-auto px-4 pt-10 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-sm font-medium px-4 py-1.5 rounded-full mb-6">
           <Clock className="w-4 h-4" />
           Complete booklet designed in under 1 hour
@@ -171,7 +171,7 @@ export default function ProgrammeBookletPage() {
       </section>
 
       {/* Features */}
-      <section className="max-w-5xl mx-auto px-4 pb-16">
+      <section className="max-w-7xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">Built for Ghanaian Funeral Services</h2>
         <p className="text-muted-foreground text-center mb-10 max-w-2xl mx-auto">
           Every feature is designed to make it easy to produce a dignified, comprehensive
@@ -194,7 +194,7 @@ export default function ProgrammeBookletPage() {
       </section>
 
       {/* Order of Service Demo */}
-      <section className="max-w-5xl mx-auto px-4 pb-16">
+      <section className="max-w-7xl mx-auto px-4 pb-16">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
           <div>
             <h2 className="text-2xl font-semibold mb-3">Complete Order of Service</h2>
@@ -234,7 +234,7 @@ export default function ProgrammeBookletPage() {
       </section>
 
       {/* Template Preview */}
-      <section className="max-w-5xl mx-auto px-4 pb-16">
+      <section className="max-w-7xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">Professional Booklet Templates</h2>
         <p className="text-muted-foreground text-center mb-8 max-w-2xl mx-auto">
           Choose from 8 professionally designed programme booklet covers, each available in 4, 8, 12, and 16-page versions.

@@ -117,7 +117,7 @@ export default function MemorialCreatorPage() {
       />
 
       {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="max-w-5xl mx-auto px-4 pt-6">
+      <nav aria-label="Breadcrumb" className="max-w-7xl mx-auto px-4 pt-6">
         <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <li><Link to="/" className="hover:text-foreground transition-colors">Home</Link></li>
           <li><ChevronRight className="w-3.5 h-3.5" /></li>
@@ -126,7 +126,7 @@ export default function MemorialCreatorPage() {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-5xl mx-auto px-4 pt-10 pb-16 text-center">
+      <section className="max-w-7xl mx-auto px-4 pt-10 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-sm font-medium px-4 py-1.5 rounded-full mb-6">
           <CheckCircle className="w-4 h-4" />
           Permanent online tribute, accessible worldwide
@@ -173,7 +173,7 @@ export default function MemorialCreatorPage() {
       </section>
 
       {/* Features */}
-      <section className="max-w-5xl mx-auto px-4 pb-16">
+      <section className="max-w-7xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">Everything for a Complete Online Tribute</h2>
         <p className="text-muted-foreground text-center mb-10 max-w-2xl mx-auto">
           More than a simple obituary — FuneralPress memorial pages are rich, interactive tributes

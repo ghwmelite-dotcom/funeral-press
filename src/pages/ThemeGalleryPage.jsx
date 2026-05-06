@@ -28,7 +28,7 @@ export default function ThemeGalleryPage() {
         description="Browse 100+ professionally designed funeral templates. Brochures, posters, invitations, booklets, and memorial cards. Customise instantly for your loved one."
         path="/themes"
       />
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link to="/" className="p-2 text-muted-foreground hover:text-foreground transition-colors">

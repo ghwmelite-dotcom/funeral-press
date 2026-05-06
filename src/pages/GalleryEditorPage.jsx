@@ -290,7 +290,7 @@ export default function GalleryEditorPage() {
         </a>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
         {/* Gallery Info + Share Link */}
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div>

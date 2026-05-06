@@ -116,7 +116,7 @@ export default function BrochureDesignerPage() {
       />
 
       {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="max-w-5xl mx-auto px-4 pt-6">
+      <nav aria-label="Breadcrumb" className="max-w-7xl mx-auto px-4 pt-6">
         <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <li><Link to="/" className="hover:text-foreground transition-colors">Home</Link></li>
           <li><ChevronRight className="w-3.5 h-3.5" /></li>
@@ -125,7 +125,7 @@ export default function BrochureDesignerPage() {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-5xl mx-auto px-4 pt-10 pb-16 text-center">
+      <section className="max-w-7xl mx-auto px-4 pt-10 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-sm font-medium px-4 py-1.5 rounded-full mb-6">
           <CheckCircle className="w-4 h-4" />
           Trusted by families across Ghana
@@ -155,7 +155,7 @@ export default function BrochureDesignerPage() {
       </section>
 
       {/* Features */}
-      <section className="max-w-5xl mx-auto px-4 pb-16">
+      <section className="max-w-7xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">Everything You Need in One Place</h2>
         <p className="text-muted-foreground text-center mb-10 max-w-2xl mx-auto">
           FuneralPress combines professional design tools with Ghanaian cultural expertise so you can
@@ -178,7 +178,7 @@ export default function BrochureDesignerPage() {
       </section>
 
       {/* Template Preview Placeholder */}
-      <section className="max-w-5xl mx-auto px-4 pb-16">
+      <section className="max-w-7xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">11 Professional Brochure Templates</h2>
         <p className="text-muted-foreground text-center mb-8 max-w-2xl mx-auto">
           From traditional Ghanaian designs to modern minimalist layouts — every template is print-ready at 300 DPI.

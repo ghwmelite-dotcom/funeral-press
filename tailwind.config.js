@@ -7,6 +7,11 @@ export default {
   ],
   theme: {
     extend: {
+      // Wider-screen breakpoint above the default 2xl=1536px so utilities like
+      // max-w-* and px-* can scale on 27"+ monitors. Defaults stop at 2xl.
+      screens: {
+        '3xl': '1920px',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

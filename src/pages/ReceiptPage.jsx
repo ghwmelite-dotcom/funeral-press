@@ -100,7 +100,7 @@ export default function ReceiptPage() {
       </div>
 
       {/* PREVIEW */}
-      <div className="print:hidden max-w-5xl mx-auto px-4 pb-12 space-y-8">
+      <div className="print:hidden max-w-7xl mx-auto px-4 pb-12 space-y-8">
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Preview</p>
         <Preview><Cover {...sharedProps} total={totalReceipts} start={startNum} /></Preview>
         <Preview><Receipt no={receiptNumbers[0]} {...sharedProps} /></Preview>

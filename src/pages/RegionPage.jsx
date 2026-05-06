@@ -117,7 +117,7 @@ export default function RegionPage() {
       />
 
       {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="max-w-5xl mx-auto px-4 pt-6">
+      <nav aria-label="Breadcrumb" className="max-w-7xl mx-auto px-4 pt-6">
         <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <li><Link to="/" className="hover:text-foreground transition-colors">Home</Link></li>
           <li><ChevronRight className="w-3.5 h-3.5" /></li>
@@ -128,7 +128,7 @@ export default function RegionPage() {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-5xl mx-auto px-4 pt-10 pb-12 text-center">
+      <section className="max-w-7xl mx-auto px-4 pt-10 pb-12 text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-sm font-medium px-4 py-1.5 rounded-full mb-6">
           <MapPin className="w-4 h-4" />
           {region.capital}, Ghana
@@ -171,7 +171,7 @@ export default function RegionPage() {
       </section>
 
       {/* Services Section */}
-      <section className="max-w-5xl mx-auto px-4 pb-16">
+      <section className="max-w-7xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">
           What FuneralPress Offers in {region.name}
         </h2>
@@ -195,7 +195,7 @@ export default function RegionPage() {
       </section>
 
       {/* Venue Directory */}
-      <section className="max-w-5xl mx-auto px-4 pb-16">
+      <section className="max-w-7xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">
           Funeral Venues in {region.name}
         </h2>

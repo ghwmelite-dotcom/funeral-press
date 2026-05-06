@@ -9,7 +9,7 @@ export default function PartnerBanner({ partner }) {
 
   return (
     <div className="bg-card border-b border-primary/20">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
         {/* Partner logo */}
         {partner.logoUrl && (
           <img

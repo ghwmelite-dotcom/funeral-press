@@ -125,7 +125,7 @@ export default function HymnLibraryPage() {
         </Link>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-4 py-6 pb-24 sm:pb-6">
+      <div className="max-w-7xl mx-auto px-4 py-6 pb-24 sm:pb-6">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">

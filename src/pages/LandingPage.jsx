@@ -500,8 +500,8 @@ export default function LandingPage() {
       {/* Migration dialog (shown on first login with existing local designs) */}
       <MigrationDialog />
 
-      {/* Hero */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 pb-10 sm:pb-16">
+      {/* Hero — extra-wide so 27"+ monitors don't get vast empty gutters */}
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-16 sm:pt-20 pb-10 sm:pb-16">
         <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-12 mb-12 lg:mb-20">
           {/* Left: text content */}
           <div className="flex-1 text-center lg:text-left">
@@ -1741,7 +1741,7 @@ export default function LandingPage() {
 
       {/* Funeral Planning Guides */}
       <div className="py-20 px-4 sm:px-6 bg-primary/5 border-y border-primary/20">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wide uppercase mb-4">
               <BookOpen size={14} />

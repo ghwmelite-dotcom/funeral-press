@@ -118,7 +118,7 @@ export default function PosterMakerPage() {
       />
 
       {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="max-w-5xl mx-auto px-4 pt-6">
+      <nav aria-label="Breadcrumb" className="max-w-7xl mx-auto px-4 pt-6">
         <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <li><Link to="/" className="hover:text-foreground transition-colors">Home</Link></li>
           <li><ChevronRight className="w-3.5 h-3.5" /></li>
@@ -127,7 +127,7 @@ export default function PosterMakerPage() {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-5xl mx-auto px-4 pt-10 pb-16 text-center">
+      <section className="max-w-7xl mx-auto px-4 pt-10 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-sm font-medium px-4 py-1.5 rounded-full mb-6">
           <CheckCircle className="w-4 h-4" />
           Print-ready in minutes
@@ -157,7 +157,7 @@ export default function PosterMakerPage() {
       </section>
 
       {/* Features */}
-      <section className="max-w-5xl mx-auto px-4 pb-16">
+      <section className="max-w-7xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">Designed for Ghanaian Funerals</h2>
         <p className="text-muted-foreground text-center mb-10 max-w-2xl mx-auto">
           Every feature is built with Ghanaian funeral traditions in mind — from Adinkra symbol libraries to
@@ -180,7 +180,7 @@ export default function PosterMakerPage() {
       </section>
 
       {/* Template Preview */}
-      <section className="max-w-5xl mx-auto px-4 pb-16">
+      <section className="max-w-7xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">Professional Poster Templates</h2>
         <p className="text-muted-foreground text-center mb-8 max-w-2xl mx-auto">
           Each template is crafted by professional designers and optimised for A3 print and digital sharing.

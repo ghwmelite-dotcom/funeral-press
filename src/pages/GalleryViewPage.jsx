@@ -181,7 +181,7 @@ export default function GalleryViewPage() {
       </header>
 
       {/* Photo Grid - Masonry-style with CSS columns */}
-      <main className="max-w-6xl mx-auto px-4 py-10">
+      <main className="max-w-7xl mx-auto px-4 py-10">
         {photos.length === 0 ? (
           <div className="text-center py-20 text-[#a0a0a0] text-sm">
             <Camera size={40} className="mx-auto mb-3 opacity-30" />
