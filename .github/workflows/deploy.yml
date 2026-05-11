@@ -114,79 +114,19 @@ jobs:
           accountId: ea2eb3a9813660dfca2a60e594858538
           command: deploy --config workers/brochure-ai-writer-wrangler.toml
 
-  smoke:
-    # Post-deploy smoke check. Confirms the just-deployed code actually
-    # serves: each worker /health is 200 (proves the deploy landed AND the
-    # binding-graph is healthy), and bad-credential auth requests return the
-    # right error codes (proves the routes parse the body, hit D1, and don't
-    # 5xx on a malformed input).
-    #
-    # Runs only on push-to-main, after both deploy jobs succeed. Failure
-    # surfaces in the Actions tab AND the notify job below; it does NOT
-    # roll back the deploy (rollback is manual — see DEPLOY_AND_ROLLBACK.md).
-    name: Post-deploy smoke
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    needs: [deploy-frontend, deploy-workers]
-    timeout-minutes: 3
-    steps:
-      - name: Probe /health on each worker
-        shell: bash
-        run: |
-          set +e
-          declare -a TARGETS=(
-            "auth-api|https://auth-api.funeralpress.org/health"
-            "donation-api|https://donation-api.funeralpress.org/health"
-            "memorial-api|https://memorial-api.funeralpress.org/health"
-            "live-api|https://live-api.funeralpress.org/health"
-            "share-api|https://share-api.funeralpress.org/health"
-            "ai|https://ai.funeralpress.org/health"
-          )
-          FAIL=0
-          for T in "${TARGETS[@]}"; do
-            NAME="${T%%|*}"; URL="${T##*|}"
-            STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -m 10 "$URL" || echo 000)
-            if [ "$STATUS" = "200" ]; then
-              echo "✓ $NAME health 200"
-            else
-              echo "::error::$NAME /health returned $STATUS (expected 200) at $URL"
-              FAIL=1
-            fi
-          done
-          exit $FAIL
-
-      - name: Probe SPA root
-        shell: bash
-        run: |
-          STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -m 10 https://funeralpress.org/ || echo 000)
-          [ "$STATUS" = "200" ] || { echo "::error::SPA returned $STATUS (expected 200)"; exit 1; }
-          echo "✓ SPA 200"
-
-      - name: Probe auth contract (bad creds → 401)
-        shell: bash
-        run: |
-          # POST a deliberately wrong phone+PIN. Worker should respond 401
-          # with a JSON body — proves the route is wired, the handler runs,
-          # rate limiting hasn't blocked the test IP, and D1 lookups work.
-          RES=$(curl -sS -m 10 -o /tmp/body.json -w "%{http_code}" \
-            -X POST 'https://auth-api.funeralpress.org/auth/phone/login' \
-            -H 'Content-Type: application/json' \
-            -d '{"phone":"+233200000000","pin":"0000"}' || echo 000)
-          if [ "$RES" != "401" ] && [ "$RES" != "429" ]; then
-            echo "::error::login bad-creds returned $RES (expected 401 or 429)"
-            head -c 200 /tmp/body.json
-            exit 1
-          fi
-          echo "✓ login bad-creds → $RES"
-
   notify-deploy:
     # One-shot Slack message summarising the outcome of every push-to-main
     # deploy. Fires regardless of success/failure so the channel sees the
     # full deploy stream. No-op when SLACK_WEBHOOK_URL repo secret is unset.
+    #
+    # Post-deploy smoke probes are NOT done here — Cloudflare's Free-plan
+    # edge rejects GitHub Actions runner IPs with 403 (see
+    # docs/runbook/DEPLOY_AND_ROLLBACK.md § 10.3). Synthetic monitoring
+    # lives in UptimeRobot instead.
     name: Notify deploy outcome
     if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    needs: [deploy-frontend, deploy-workers, smoke]
+    needs: [deploy-frontend, deploy-workers]
     steps:
       - name: Compose + send Slack message
         if: env.SLACK_WEBHOOK_URL != ''
@@ -194,21 +134,15 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           FRONTEND_RESULT: ${{ needs.deploy-frontend.result }}
           WORKERS_RESULT: ${{ needs.deploy-workers.result }}
-          SMOKE_RESULT: ${{ needs.smoke.result }}
           COMMIT_SHA: ${{ github.sha }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           ACTOR: ${{ github.actor }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         shell: bash
         run: |
-          # Emoji per overall outcome. Smoke "skipped" can mean a deploy job
-          # failed and smoke never ran — treat skipped as not-success.
-          if [ "$FRONTEND_RESULT" = "success" ] && [ "$WORKERS_RESULT" = "success" ] && [ "$SMOKE_RESULT" = "success" ]; then
+          if [ "$FRONTEND_RESULT" = "success" ] && [ "$WORKERS_RESULT" = "success" ]; then
             ICON=":white_check_mark:"
             OUTCOME="success"
-          elif [ "$SMOKE_RESULT" = "failure" ]; then
-            ICON=":warning:"
-            OUTCOME="deployed, smoke FAILED"
           else
             ICON=":x:"
             OUTCOME="deploy FAILED"
