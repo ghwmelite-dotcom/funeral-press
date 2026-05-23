@@ -34,9 +34,11 @@ const DB_NAME = 'funeralpress-db'
 // scope for the e2e harness.
 //
 // Instead, e2e/schema-e2e.sql declares just enough schema for the auth
-// flow. See its header for the drift-risk tradeoff.
+// flow. See its header for the drift-risk tradeoff. schema-donation.sql adds
+// the donation-rail tables + fixtures for the webhook integration spec.
 const SCHEMA_FILES = [
   'e2e/schema-e2e.sql',
+  'e2e/schema-donation.sql',
 ]
 
 function log(msg) {
