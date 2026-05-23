@@ -128,6 +128,28 @@ cd workers
 npx wrangler deploy --config auth-api-wrangler.toml
 ```
 
+### End-to-end tests (Playwright)
+
+```bash
+# First time only — install browser binaries
+npm run test:e2e:install
+
+# Default: auto-boots wrangler dev (auth-api) + vite dev against a fresh
+# local D1. No other servers needed.
+npm run test:e2e
+
+# Run against a Pages preview URL, staging, or any other deployment
+# (skips the local-stack auto-boot)
+E2E_BASE_URL=https://your-preview.pages.dev npm run test:e2e
+
+# Interactive UI mode for debugging
+npm run test:e2e:ui
+```
+
+E2E lives in `e2e/`. There is **no GitHub Actions e2e workflow** — CF Free
+edge blocks GHA runner IPs. See `docs/e2e-ci.md` for the constraint and
+future-CI paths.
+
 ---
 
 ## Environment
