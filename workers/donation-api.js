@@ -1038,7 +1038,8 @@ const handler = {
             last_donation_at: row.last_donation_at,
             wall_mode: row.wall_mode,
           }
-          await env.MEMORIAL_PAGES_KV.put(cacheKey, JSON.stringify(out), { expirationTtl: 30 })
+          // KV enforces a 60s minimum expirationTtl; 30 is rejected with a 400.
+          await env.MEMORIAL_PAGES_KV.put(cacheKey, JSON.stringify(out), { expirationTtl: 60 })
           return json(out, 200, request)
         }
 
@@ -1106,7 +1107,8 @@ const handler = {
             donations,
             next_cursor: nextCursor,
           }
-          await env.MEMORIAL_PAGES_KV.put(cacheKey, JSON.stringify(out), { expirationTtl: 30 })
+          // KV enforces a 60s minimum expirationTtl; 30 is rejected with a 400.
+          await env.MEMORIAL_PAGES_KV.put(cacheKey, JSON.stringify(out), { expirationTtl: 60 })
           return json(out, 200, request)
         }
 

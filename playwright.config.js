@@ -8,8 +8,10 @@ const baseURL = process.env.E2E_BASE_URL || 'http://localhost:5173'
 const useLocalStack = !process.env.E2E_BASE_URL
 
 const LOCAL_WORKER_URL = 'http://localhost:8787'
+const LOCAL_DONATION_API_URL = 'http://localhost:8788'
 const LOCAL_FRONTEND_URL = 'http://localhost:5173'
 const TEST_JWT_SECRET = 'e2e-test-jwt-secret-do-not-use-in-prod'
+const TEST_PAYSTACK_WEBHOOK_SECRET = 'e2e-paystack-webhook-secret-do-not-use-in-prod'
 
 export default defineConfig({
   testDir: './e2e',
@@ -54,6 +56,30 @@ export default defineConfig({
             '--var CORS_ORIGIN:' + LOCAL_FRONTEND_URL,
           ].join(' '),
           url: LOCAL_WORKER_URL + '/health',
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+          stdout: 'pipe',
+          stderr: 'pipe',
+        },
+        {
+          // Local donation-api worker. Shares the same --persist-to D1 as
+          // auth-api so seeded memorials/donations are visible. The test
+          // PAYSTACK_WEBHOOK_SECRET lets the spec forge valid HMAC-SHA512
+          // webhook signatures.
+          command: [
+            'npx wrangler dev',
+            '--config workers/donation-api-wrangler.toml',
+            '--port 8788',
+            '--ip 127.0.0.1',
+            '--persist-to .wrangler/e2e',
+            '--var PAYSTACK_WEBHOOK_SECRET:' + TEST_PAYSTACK_WEBHOOK_SECRET,
+            '--var JWT_SECRET:' + TEST_JWT_SECRET,
+            '--var ENVIRONMENT:dev',
+            // Read endpoints (wall/totals/charge) are gated behind this flag;
+            // the toml defaults it to "false". The webhook path is exempt.
+            '--var DONATIONS_ENABLED:true',
+          ].join(' '),
+          url: LOCAL_DONATION_API_URL + '/health',
           reuseExistingServer: !process.env.CI,
           timeout: 120_000,
           stdout: 'pipe',
