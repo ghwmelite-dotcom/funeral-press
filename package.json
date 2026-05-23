@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "deploy": "vite build && wrangler pages deploy dist",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "node e2e/seed-local-d1.mjs && playwright test",
+    "test:e2e:ui": "node e2e/seed-local-d1.mjs && playwright test --ui",
+    "test:e2e:install": "playwright install --with-deps"
   },
   "dependencies": {
     "@imgly/background-removal": "^1.7.0",
