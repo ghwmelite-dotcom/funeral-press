@@ -70,7 +70,17 @@ function makeEnv({ memorial = approvedMemorial(), donations = [], kvSeed = {} } 
     DB: makeMockDb({ memorial, donations }),
     MEMORIAL_PAGES_KV: {
       get: async (k) => kvMap.get(k) || null,
-      put: async (k, v) => kvMap.set(k, v),
+      put: async (k, v, opts) => {
+        // Real Cloudflare KV rejects expirationTtl < 60 with a 400. Mirror
+        // that so a sub-minimum TTL surfaces here instead of 500-ing in prod
+        // (regression guard for the donor-wall/totals cache writes).
+        if (opts?.expirationTtl != null && opts.expirationTtl < 60) {
+          throw new Error(
+            `KV PUT failed: 400 Invalid expiration_ttl of ${opts.expirationTtl}. Expiration TTL must be at least 60.`
+          )
+        }
+        kvMap.set(k, v)
+      },
     },
     RATE_LIMITS: { get: async () => null, put: async () => undefined },
     OTP_KV: { get: async () => null, put: async () => undefined },
@@ -112,6 +122,14 @@ describe('GET /memorials/:id/donation/totals', () => {
     const env = makeEnv({ memorial: approvedMemorial() })
     await worker.fetch(getReq('totals'), env)
     expect(env._kv.has(`wall:totals:${MEMORIAL_ID}`)).toBe(true)
+  })
+
+  it('caches totals with a KV-legal TTL (>= 60s), not 500', async () => {
+    // Regression: a sub-60s expirationTtl is rejected by real KV with a 400,
+    // which bubbled to a 500 on every cache-miss for the donor wall/totals.
+    const env = makeEnv({ memorial: approvedMemorial() })
+    const res = await worker.fetch(getReq('totals'), env)
+    expect(res.status).toBe(200)
   })
 
   it('serves from KV cache on second request', async () => {
