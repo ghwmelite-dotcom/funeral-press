@@ -49,6 +49,15 @@ describe('hashPin / verifyPin (PBKDF2-SHA256)', () => {
     expect(Number(parts[1])).toBeGreaterThanOrEqual(100000) // sanity floor
   })
 
+  it('keeps the default iteration count within the Cloudflare Workers PBKDF2 cap', async () => {
+    // Workers' WebCrypto throws "iteration counts above 100000 are not
+    // supported", which breaks signup AND login in production. Node does NOT
+    // enforce this cap, so without this guard a bump above 100000 passes the
+    // suite but throws in prod. Pin the default at the runtime ceiling.
+    const hash = await hashPin('1234')
+    expect(Number(hash.split('$')[1])).toBeLessThanOrEqual(100000)
+  })
+
   it('uses a different salt every call (so two hashes of the same PIN differ)', async () => {
     const a = await hashPin('1234')
     const b = await hashPin('1234')
