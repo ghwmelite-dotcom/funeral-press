@@ -3,7 +3,7 @@
 // Chromium to each content route, capture the fully-rendered HTML (content +
 // Helmet meta + JSON-LD), and write it to dist/<route>/index.html so non-JS
 // crawlers (AI engines, social scrapers) see real content.
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -15,10 +15,23 @@ import { collectPrerenderRoutes } from '../vite-plugins/prerender-routes.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 const DIST = join(ROOT, 'dist')
+// Offset from vite's default preview port (4173) so a running dev/preview
+// server doesn't collide with the prerender's --strictPort bind.
 const PORT = 4183
 const BASE = `http://127.0.0.1:${PORT}`
 
 function log(m) { process.stdout.write(`[prerender] ${m}\n`) }
+
+// On Windows, `spawn(..., { shell: true })` creates cmd.exe → npx → node(vite).
+// `child.kill()` only ends cmd.exe and can orphan vite, leaving PORT held so the
+// next run fails --strictPort. taskkill /T kills the whole tree.
+function killPreview(child) {
+  if (process.platform === 'win32' && child.pid) {
+    spawnSync('taskkill', ['/pid', String(child.pid), '/f', '/t'], { stdio: 'ignore' })
+  } else {
+    child.kill()
+  }
+}
 
 async function waitForServer(url, timeoutMs = 30000) {
   const deadline = Date.now() + timeoutMs
@@ -41,6 +54,8 @@ async function renderRoute(page, route) {
   await page.goto(BASE + route, { waitUntil: 'networkidle0', timeout: 45000 })
   await page.waitForFunction(
     () => {
+      // Heuristic: a real content page renders well over 150 visible chars,
+      // so this fires only after React has mounted the route's content.
       const r = document.getElementById('root')
       return r && r.innerText.trim().length > 150
     },
@@ -60,7 +75,7 @@ async function main() {
   )
 
   const browser = await puppeteer.launch({
-    headless: 'new',
+    headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   })
 
@@ -87,7 +102,7 @@ async function main() {
     }
   } finally {
     await browser.close()
-    preview.kill()
+    killPreview(preview)
   }
 
   if (failures.length) {
