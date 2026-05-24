@@ -489,9 +489,31 @@ export default function LandingPage() {
       {/* ═══ Hero — cinematic obsidian + gold brand moment (fixed dark) ═══ */}
       <section className="relative overflow-hidden" style={{ backgroundColor: '#08080C' }}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-          <div className="absolute rounded-full motion-safe:animate-glow-breathe" style={{ width: 680, height: 680, top: -240, right: -160, background: 'radial-gradient(circle, rgba(232,199,102,0.20), transparent 60%)', filter: 'blur(90px)' }} />
-          <div className="absolute rounded-full" style={{ width: 520, height: 520, bottom: -240, left: -180, background: 'radial-gradient(circle, rgba(120,90,200,0.12), transparent 60%)', filter: 'blur(90px)' }} />
+          {/* Top spotlight */}
+          <div className="absolute inset-x-0 top-0 h-[480px]" style={{ background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(232,199,102,0.12), transparent 70%)' }} />
+          {/* Drifting gold aurora */}
+          <div className="absolute rounded-full animate-aurora-drift" style={{ width: 720, height: 720, top: -260, right: -180, background: 'radial-gradient(circle, rgba(232,199,102,0.22), transparent 60%)', filter: 'blur(90px)' }} />
+          <div className="absolute rounded-full animate-aurora-drift" style={{ width: 560, height: 560, bottom: -260, left: -200, background: 'radial-gradient(circle, rgba(196,140,60,0.14), transparent 60%)', filter: 'blur(90px)', animationDelay: '5s' }} />
+          {/* Faint lattice motif */}
+          <div className="absolute inset-0" style={{ opacity: 0.04, backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M22 0L44 22L22 44L0 22z' fill='none' stroke='%23E8C766' stroke-width='1'/%3E%3C/svg%3E\")", backgroundSize: '44px 44px' }} />
+          {/* Shimmer sweep */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-y-0 w-1/3 animate-shimmer-sweep" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.045), transparent)' }} />
+          </div>
+          {/* Grain */}
           <div className="absolute inset-0" style={{ opacity: 0.5, mixBlendMode: 'overlay', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E\")" }} />
+          {/* Twinkling gold accents */}
+          {[
+            { top: '18%', left: '12%', s: 3, d: '0s' },
+            { top: '32%', left: '46%', s: 2, d: '1.2s' },
+            { top: '24%', left: '72%', s: 2.5, d: '2s' },
+            { top: '62%', left: '24%', s: 2, d: '0.6s' },
+            { top: '70%', left: '60%', s: 3, d: '1.6s' },
+            { top: '14%', left: '88%', s: 2, d: '2.4s' },
+          ].map((p, i) => (
+            <span key={i} className="absolute rounded-full animate-twinkle" style={{ top: p.top, left: p.left, width: p.s, height: p.s, background: '#F6E2A0', boxShadow: '0 0 8px 1px rgba(246,226,160,0.8)', animationDelay: p.d }} />
+          ))}
+          {/* Bottom fade */}
           <div className="absolute inset-x-0 bottom-0 h-32" style={{ background: 'linear-gradient(to bottom, transparent, #08080C)' }} />
         </div>
 
@@ -505,17 +527,18 @@ export default function LandingPage() {
               </div>
 
               <h1
-                className="text-4xl sm:text-5xl md:text-6xl font-semibold mb-5 leading-[1.05] tracking-tight"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F4EFE4' }}
+                className="text-5xl sm:text-6xl md:text-7xl font-semibold mb-6 leading-[1.02] tracking-tight"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F4EFE4', textShadow: '0 1px 30px rgba(0,0,0,0.5)' }}
               >
                 Create Beautiful Memorial<br className="hidden sm:block" />
                 <span className="relative inline-block overflow-hidden h-[1.2em] align-bottom">
                   {HERO_PRODUCTS.map((p, i) => (
                     <span
                       key={p.label}
-                      className="absolute left-0 whitespace-nowrap"
+                      className="absolute left-0 whitespace-nowrap animate-shimmer"
                       style={{
-                        background: 'linear-gradient(135deg, #F6E2A0 0%, #E8C766 45%, #C9A24B 100%)',
+                        background: 'linear-gradient(110deg, #C9A24B 0%, #E8C766 28%, #FFF4D6 50%, #E8C766 72%, #C9A24B 100%)',
+                        backgroundSize: '200% auto',
                         WebkitBackgroundClip: 'text',
                         backgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
@@ -607,8 +630,8 @@ export default function LandingPage() {
             </div>
 
             {/* Right: rotating mockup showcase */}
-            <div className="flex-shrink-0 w-full max-w-[280px] lg:max-w-[300px] relative" style={{ minHeight: 380 }}>
-              <div aria-hidden="true" className="absolute -inset-10 rounded-[32px]" style={{ background: 'radial-gradient(circle at 50% 42%, rgba(232,199,102,0.18), transparent 62%)', filter: 'blur(22px)', zIndex: 0 }} />
+            <div className="flex-shrink-0 w-full max-w-[280px] lg:max-w-[300px] relative animate-float-bob" style={{ minHeight: 380 }}>
+              <div aria-hidden="true" className="absolute -inset-12 rounded-[36px] animate-glow-breathe" style={{ background: 'radial-gradient(circle at 50% 42%, rgba(232,199,102,0.22), transparent 62%)', filter: 'blur(24px)', zIndex: 0 }} />
               {HERO_PRODUCTS.map((p, i) => (
                 <div
                   key={p.mockup}
@@ -629,6 +652,15 @@ export default function LandingPage() {
                   </div>
                 </div>
               ))}
+              {/* Floating glass feature tags */}
+              <div className="absolute z-20 -left-6 top-[12%] hidden sm:flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium backdrop-blur-md" style={{ background: 'rgba(20,20,28,0.72)', border: '1px solid rgba(232,199,102,0.34)', color: '#F4EFE4', boxShadow: '0 14px 30px rgba(0,0,0,0.5)' }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#E8C766', boxShadow: '0 0 8px #E8C766' }} />
+                Print-ready PDF
+              </div>
+              <div className="absolute z-20 -right-5 bottom-[14%] hidden sm:flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium backdrop-blur-md" style={{ background: 'rgba(20,20,28,0.72)', border: '1px solid rgba(232,199,102,0.34)', color: '#F4EFE4', boxShadow: '0 14px 30px rgba(0,0,0,0.5)' }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#E8C766', boxShadow: '0 0 8px #E8C766' }} />
+                40+ elegant themes
+              </div>
             </div>
           </div>
         </div>
@@ -1809,12 +1841,30 @@ export default function LandingPage() {
       {/* ═══ Closing CTA — bookends the cinematic hero ═══ */}
       <section className="relative overflow-hidden" style={{ backgroundColor: '#08080C' }}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-          <div className="absolute rounded-full" style={{ width: 560, height: 560, top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'radial-gradient(circle, rgba(232,199,102,0.16), transparent 60%)', filter: 'blur(90px)' }} />
-          <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(232,199,102,0.3), transparent)' }} />
+          <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(232,199,102,0.4), transparent)' }} />
+          <div className="absolute rounded-full animate-glow-breathe" style={{ width: 640, height: 640, top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'radial-gradient(circle, rgba(232,199,102,0.18), transparent 60%)', filter: 'blur(90px)' }} />
+          <div className="absolute inset-0" style={{ opacity: 0.04, backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M22 0L44 22L22 44L0 22z' fill='none' stroke='%23E8C766' stroke-width='1'/%3E%3C/svg%3E\")", backgroundSize: '44px 44px' }} />
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-y-0 w-1/3 animate-shimmer-sweep" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)' }} />
+          </div>
+          {[
+            { top: '24%', left: '18%', d: '0s' },
+            { top: '36%', left: '80%', d: '1.4s' },
+            { top: '68%', left: '30%', d: '0.8s' },
+            { top: '60%', left: '72%', d: '2.1s' },
+          ].map((p, i) => (
+            <span key={i} className="absolute rounded-full animate-twinkle" style={{ top: p.top, left: p.left, width: 2.5, height: 2.5, background: '#F6E2A0', boxShadow: '0 0 8px 1px rgba(246,226,160,0.8)', animationDelay: p.d }} />
+          ))}
         </div>
-        <div className="relative max-w-3xl mx-auto px-6 py-20 sm:py-24 text-center">
-          <div className="text-3xl mb-5" style={{ color: '#E8C766' }}>&#10013;</div>
-          <h2 className="text-3xl sm:text-5xl font-semibold mb-5 leading-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F4EFE4' }}>
+        <div className="relative max-w-3xl mx-auto px-6 py-24 sm:py-28 text-center">
+          <div className="flex items-center justify-center gap-3 mb-7">
+            <span className="h-px w-12" style={{ background: 'linear-gradient(90deg, transparent, #C9A24B)' }} />
+            <span className="text-sm" style={{ color: '#C9A24B' }}>&#9670;</span>
+            <span className="text-3xl" style={{ color: '#E8C766', textShadow: '0 0 24px rgba(232,199,102,0.5)' }}>&#10013;</span>
+            <span className="text-sm" style={{ color: '#C9A24B' }}>&#9670;</span>
+            <span className="h-px w-12" style={{ background: 'linear-gradient(90deg, #C9A24B, transparent)' }} />
+          </div>
+          <h2 className="text-4xl sm:text-6xl font-semibold mb-6 leading-[1.05]" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F4EFE4', textShadow: '0 1px 30px rgba(0,0,0,0.5)' }}>
             A farewell worthy of the<br className="hidden sm:block" /> ones we love
           </h2>
           <p className="text-lg mb-9 font-light max-w-xl mx-auto" style={{ color: '#9C968B' }}>
