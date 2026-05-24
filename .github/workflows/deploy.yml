@@ -43,6 +43,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # .puppeteerrc.cjs sets skipDownload, so fetch Chrome-for-Testing here.
+      # The build's prerender step (scripts/prerender.mjs) drives it headless.
+      - run: npx puppeteer browsers install chrome
       - run: npm run build
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
