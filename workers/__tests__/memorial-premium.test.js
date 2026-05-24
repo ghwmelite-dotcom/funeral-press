@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import worker from '../auth-api.js'
 import { signJWT } from '../utils/jwt.js'
 
