@@ -242,6 +242,45 @@ describe('POST /memorial/:id/tributes (initialize)', () => {
     )
     expect(env.DB._state.tributes[0].message).toHaveLength(80)
   })
+
+  it('inserts correct amount for tribute type (5000 pesewas, maxMessage 500)', async () => {
+    const env = makeEnv({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ status: true, data: { authorization_url: 'https://checkout.paystack.com/trib' } }), { status: 200 })
+    )
+    const res = await worker.fetch(
+      publicReq('/memorial/mem1/tributes', 'POST', {
+        type: 'tribute',
+        authorName: 'Kofi',
+        email: 'kofi@example.com',
+        message: 'A'.repeat(600), // should be clamped to 500
+      }),
+      env
+    )
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.authorization_url).toBe('https://checkout.paystack.com/trib')
+    expect(env.DB._state.tributes).toHaveLength(1)
+    expect(env.DB._state.tributes[0].amount_pesewas).toBe(5000)
+    expect(env.DB._state.tributes[0].message).toHaveLength(500)
+  })
+
+  it('does NOT insert a row when Paystack returns a failure', async () => {
+    const env = makeEnv({})
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ status: false, message: 'Invalid key' }), { status: 400 })
+    )
+    const res = await worker.fetch(
+      publicReq('/memorial/mem1/tributes', 'POST', {
+        type: 'candle',
+        authorName: 'Kwame',
+        email: 'kwame@example.com',
+      }),
+      env
+    )
+    expect(res.status).toBe(502)
+    expect(env.DB._state.tributes).toHaveLength(0)
+  })
 })
 
 // ─── Webhook fp-candle- branch ────────────────────────────────────────────────
@@ -272,6 +311,65 @@ describe('POST /payments/webhook (fp-candle- branch)', () => {
     })
     const res = await worker.fetch(await webhookReq('fp-candle-ref1', 500), env) // wrong amount
     expect(res.status).toBe(200)
+    expect(env.DB._state.tributes[0].status).toBe('pending')
+  })
+})
+
+// ─── GET /tribute/:ref/verify — handleTributeVerify ──────────────────────────
+
+describe('GET /tribute/:ref/verify (handleTributeVerify)', () => {
+  it('happy path — pending tribute, Paystack returns success with matching amount → paid:true', async () => {
+    const env = makeEnv({
+      tributes: [{ id: 't1', memorial_id: 'mem1', type: 'candle', author_name: 'Kwame', message: '', amount_pesewas: 1000, paystack_reference: 'fp-candle-ref1', status: 'pending', created_at: Date.now(), paid_at: null }],
+    })
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ status: true, data: { status: 'success', amount: 1000 } }), { status: 200 })
+    )
+    const res = await worker.fetch(publicReq('/tribute/fp-candle-ref1/verify'), env)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ paid: true })
+    expect(env.DB._state.tributes[0].status).toBe('paid')
+    expect(env.DB._state.tributes[0].paid_at).toMatch(/^\d{4}-\d{2}-\d{2}T/) // ISO string
+  })
+
+  it('already-paid — idempotent, returns paid:true with no second write', async () => {
+    const existingPaidAt = new Date().toISOString()
+    const env = makeEnv({
+      tributes: [{ id: 't1', memorial_id: 'mem1', type: 'candle', author_name: 'Kwame', message: '', amount_pesewas: 1000, paystack_reference: 'fp-candle-ref1', status: 'paid', created_at: Date.now(), paid_at: existingPaidAt }],
+    })
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const res = await worker.fetch(publicReq('/tribute/fp-candle-ref1/verify'), env)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ paid: true })
+    // Paystack should not be called for an already-paid tribute
+    expect(fetchSpy).not.toHaveBeenCalled()
+    // paid_at unchanged
+    expect(env.DB._state.tributes[0].paid_at).toBe(existingPaidAt)
+  })
+
+  it('Paystack returns non-success → row stays pending, response paid:false', async () => {
+    const env = makeEnv({
+      tributes: [{ id: 't1', memorial_id: 'mem1', type: 'candle', author_name: 'Kwame', message: '', amount_pesewas: 1000, paystack_reference: 'fp-candle-ref1', status: 'pending', created_at: Date.now(), paid_at: null }],
+    })
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ status: true, data: { status: 'abandoned', amount: 1000 } }), { status: 200 })
+    )
+    const res = await worker.fetch(publicReq('/tribute/fp-candle-ref1/verify'), env)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ paid: false })
+    expect(env.DB._state.tributes[0].status).toBe('pending')
+  })
+
+  it('Paystack returns success but amount mismatch → row stays pending, response paid:false', async () => {
+    const env = makeEnv({
+      tributes: [{ id: 't1', memorial_id: 'mem1', type: 'candle', author_name: 'Kwame', message: '', amount_pesewas: 1000, paystack_reference: 'fp-candle-ref1', status: 'pending', created_at: Date.now(), paid_at: null }],
+    })
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ status: true, data: { status: 'success', amount: 500 } }), { status: 200 })
+    )
+    const res = await worker.fetch(publicReq('/tribute/fp-candle-ref1/verify'), env)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ paid: false })
     expect(env.DB._state.tributes[0].status).toBe('pending')
   })
 })

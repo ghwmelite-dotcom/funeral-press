@@ -1077,10 +1077,6 @@ async function handleTributeInitialize(request, env, memorialId) {
 
   const id = generateId()
   const reference = `fp-candle-${generateId()}`
-  await env.DB.prepare(
-    `INSERT INTO memorial_tributes (id, memorial_id, type, author_name, message, amount_pesewas, paystack_reference, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
-  ).bind(id, memorialId, type, authorName, message, product.pesewas, reference, Date.now()).run()
 
   const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
     method: 'POST',
@@ -1099,6 +1095,11 @@ async function handleTributeInitialize(request, env, memorialId) {
   if (!psData.status || !psData.data?.authorization_url) {
     return error('Payment initialization failed', 502, request)
   }
+
+  await env.DB.prepare(
+    `INSERT INTO memorial_tributes (id, memorial_id, type, author_name, message, amount_pesewas, paystack_reference, status, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
+  ).bind(id, memorialId, type, authorName, message, product.pesewas, reference, Date.now()).run()
 
   return json({ authorization_url: psData.data.authorization_url, reference }, 200, request)
 }
@@ -1122,7 +1123,7 @@ async function handleTributeVerify(request, env, reference) {
 
   await env.DB.prepare(
     "UPDATE memorial_tributes SET status='paid', paid_at=? WHERE id=? AND status='pending'"
-  ).bind(Date.now(), row.id).run()
+  ).bind(new Date().toISOString(), row.id).run()
   return json({ paid: true }, 200, request)
 }
 
@@ -1205,14 +1206,18 @@ async function handlePaymentWebhook(request, env) {
   // Digital candle/flower/tribute (fp-candle- prefix). Backstop for handleTributeVerify.
   if (reference.startsWith('fp-candle-')) {
     const tribute = await env.DB.prepare('SELECT * FROM memorial_tributes WHERE paystack_reference = ?').bind(reference).first()
-    if (!tribute || tribute.status === 'paid') return json({ ok: true }, 200, request)
+    if (!tribute) {
+      console.warn('[webhook] fp-candle- reference not found', { reference })
+      return json({ ok: true }, 200, request)
+    }
+    if (tribute.status === 'paid') return json({ ok: true }, 200, request)
     if (event.data.amount !== tribute.amount_pesewas) {
       console.error('[webhook] fp-candle- amount mismatch', { reference, expected: tribute.amount_pesewas, got: event.data.amount })
       return json({ ok: true }, 200, request)
     }
     await env.DB.prepare(
       "UPDATE memorial_tributes SET status='paid', paid_at=? WHERE id=? AND status='pending'"
-    ).bind(Date.now(), tribute.id).run()
+    ).bind(new Date().toISOString(), tribute.id).run()
     return json({ ok: true }, 200, request)
   }
 

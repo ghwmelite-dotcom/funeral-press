@@ -8,6 +8,6 @@ CREATE TABLE memorial_tributes (
   paystack_reference TEXT NOT NULL UNIQUE,
   status             TEXT NOT NULL DEFAULT 'pending', -- pending | paid | hidden
   created_at         INTEGER NOT NULL,
-  paid_at            INTEGER
+  paid_at            TEXT
 );
 CREATE INDEX idx_tributes_memorial ON memorial_tributes(memorial_id, status, created_at);
