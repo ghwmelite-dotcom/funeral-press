@@ -221,6 +221,30 @@
 .animate-crossfade-in { animation: crossfade-in 0.6s ease-out; }
 .animate-crossfade-out { animation: crossfade-out 0.6s ease-out; }
 
+/* Premium hero / closing-band decorative motion */
+@keyframes float-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.85; }
+}
+@keyframes aurora-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(28px, -22px) scale(1.1); }
+}
+.animate-float-bob { animation: float-bob 6s ease-in-out infinite; }
+.animate-twinkle { animation: twinkle 4s ease-in-out infinite; }
+.animate-aurora-drift { animation: aurora-drift 16s ease-in-out infinite; }
+
+/* Accessibility: silence decorative motion when reduced motion is requested */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer, .animate-shimmer-sweep, .animate-glow-breathe, .animate-border-glow,
+  .animate-float-up, .animate-float-bob, .animate-twinkle, .animate-aurora-drift,
+  .animate-ken-burns { animation: none !important; }
+}
+
 /* Hide scrollbar utility */
 .scrollbar-hide {
   -ms-overflow-style: none;
