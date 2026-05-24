@@ -17,6 +17,7 @@ import InstallPrompt from './components/pwa/InstallPrompt'
 import RouteProgressBar from './components/pwa/RouteProgressBar'
 import PageTransition from './components/layout/PageTransition'
 import TelegramHelp from './components/layout/TelegramHelp'
+import SiteHeader from './components/layout/SiteHeader'
 
 const EditorPage = lazy(() => import('./pages/EditorPage'))
 const PreviewPage = lazy(() => import('./pages/PreviewPage'))
@@ -133,6 +134,7 @@ export default function App() {
           <Suspense fallback={null}>
             <EmailVerificationBanner />
           </Suspense>
+          <SiteHeader />
           <Suspense fallback={<RouteSkeleton />}>
             <PageTransition>
             <Routes>
