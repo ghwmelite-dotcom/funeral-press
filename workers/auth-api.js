@@ -910,6 +910,72 @@ async function handlePaymentVerify(request, env, userId) {
   return json({ verified: true, ...purchaseData }, 200, request)
 }
 
+// ─── Memorial Premium (one-time per-memorial unlock) ───────────────────────
+const PREMIUM_AMOUNT_PESEWAS = 15000 // GHS 150 one-time "Forever Tribute"
+
+async function markPremiumSucceeded(env, row) {
+  if (row.status === 'succeeded') return
+  await env.DB.prepare(
+    `UPDATE memorial_premium SET status = 'succeeded', succeeded_at = ? WHERE id = ? AND status = 'pending'`
+  ).bind(Date.now(), row.id).run()
+}
+
+// Public: is this memorial premium?
+async function handlePremiumStatus(request, env, memorialId) {
+  const row = await env.DB.prepare(
+    `SELECT tier FROM memorial_premium WHERE memorial_id = ? AND status = 'succeeded' LIMIT 1`
+  ).bind(memorialId).first()
+  return json({ premium: !!row, tier: row?.tier || null }, 200, request)
+}
+
+// Authed: create a pending entitlement + return Paystack inline params.
+async function handlePremiumInitialize(request, env, userId) {
+  if (!userId) return error('Sign in required', 401, request)
+  const { memorialId } = await request.json().catch(() => ({}))
+  if (!memorialId) return error('Missing memorialId', 400, request)
+
+  const existing = await env.DB.prepare(
+    `SELECT id FROM memorial_premium WHERE memorial_id = ? AND status = 'succeeded' LIMIT 1`
+  ).bind(memorialId).first()
+  if (existing) return error('Already premium', 409, request)
+
+  const user = await env.DB.prepare('SELECT id, email FROM users WHERE id = ?').bind(userId).first()
+  if (!user) return error('User not found', 404, request)
+
+  const reference = `fp-premium-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
+  await env.DB.prepare(
+    `INSERT INTO memorial_premium (id, memorial_id, tier, status, paystack_reference, amount_pesewas, currency, buyer_user_id, created_at)
+     VALUES (?, ?, 'tribute', 'pending', ?, ?, 'GHS', ?, ?)`
+  ).bind(generateId(), memorialId, reference, PREMIUM_AMOUNT_PESEWAS, userId, Date.now()).run()
+
+  return json({ reference, amount: PREMIUM_AMOUNT_PESEWAS, email: user.email, currency: 'GHS' }, 200, request)
+}
+
+// Authed: verify with Paystack after the inline popup succeeds.
+async function handlePremiumVerify(request, env, userId) {
+  if (!userId) return error('Sign in required', 401, request)
+  const { reference } = await request.json().catch(() => ({}))
+  if (!reference) return error('Missing reference', 400, request)
+
+  const row = await env.DB.prepare(
+    `SELECT * FROM memorial_premium WHERE paystack_reference = ? AND buyer_user_id = ?`
+  ).bind(reference, userId).first()
+  if (!row) return error('Not found', 404, request)
+  if (row.status === 'succeeded') return json({ verified: true, premium: true }, 200, request)
+
+  const psRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+    headers: { Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}` },
+  })
+  const psData = await psRes.json()
+  if (!psData.status || psData.data?.status !== 'success') {
+    await env.DB.prepare("UPDATE memorial_premium SET status = 'failed' WHERE id = ?").bind(row.id).run()
+    return error('Payment not successful', 400, request)
+  }
+  if (psData.data.amount !== row.amount_pesewas) return error('Amount mismatch', 400, request)
+  await markPremiumSucceeded(env, row)
+  return json({ verified: true, premium: true }, 200, request)
+}
+
 async function handlePaymentWebhook(request, env) {
   // Paystack webhook IP allowlist
   const PAYSTACK_IPS = ['52.31.139.75', '52.49.173.169', '52.214.14.220']
@@ -956,6 +1022,16 @@ async function handlePaymentWebhook(request, env) {
     if (!printOrder || printOrder.payment_status === 'success') return json({ ok: true }, 200, request)
     const now = new Date().toISOString()
     await env.DB.prepare("UPDATE print_orders SET payment_status = 'success', paid_at = ?, updated_at = ? WHERE id = ?").bind(now, now, printOrder.id).run()
+    return json({ ok: true }, 200, request)
+  }
+
+  // Memorial Premium unlock (fp-premium- prefix). Backstop for the client
+  // verify call — grants entitlement even if the buyer closes before verify.
+  if (reference.startsWith('fp-premium-')) {
+    const prem = await env.DB.prepare('SELECT * FROM memorial_premium WHERE paystack_reference = ?').bind(reference).first()
+    if (prem && prem.status !== 'succeeded' && event.data.amount === prem.amount_pesewas) {
+      await markPremiumSucceeded(env, prem)
+    }
     return json({ ok: true }, 200, request)
   }
 
@@ -2547,6 +2623,8 @@ const handler = {
       if (guestSignMatch) return await handleSignGuestBook(request, env, guestSignMatch[1])
       const obituaryMatch = method === 'GET' && path.match(/^\/obituary\/([^/]+)$/)
       if (obituaryMatch) return await handleGetObituary(request, env, obituaryMatch[1])
+      const premiumStatusMatch = method === 'GET' && path.match(/^\/memorial-premium\/([^/]+)$/)
+      if (premiumStatusMatch) return await handlePremiumStatus(request, env, premiumStatusMatch[1])
       const galleryMatch = method === 'GET' && path.match(/^\/gallery\/([^/]+)$/)
       if (galleryMatch) return await handleGetGallery(request, env, galleryMatch[1])
 
@@ -2692,6 +2770,8 @@ const handler = {
       if (method === 'POST' && path === '/partner/upload-logo') return await handlePartnerLogoUpload(request, env, userId)
       if (method === 'POST' && path === '/payments/initialize') return await handlePaymentInitialize(request, env, userId)
       if (method === 'POST' && path === '/payments/verify') return await handlePaymentVerify(request, env, userId)
+      if (method === 'POST' && path === '/memorial-premium/initialize') return await handlePremiumInitialize(request, env, userId)
+      if (method === 'POST' && path === '/memorial-premium/verify') return await handlePremiumVerify(request, env, userId)
       if (method === 'POST' && path === '/payments/unlock-design') return await handleUnlockDesign(request, env, userId)
       if (method === 'GET' && path === '/payments/status') return await handlePaymentStatus(request, env, userId)
       if (method === 'POST' && path === '/subscriptions/create') return await handleSubscriptionCreate(request, env, userId)
