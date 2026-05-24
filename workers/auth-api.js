@@ -2300,8 +2300,10 @@ async function handlePhoneLogin(request, env) {
        FROM users WHERE phone_e164 = ? AND deleted_at IS NULL LIMIT 1`
   ).bind(phone).first()
   // Always do a constant-time PIN compare (with a dummy hash if user is
-  // missing) to avoid timing-leak phone enumeration.
-  const dummyHash = 'pbkdf2$600000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  // missing) to avoid timing-leak phone enumeration. The iteration count here
+  // must match real hashes (100000) so the derivation actually runs — a higher
+  // count throws on Workers, short-circuiting the compare and leaking timing.
+  const dummyHash = 'pbkdf2$100000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
   const hashToCheck = user?.pin_hash || dummyHash
 
   if (user?.pin_lockout_until && user.pin_lockout_until > Date.now()) {

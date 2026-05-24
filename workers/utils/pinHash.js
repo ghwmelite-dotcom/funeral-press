@@ -1,9 +1,14 @@
 // PIN hashing for the phone+PIN auth flow.
 //
 // PBKDF2-SHA256 is used (not Argon2/scrypt) because Web Crypto exposes it
-// natively in Cloudflare Workers — no WASM bundle required. 600 000 iterations
-// is OWASP's current recommendation for PBKDF2-SHA256 (2023+) and runs in
-// ~150 ms on a Worker, well within the p99 budget for login.
+// natively in Cloudflare Workers — no WASM bundle required. The Workers runtime
+// caps PBKDF2 at 100 000 iterations (deriveBits throws "iteration counts above
+// 100000 are not supported" beyond that), so that is the ceiling here. OWASP
+// recommends more, but 100 000 is the maximum the runtime allows; brute-force
+// resistance for the 4-digit PIN comes primarily from the 5-attempt lockout in
+// handlePhoneLogin, not from iteration count. NOTE: Node's WebCrypto does NOT
+// enforce this cap, so a value above it passes the test suite but throws in
+// production — see the upper-bound guard in pinHash.test.js.
 //
 // Output format:    pbkdf2$<iter>$<salt_b64url>$<hash_b64url>
 //
@@ -16,7 +21,7 @@ const ALG = 'PBKDF2'
 const HASH = 'SHA-256'
 const KEY_LEN_BITS = 256
 const SALT_BYTES = 16
-const DEFAULT_ITERATIONS = 600000
+const DEFAULT_ITERATIONS = 100000 // Cloudflare Workers' PBKDF2 ceiling (see header)
 
 // 4-digit PIN to match MTN MoMo / Vodafone Cash UX in Ghana. Brute-force
 // resistance comes from the 5-attempt lockout, not from PIN entropy.
