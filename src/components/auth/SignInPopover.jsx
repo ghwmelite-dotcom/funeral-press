@@ -1,12 +1,14 @@
 import * as Popover from '@radix-ui/react-popover'
 import { SignInChooser } from './SignInChooser.jsx'
 
-export function SignInPopover() {
+export function SignInPopover({ onDark = false }) {
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
         <button
-          className="px-3 py-1.5 text-sm font-medium border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
+          className={onDark
+            ? "px-3 py-1.5 text-sm font-medium border border-white/30 text-white rounded-lg hover:bg-white/10 transition-colors"
+            : "px-3 py-1.5 text-sm font-medium border border-border text-foreground rounded-lg hover:bg-muted transition-colors"}
         >
           Sign in
         </button>
