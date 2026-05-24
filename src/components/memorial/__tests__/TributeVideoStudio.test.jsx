@@ -18,6 +18,7 @@ vi.mock('../../../utils/memorialApi', () => ({
 }))
 vi.mock('../../../utils/apiClient', () => ({
   apiUploadImage: (...args) => mockUpload(...args),
+  API_BASE: 'https://auth-api.test',
 }))
 
 import TributeVideoStudio from '../TributeVideoStudio.jsx'

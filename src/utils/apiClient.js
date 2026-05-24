@@ -1,6 +1,6 @@
 import { useAuthStore } from '../stores/authStore'
 
-const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
+export const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
 
 export async function apiFetch(path, options = {}) {
   const { auth = true, ...rest } = options

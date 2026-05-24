@@ -1,17 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
 import { Film, Loader2, Download, Share2, RefreshCw, ImagePlus, X } from 'lucide-react'
 import { createTributeVideo, getTributeVideoStatus } from '../../utils/memorialApi'
-import { apiUploadImage } from '../../utils/apiClient'
+import { apiUploadImage, API_BASE } from '../../utils/apiClient'
 import { useAuthStore } from '../../stores/authStore'
 import { useNotification } from '../ui/notification.jsx'
 
-// Royalty-free instrumental options. URLs resolve once the MP3s are uploaded to
-// R2 under soundtracks/; "No music" is the safe default so the feature works
-// before any tracks exist.
+// Royalty-free instrumental options, served from the auth API host (same place
+// R2 images are served) so Shotstack can fetch them. URLs resolve once the MP3s
+// are uploaded to R2 under soundtracks/; "No music" is the safe default so the
+// feature works before any tracks exist.
 const SOUNDTRACKS = [
   { label: 'No music', url: '' },
-  { label: 'Gentle Piano', url: 'https://funeralpress.org/images/soundtracks/gentle-piano.mp3' },
-  { label: 'Soft Strings', url: 'https://funeralpress.org/images/soundtracks/soft-strings.mp3' },
+  { label: 'Gentle Piano', url: `${API_BASE}/images/soundtracks/gentle-piano.mp3` },
+  { label: 'Soft Strings', url: `${API_BASE}/images/soundtracks/soft-strings.mp3` },
 ]
 
 const POLL_MS = 4000
