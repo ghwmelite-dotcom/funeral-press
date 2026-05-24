@@ -9,6 +9,7 @@ import { runD1Cleanup } from './utils/dbCleanup.js'
 import { hashPin, verifyPin, isValidPinFormat } from './utils/pinHash.js'
 import { generateAuthEmailToken, consumeAuthEmailToken } from './utils/authEmailToken.js'
 import { sendVerifyEmail, sendPinResetEmail, sendPinChangedEmail } from './utils/authEmails.js'
+import { buildTributeEdit } from './utils/shotstackEdit.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -908,6 +909,84 @@ async function handlePaymentVerify(request, env, userId) {
   notifyAdmin(env, 'payment', `Payment completed: GHS ${(order.amount_pesewas / 100).toFixed(2)}`, { email: user?.email || '', plan: order.plan, amount: `GHS ${(order.amount_pesewas / 100).toFixed(2)}`, reference: reference })
 
   return json({ verified: true, ...purchaseData }, 200, request)
+}
+
+// ─── AI Tribute Video (Shotstack, premium-gated) ───────────────────────────
+const shotstackBase = (env) => `https://api.shotstack.io/${env.SHOTSTACK_ENV || 'stage'}`
+
+async function aiTributeCaption(env, { name, notes }) {
+  try {
+    const r = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        { role: 'system', content: 'Write a single dignified, warm one-sentence tribute caption (max 90 characters) for a funeral memorial video. No quotes, no emojis, no hashtags.' },
+        { role: 'user', content: `Name: ${name || 'our beloved'}. Notes: ${(notes || '').slice(0, 500)}` },
+      ],
+      max_tokens: 60,
+    })
+    const text = String(r?.response || '').trim().replace(/^["']|["']$/g, '')
+    return text.slice(0, 100) || `In loving memory of ${name || 'our beloved'}.`
+  } catch {
+    return `In loving memory of ${name || 'our beloved'}.`
+  }
+}
+
+async function handleCreateTributeVideo(request, env, userId, memorialId) {
+  if (!userId) return error('Sign in required', 401, request)
+  const ent = await env.DB.prepare(
+    `SELECT id FROM memorial_premium WHERE memorial_id = ? AND status = 'succeeded' LIMIT 1`
+  ).bind(memorialId).first()
+  if (!ent) return error('Premium required', 403, request)
+
+  const body = await request.json().catch(() => ({}))
+  const { title, subtitle, notes, imageUrls = [], soundtrackUrl } = body
+  if (!Array.isArray(imageUrls) || imageUrls.length === 0) return error('At least one photo is required', 400, request)
+
+  const caption = await aiTributeCaption(env, { name: title, notes })
+  const edit = buildTributeEdit({ title, subtitle, caption, imageUrls, soundtrackUrl })
+
+  const res = await fetch(`${shotstackBase(env)}/render`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': env.SHOTSTACK_API_KEY || '' },
+    body: JSON.stringify(edit),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || !data?.response?.id) return error('Could not start video render', 502, request)
+
+  const id = generateId()
+  await env.DB.prepare(
+    `INSERT INTO tribute_videos (id, memorial_id, status, shotstack_id, caption, created_at)
+     VALUES (?, ?, 'rendering', ?, ?, ?)`
+  ).bind(id, memorialId, data.response.id, caption, Date.now()).run()
+
+  return json({ videoId: id, status: 'rendering' }, 200, request)
+}
+
+async function handleTributeVideoStatus(request, env, videoId) {
+  const row = await env.DB.prepare('SELECT * FROM tribute_videos WHERE id = ?').bind(videoId).first()
+  if (!row) return error('Not found', 404, request)
+  if (row.status === 'ready') return json({ status: 'ready', url: row.output_url }, 200, request)
+  if (row.status === 'failed') return json({ status: 'failed', error: row.error }, 200, request)
+
+  const res = await fetch(`${shotstackBase(env)}/render/${row.shotstack_id}`, {
+    headers: { 'x-api-key': env.SHOTSTACK_API_KEY || '' },
+  })
+  const data = await res.json().catch(() => ({}))
+  const st = data?.response?.status
+
+  if (st === 'done' && data.response.url) {
+    const mp4 = await fetch(data.response.url)
+    const key = `tribute-videos/${row.memorial_id}/${videoId}.mp4`
+    await env.IMAGES.put(key, mp4.body, { httpMetadata: { contentType: 'video/mp4' } })
+    const publicUrl = `https://funeralpress.org/images/${key}`
+    await env.DB.prepare("UPDATE tribute_videos SET status = 'ready', output_url = ?, ready_at = ? WHERE id = ?")
+      .bind(publicUrl, Date.now(), videoId).run()
+    return json({ status: 'ready', url: publicUrl }, 200, request)
+  }
+  if (st === 'failed') {
+    await env.DB.prepare("UPDATE tribute_videos SET status = 'failed', error = 'render failed' WHERE id = ?").bind(videoId).run()
+    return json({ status: 'failed' }, 200, request)
+  }
+  return json({ status: 'rendering' }, 200, request)
 }
 
 // ─── Memorial Premium (one-time per-memorial unlock) ───────────────────────
@@ -2625,6 +2704,8 @@ const handler = {
       if (obituaryMatch) return await handleGetObituary(request, env, obituaryMatch[1])
       const premiumStatusMatch = method === 'GET' && path.match(/^\/memorial-premium\/([^/]+)$/)
       if (premiumStatusMatch) return await handlePremiumStatus(request, env, premiumStatusMatch[1])
+      const tributeStatusMatch = method === 'GET' && path.match(/^\/tribute-video\/([^/]+)\/status$/)
+      if (tributeStatusMatch) return await handleTributeVideoStatus(request, env, tributeStatusMatch[1])
       const galleryMatch = method === 'GET' && path.match(/^\/gallery\/([^/]+)$/)
       if (galleryMatch) return await handleGetGallery(request, env, galleryMatch[1])
 
@@ -2772,6 +2853,8 @@ const handler = {
       if (method === 'POST' && path === '/payments/verify') return await handlePaymentVerify(request, env, userId)
       if (method === 'POST' && path === '/memorial-premium/initialize') return await handlePremiumInitialize(request, env, userId)
       if (method === 'POST' && path === '/memorial-premium/verify') return await handlePremiumVerify(request, env, userId)
+      const tributeCreateMatch = method === 'POST' && path.match(/^\/memorial-premium\/([^/]+)\/tribute-video$/)
+      if (tributeCreateMatch) return await handleCreateTributeVideo(request, env, userId, tributeCreateMatch[1])
       if (method === 'POST' && path === '/payments/unlock-design') return await handleUnlockDesign(request, env, userId)
       if (method === 'GET' && path === '/payments/status') return await handlePaymentStatus(request, env, userId)
       if (method === 'POST' && path === '/subscriptions/create') return await handleSubscriptionCreate(request, env, userId)

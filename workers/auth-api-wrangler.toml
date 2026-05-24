@@ -12,6 +12,7 @@ GOOGLE_CLIENT_ID = "820118502550-4cju49bcbn2btvr3d31k5cpgdefpv0j1.apps.googleuse
 CORS_ORIGIN = "https://funeralpress.org"
 PAYSTACK_PLAN_MONTHLY = "PLN_e0z9m03nuwd582x"
 PAYSTACK_PLAN_ANNUAL = "PLN_2ijmz43rukw84ql"
+SHOTSTACK_ENV = "stage"   # 'stage' = free sandbox (watermarked) · 'v1' = production
 
 [[d1_databases]]
 binding = "DB"
@@ -21,6 +22,10 @@ database_id = "eab2488e-18cd-4920-adf8-7db724facee5"
 [[r2_buckets]]
 binding = "IMAGES"
 bucket_name = "funeralpress-images"
+
+# Workers AI — tribute-video caption generation (@cf/meta/llama-3.1-8b-instruct)
+[ai]
+binding = "AI"
 
 [[kv_namespaces]]
 binding = "RATE_LIMITS"
@@ -36,6 +41,7 @@ id = "3cf6b47818c04ca8828461650478a6c1"
 # SENTRY_DSN                — Sentry workers DSN (project funeralpress-workers, EU)
 # ADMIN_SECRET              — header for legacy admin endpoints (X-Admin-Secret)
 # GOOGLE_CLIENT_ID          — set via [vars] above; not a secret
+# SHOTSTACK_API_KEY         — Shotstack render API key; use the sandbox key while SHOTSTACK_ENV='stage', the prod key for 'v1'
 
 [[routes]]
 pattern = "auth-api.funeralpress.org/*"
