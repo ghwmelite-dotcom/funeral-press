@@ -48,4 +48,17 @@ describe('memorialTiers drift guard', () => {
       expect(worker.tierHasFeature('free', 'allThemes')).toBe(false)
     })
   })
+
+  // Safe-fail fallbacks (the access-control-relevant branches).
+  describe('tierHasFeature — unknown inputs degrade safely', () => {
+    for (const mod of [['frontend', frontend], ['worker', worker]]) {
+      const [name, m] = mod
+      it(`${name}: unknown tier is denied (degrades to free)`, () => {
+        expect(m.tierHasFeature('gold', 'removeBranding')).toBe(false)
+      })
+      it(`${name}: unknown feature is never granted, even for heritage`, () => {
+        expect(m.tierHasFeature('heritage', 'nonExistentFeature')).toBe(false)
+      })
+    }
+  })
 })
