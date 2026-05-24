@@ -486,136 +486,156 @@ export default function LandingPage() {
       {/* Migration dialog (shown on first login with existing local designs) */}
       <MigrationDialog />
 
-      {/* Hero — extra-wide so 27"+ monitors don't get vast empty gutters */}
-      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-16 sm:pt-20 pb-10 sm:pb-16">
-        <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-12 mb-12 lg:mb-20">
-          {/* Left: text content */}
-          <div className="flex-1 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full mb-6">
-              <BookOpen size={14} className="text-primary" />
-              <span className="text-xs text-primary tracking-wide">FuneralPress</span>
-            </div>
+      {/* ═══ Hero — cinematic obsidian + gold brand moment (fixed dark) ═══ */}
+      <section className="relative overflow-hidden" style={{ backgroundColor: '#08080C' }}>
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <div className="absolute rounded-full motion-safe:animate-glow-breathe" style={{ width: 680, height: 680, top: -240, right: -160, background: 'radial-gradient(circle, rgba(232,199,102,0.20), transparent 60%)', filter: 'blur(90px)' }} />
+          <div className="absolute rounded-full" style={{ width: 520, height: 520, bottom: -240, left: -180, background: 'radial-gradient(circle, rgba(120,90,200,0.12), transparent 60%)', filter: 'blur(90px)' }} />
+          <div className="absolute inset-0" style={{ opacity: 0.5, mixBlendMode: 'overlay', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E\")" }} />
+          <div className="absolute inset-x-0 bottom-0 h-32" style={{ background: 'linear-gradient(to bottom, transparent, #08080C)' }} />
+        </div>
 
-            <h1
-              className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 leading-tight"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-            >
-              Create Beautiful Memorial<br className="hidden sm:block" />
-              <span className="relative inline-block overflow-hidden h-[1.2em] align-bottom">
+        <div className="relative max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-16 sm:pt-20 pb-20 sm:pb-28">
+          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-12">
+            {/* Left: text content */}
+            <div className="flex-1 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2.5 mb-7">
+                <span className="h-px w-7" style={{ background: 'linear-gradient(90deg, transparent, #E8C766)' }} />
+                <span className="text-[11px] sm:text-xs uppercase tracking-[0.3em] font-medium" style={{ color: '#E8C766' }}>A dignified farewell, beautifully made</span>
+              </div>
+
+              <h1
+                className="text-4xl sm:text-5xl md:text-6xl font-semibold mb-5 leading-[1.05] tracking-tight"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F4EFE4' }}
+              >
+                Create Beautiful Memorial<br className="hidden sm:block" />
+                <span className="relative inline-block overflow-hidden h-[1.2em] align-bottom">
+                  {HERO_PRODUCTS.map((p, i) => (
+                    <span
+                      key={p.label}
+                      className="absolute left-0 whitespace-nowrap"
+                      style={{
+                        background: 'linear-gradient(135deg, #F6E2A0 0%, #E8C766 45%, #C9A24B 100%)',
+                        WebkitBackgroundClip: 'text',
+                        backgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        transition: 'all 0.4s ease',
+                        transform: i === heroIdx
+                          ? (heroAnimating ? 'translateY(-110%)' : 'translateY(0)')
+                          : i === (heroIdx + 1) % HERO_PRODUCTS.length
+                            ? (heroAnimating ? 'translateY(0)' : 'translateY(110%)')
+                            : 'translateY(110%)',
+                        opacity: i === heroIdx
+                          ? (heroAnimating ? 0 : 1)
+                          : i === (heroIdx + 1) % HERO_PRODUCTS.length
+                            ? (heroAnimating ? 1 : 0)
+                            : 0,
+                      }}
+                    >
+                      {p.label}
+                    </span>
+                  ))}
+                  {/* Invisible spacer for width */}
+                  <span className="invisible">Thank You Cards</span>
+                </span>
+              </h1>
+
+              <p className="text-lg max-w-2xl mb-9 leading-relaxed font-light mx-auto lg:mx-0" style={{ color: '#9C968B' }}>
+                Design premium funeral brochures, posters, invitations, booklets, collages, and more
+                with our elegant editor. Choose from professional themes — then download as a print-ready PDF.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start">
+                <button
+                  onClick={handleNew}
+                  className="group inline-flex items-center gap-2 px-8 py-3.5 font-semibold rounded-full text-sm transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  style={{ color: '#1a1408', background: 'linear-gradient(135deg, #F6E2A0, #C9A24B)', boxShadow: '0 10px 34px rgba(201,162,75,0.35), inset 0 1px 0 rgba(255,255,255,0.45)' }}
+                >
+                  <Plus size={18} />
+                  Start Creating
+                </button>
+                <button
+                  onClick={() => setExampleOpen(true)}
+                  className="inline-flex items-center gap-2 px-7 py-3.5 font-medium rounded-full transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  style={{ color: '#F4EFE4', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(232,199,102,0.34)' }}
+                >
+                  <Eye size={18} />
+                  See Example
+                </button>
+              </div>
+
+              {/* Social proof */}
+              <div className="flex items-center gap-5 sm:gap-7 mt-10 justify-center lg:justify-start">
+                <div className="text-center lg:text-left">
+                  <div className="font-semibold text-2xl tabular-nums" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F4EFE4' }}>500+</div>
+                  <div className="text-xs" style={{ color: '#6B665E' }}>Families served</div>
+                </div>
+                <div className="w-px h-9" style={{ background: 'rgba(232,199,102,0.16)' }} />
+                <div className="text-center lg:text-left">
+                  <div className="font-semibold text-2xl tabular-nums" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F4EFE4' }}>2,000+</div>
+                  <div className="text-xs" style={{ color: '#6B665E' }}>Tributes created</div>
+                </div>
+                <div className="w-px h-9" style={{ background: 'rgba(232,199,102,0.16)' }} />
+                <div className="text-center lg:text-left">
+                  <div className="text-sm tracking-[3px]" style={{ color: '#E8C766' }}>★★★★★</div>
+                  <div className="text-xs" style={{ color: '#6B665E' }}>Loved across Ghana</div>
+                </div>
+              </div>
+
+              {/* Product type pills */}
+              <div className="flex flex-wrap items-center gap-2 mt-8 justify-center lg:justify-start">
                 {HERO_PRODUCTS.map((p, i) => (
-                  <span
+                  <button
                     key={p.label}
-                    className="absolute left-0 text-primary whitespace-nowrap"
-                    style={{
-                      transition: 'all 0.4s ease',
-                      transform: i === heroIdx
-                        ? (heroAnimating ? 'translateY(-110%)' : 'translateY(0)')
-                        : i === (heroIdx + 1) % HERO_PRODUCTS.length
-                          ? (heroAnimating ? 'translateY(0)' : 'translateY(110%)')
-                          : 'translateY(110%)',
-                      opacity: i === heroIdx
-                        ? (heroAnimating ? 0 : 1)
-                        : i === (heroIdx + 1) % HERO_PRODUCTS.length
-                          ? (heroAnimating ? 1 : 0)
-                          : 0,
+                    onClick={() => {
+                      clearInterval(heroTimerRef.current)
+                      setHeroAnimating(true)
+                      setTimeout(() => {
+                        setHeroIdx(i)
+                        setHeroAnimating(false)
+                      }, 400)
                     }}
+                    className="px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#08080C]"
+                    style={i === heroIdx
+                      ? { background: 'rgba(232,199,102,0.14)', borderColor: 'rgba(232,199,102,0.45)', color: '#F6E2A0' }
+                      : { background: 'rgba(255,255,255,0.03)', borderColor: 'transparent', color: '#9C968B' }}
                   >
                     {p.label}
-                  </span>
+                  </button>
                 ))}
-                {/* Invisible spacer for width */}
-                <span className="invisible">Thank You Cards</span>
-              </span>
-            </h1>
-
-            <p className="text-muted-foreground text-lg max-w-2xl mb-8 leading-relaxed">
-              Design premium funeral brochures, posters, invitations, booklets, collages, and more
-              with our elegant editor. Choose from professional themes — then download as a print-ready PDF.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start">
-              <button
-                onClick={handleNew}
-                className="inline-flex items-center gap-2 px-8 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors text-sm"
-              >
-                <Plus size={18} />
-                Start Creating
-              </button>
-              <button
-                onClick={() => setExampleOpen(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-muted hover:bg-accent text-card-foreground hover:text-foreground border border-input font-medium rounded-lg transition-colors text-sm"
-              >
-                <Eye size={18} />
-                See Example
-              </button>
-            </div>
-
-            {/* Social proof */}
-            <div className="flex items-center gap-4 sm:gap-6 mt-6 justify-center lg:justify-start text-muted-foreground">
-              <div className="flex items-center gap-1.5 text-sm">
-                <Users size={14} className="text-primary" />
-                <span className="font-semibold text-foreground">500+</span>
-                <span className="hidden sm:inline">families served</span>
-                <span className="sm:hidden">families</span>
-              </div>
-              <div className="w-px h-4 bg-border" />
-              <div className="flex items-center gap-1.5 text-sm">
-                <FileText size={14} className="text-primary" />
-                <span className="font-semibold text-foreground">2,000+</span>
-                <span className="hidden sm:inline">designs created</span>
-                <span className="sm:hidden">designs</span>
               </div>
             </div>
 
-            {/* Product type pills */}
-            <div className="flex flex-wrap items-center gap-2 mt-6 justify-center lg:justify-start">
+            {/* Right: rotating mockup showcase */}
+            <div className="flex-shrink-0 w-full max-w-[280px] lg:max-w-[300px] relative" style={{ minHeight: 380 }}>
+              <div aria-hidden="true" className="absolute -inset-10 rounded-[32px]" style={{ background: 'radial-gradient(circle at 50% 42%, rgba(232,199,102,0.18), transparent 62%)', filter: 'blur(22px)', zIndex: 0 }} />
               {HERO_PRODUCTS.map((p, i) => (
-                <button
-                  key={p.label}
-                  onClick={() => {
-                    clearInterval(heroTimerRef.current)
-                    setHeroAnimating(true)
-                    setTimeout(() => {
-                      setHeroIdx(i)
-                      setHeroAnimating(false)
-                    }, 400)
+                <div
+                  key={p.mockup}
+                  className="absolute inset-0 transition-all duration-500 ease-out"
+                  style={{
+                    opacity: i === heroIdx ? 1 : 0,
+                    transform: i === heroIdx
+                      ? 'scale(1) rotate(0deg)'
+                      : i < heroIdx
+                        ? 'scale(0.92) rotate(-3deg)'
+                        : 'scale(0.92) rotate(3deg)',
+                    zIndex: i === heroIdx ? 10 : 1,
+                    pointerEvents: i === heroIdx ? 'auto' : 'none',
                   }}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300 ${
-                    i === heroIdx
-                      ? 'bg-primary/15 border-primary/40 text-primary'
-                      : 'bg-muted/50 border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                  }`}
                 >
-                  {p.label}
-                </button>
+                  <div className="rounded-xl overflow-hidden" style={{ boxShadow: '0 50px 90px -30px rgba(0,0,0,0.85), 0 0 60px rgba(232,199,102,0.10)', border: '1px solid rgba(232,199,102,0.22)' }}>
+                    {heroMockups[p.mockup]}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-
-          {/* Right: rotating mockup showcase */}
-          <div className="flex-shrink-0 w-full max-w-[280px] lg:max-w-[300px] relative" style={{ minHeight: 380 }}>
-            {HERO_PRODUCTS.map((p, i) => (
-              <div
-                key={p.mockup}
-                className="absolute inset-0 transition-all duration-500 ease-out"
-                style={{
-                  opacity: i === heroIdx ? 1 : 0,
-                  transform: i === heroIdx
-                    ? 'scale(1) rotate(0deg)'
-                    : i < heroIdx
-                      ? 'scale(0.92) rotate(-3deg)'
-                      : 'scale(0.92) rotate(3deg)',
-                  zIndex: i === heroIdx ? 10 : 1,
-                  pointerEvents: i === heroIdx ? 'auto' : 'none',
-                }}
-              >
-                <div className="rounded-xl overflow-hidden shadow-2xl shadow-primary/10 ring-1 ring-border">
-                  {heroMockups[p.mockup]}
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
+      </section>
+
+      {/* ═══ Page body ═══ */}
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-12 sm:pt-16 pb-10 sm:pb-16">
 
         {/* ═══ Partner Program — Premium Section ═══ */}
         <div className="relative mb-12 lg:mb-20">
@@ -883,9 +903,9 @@ export default function LandingPage() {
         {/* Choose Your Product */}
         <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
-            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Complete Memorial Suite</p>
+            <p className="text-xs text-primary uppercase tracking-[0.3em] mb-3 font-medium">Complete Memorial Suite</p>
             <h2
-              className="text-2xl md:text-3xl font-bold text-foreground"
+              className="text-3xl md:text-4xl font-semibold text-foreground"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
               What Would You Like to Create?
@@ -896,7 +916,7 @@ export default function LandingPage() {
             {/* Brochure Card */}
             <button
               onClick={handleNew}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <BrochureMockup themeKey="blackGold" className="text-[8px]" />
@@ -915,7 +935,7 @@ export default function LandingPage() {
             {/* Poster Card */}
             <button
               onClick={handleNewPoster}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <PosterMockup themeKey="royalBlue" className="text-[8px]" />
@@ -934,7 +954,7 @@ export default function LandingPage() {
             {/* One-Week Celebration Card */}
             <button
               onClick={handleNewOneWeek}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <OneWeekMockup themeKey="burgundyGold" className="text-[8px]" />
@@ -953,7 +973,7 @@ export default function LandingPage() {
             {/* Programme Card */}
             <button
               onClick={handleOpenProgramme}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <ProgrammeMockup themeKey="blackGold" className="text-[8px]" />
@@ -972,7 +992,7 @@ export default function LandingPage() {
             {/* Flipbook Card */}
             <button
               onClick={handleOpenFlipbook}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <FlipbookMockup themeKey="blackGold" className="text-[8px]" />
@@ -991,7 +1011,7 @@ export default function LandingPage() {
             {/* Slideshow Card */}
             <button
               onClick={handleOpenSlideshow}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <SlideshowMockup themeKey="blackGold" className="text-[8px]" />
@@ -1010,7 +1030,7 @@ export default function LandingPage() {
             {/* Memorial Page Card */}
             <button
               onClick={handleOpenMemorial}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <MemorialMockup themeKey="blackGold" className="text-[8px]" />
@@ -1029,7 +1049,7 @@ export default function LandingPage() {
             {/* Invitation Card */}
             <button
               onClick={handleNewInvitation}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <InvitationMockup themeKey="burgundyGold" className="text-[8px]" />
@@ -1048,7 +1068,7 @@ export default function LandingPage() {
             {/* Thank You Card */}
             <button
               onClick={handleNewThankYou}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <ThankYouMockup themeKey="ivoryGold" className="text-[8px]" />
@@ -1067,7 +1087,7 @@ export default function LandingPage() {
             {/* Programme Booklet */}
             <button
               onClick={handleNewBooklet}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <BookletMockup themeKey={Object.keys(bookletThemes)[0]} className="text-[8px]" />
@@ -1086,7 +1106,7 @@ export default function LandingPage() {
             {/* Memorial Banner */}
             <button
               onClick={handleNewBanner}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[80px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <BannerMockup themeKey="royalBlue" className="text-[6px]" />
@@ -1105,7 +1125,7 @@ export default function LandingPage() {
             {/* Budget Planner */}
             <button
               onClick={handleNewBudget}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <BudgetMockup className="text-[8px]" />
@@ -1124,7 +1144,7 @@ export default function LandingPage() {
             {/* Photo Collage */}
             <button
               onClick={() => navigate('/collage-maker')}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <CollageMockup className="text-[8px]" />
@@ -1143,7 +1163,7 @@ export default function LandingPage() {
             {/* Anniversary Reminder */}
             <button
               onClick={() => navigate('/reminders')}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <ReminderMockup className="text-[8px]" />
@@ -1162,7 +1182,7 @@ export default function LandingPage() {
             {/* QR Code Cards */}
             <button
               onClick={() => navigate('/qr-cards')}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[140px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <QRCardsMockup className="text-[8px]" />
@@ -1181,7 +1201,7 @@ export default function LandingPage() {
             {/* Donation Receipt */}
             <button
               onClick={() => navigate('/receipt')}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[160px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <ReceiptMockup className="text-[8px]" />
@@ -1200,7 +1220,7 @@ export default function LandingPage() {
             {/* Wreath Cards */}
             <button
               onClick={() => navigate('/wreath-cards')}
-              className="group text-left p-6 bg-card border border-border rounded-xl hover:border-primary/40 transition-all"
+              className="group text-left p-6 bg-card border border-border rounded-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(0,0,0,0.45)]"
             >
               <div className="w-full max-w-[160px] mx-auto mb-4 rounded-lg overflow-hidden shadow-lg ring-1 ring-border">
                 <WreathCardMockup className="text-[8px]" />
@@ -1221,8 +1241,8 @@ export default function LandingPage() {
         {/* New Services */}
         <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
-            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">New Services</p>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+            <p className="text-xs text-primary uppercase tracking-[0.3em] mb-3 font-medium">New Services</p>
+            <h2 className="text-3xl md:text-4xl font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
               Beyond Design
             </h2>
             <p className="text-muted-foreground text-sm mt-2 max-w-lg mx-auto">
@@ -1266,9 +1286,9 @@ export default function LandingPage() {
         {/* Template Selection */}
         <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
-            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Get Started Quickly</p>
+            <p className="text-xs text-primary uppercase tracking-[0.3em] mb-3 font-medium">Get Started Quickly</p>
             <h2
-              className="text-2xl md:text-3xl font-bold text-foreground"
+              className="text-3xl md:text-4xl font-semibold text-foreground"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
               Choose a Template
@@ -1306,9 +1326,9 @@ export default function LandingPage() {
         {/* Poster Templates */}
         <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
-            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Obituary Posters</p>
+            <p className="text-xs text-primary uppercase tracking-[0.3em] mb-3 font-medium">Obituary Posters</p>
             <h2
-              className="text-2xl md:text-3xl font-bold text-foreground"
+              className="text-3xl md:text-4xl font-semibold text-foreground"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
               Poster Templates
@@ -1347,9 +1367,9 @@ export default function LandingPage() {
         {/* Invitation Templates */}
         <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
-            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Invitation Cards</p>
+            <p className="text-xs text-primary uppercase tracking-[0.3em] mb-3 font-medium">Invitation Cards</p>
             <h2
-              className="text-2xl md:text-3xl font-bold text-foreground"
+              className="text-3xl md:text-4xl font-semibold text-foreground"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
               Invitation Templates
@@ -1388,8 +1408,8 @@ export default function LandingPage() {
         {/* Thank You Templates */}
         <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
-            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Thank You Cards</p>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Thank You Templates</h2>
+            <p className="text-xs text-primary uppercase tracking-[0.3em] mb-3 font-medium">Thank You Cards</p>
+            <h2 className="text-3xl md:text-4xl font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Thank You Templates</h2>
             <p className="text-muted-foreground text-sm mt-2 max-w-lg mx-auto">Choose a thank you style for funeral attendees.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -1411,8 +1431,8 @@ export default function LandingPage() {
         {/* Booklet Templates */}
         <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
-            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Programme Booklets</p>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Booklet Templates</h2>
+            <p className="text-xs text-primary uppercase tracking-[0.3em] mb-3 font-medium">Programme Booklets</p>
+            <h2 className="text-3xl md:text-4xl font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Booklet Templates</h2>
             <p className="text-muted-foreground text-sm mt-2 max-w-lg mx-auto">Choose a programme style with order of service and hymns.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -1434,8 +1454,8 @@ export default function LandingPage() {
         {/* Banner Templates */}
         <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
-            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Memorial Banners</p>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Banner Templates</h2>
+            <p className="text-xs text-primary uppercase tracking-[0.3em] mb-3 font-medium">Memorial Banners</p>
+            <h2 className="text-3xl md:text-4xl font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Banner Templates</h2>
             <p className="text-muted-foreground text-sm mt-2 max-w-lg mx-auto">Choose a roll-up banner style for the funeral venue.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -1457,9 +1477,9 @@ export default function LandingPage() {
         {/* Features */}
         <div className="mb-12 lg:mb-20">
           <div className="text-center mb-8">
-            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Everything You Need</p>
+            <p className="text-xs text-primary uppercase tracking-[0.3em] mb-3 font-medium">Everything You Need</p>
             <h2
-              className="text-2xl md:text-3xl font-bold text-foreground"
+              className="text-3xl md:text-4xl font-semibold text-foreground"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
               Powerful Features
@@ -1485,9 +1505,9 @@ export default function LandingPage() {
         {/* Load Shared Brochure */}
         <div className="mb-12 lg:mb-20">
           <div className="text-center mb-6">
-            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Collaboration</p>
+            <p className="text-xs text-primary uppercase tracking-[0.3em] mb-3 font-medium">Collaboration</p>
             <h2
-              className="text-2xl md:text-3xl font-bold text-foreground"
+              className="text-3xl md:text-4xl font-semibold text-foreground"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
               Have a Share Code?
@@ -1510,9 +1530,9 @@ export default function LandingPage() {
         {/* Choose Your Theme */}
         <div className="mb-10">
           <div className="text-center mb-8">
-            <p className="text-xs text-primary/80 uppercase tracking-wider mb-2 font-medium">Personalize Your Design</p>
+            <p className="text-xs text-primary uppercase tracking-[0.3em] mb-3 font-medium">Personalize Your Design</p>
             <h2
-              className="text-2xl md:text-3xl font-bold text-foreground"
+              className="text-3xl md:text-4xl font-semibold text-foreground"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
               Choose Your Theme
@@ -1733,7 +1753,7 @@ export default function LandingPage() {
               <BookOpen size={14} />
               Free Resources
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Funeral Planning Guides</h2>
+            <h2 className="text-3xl sm:text-4xl font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Funeral Planning Guides</h2>
             <p className="text-base text-muted-foreground mt-3 max-w-xl mx-auto">Practical step-by-step resources for planning dignified funerals in Ghana</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1779,12 +1799,38 @@ export default function LandingPage() {
               <HelpCircle size={14} />
               FAQ
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Frequently Asked Questions</h2>
+            <h2 className="text-3xl sm:text-4xl font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Frequently Asked Questions</h2>
             <p className="text-base text-muted-foreground mt-3 max-w-xl mx-auto">Everything you need to know about designing funeral materials with FuneralPress</p>
           </div>
           <FAQSection faqs={LANDING_FAQS} />
         </div>
       </div>
+
+      {/* ═══ Closing CTA — bookends the cinematic hero ═══ */}
+      <section className="relative overflow-hidden" style={{ backgroundColor: '#08080C' }}>
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <div className="absolute rounded-full" style={{ width: 560, height: 560, top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'radial-gradient(circle, rgba(232,199,102,0.16), transparent 60%)', filter: 'blur(90px)' }} />
+          <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(232,199,102,0.3), transparent)' }} />
+        </div>
+        <div className="relative max-w-3xl mx-auto px-6 py-20 sm:py-24 text-center">
+          <div className="text-3xl mb-5" style={{ color: '#E8C766' }}>&#10013;</div>
+          <h2 className="text-3xl sm:text-5xl font-semibold mb-5 leading-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F4EFE4' }}>
+            A farewell worthy of the<br className="hidden sm:block" /> ones we love
+          </h2>
+          <p className="text-lg mb-9 font-light max-w-xl mx-auto" style={{ color: '#9C968B' }}>
+            Start designing in minutes — beautiful, dignified, and print-ready. No design skills needed.
+          </p>
+          <button
+            onClick={handleNew}
+            className="inline-flex items-center gap-2 px-9 py-4 font-semibold rounded-full text-sm transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#08080C]"
+            style={{ color: '#1a1408', background: 'linear-gradient(135deg, #F6E2A0, #C9A24B)', boxShadow: '0 10px 34px rgba(201,162,75,0.35), inset 0 1px 0 rgba(255,255,255,0.45)' }}
+          >
+            <Plus size={18} />
+            Start Creating
+          </button>
+          <p className="mt-7 text-xs tracking-wide" style={{ color: '#6B665E' }}>500+ families served &nbsp;·&nbsp; 2,000+ tributes created</p>
+        </div>
+      </section>
 
       {/* Example brochure dialog */}
       <ExampleBrochureDialog open={exampleOpen} onOpenChange={setExampleOpen} />

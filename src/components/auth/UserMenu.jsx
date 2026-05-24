@@ -4,7 +4,7 @@ import { LogOut, Cloud, FolderOpen, Users, Shield, BookOpen } from 'lucide-react
 import { useAuthStore } from '../../stores/authStore'
 import { haptic } from '../../hooks/useHaptic'
 
-export default function UserMenu() {
+export default function UserMenu({ onDark = false }) {
   const user = useAuthStore((s) => s.user)
   const isSyncing = useAuthStore((s) => s.isSyncing)
   const logout = useAuthStore((s) => s.logout)
@@ -46,7 +46,9 @@ export default function UserMenu() {
                   ? 'bg-primary/10 text-primary'
                   : highlight
                     ? 'text-primary border border-primary/30 bg-primary/5 hover:bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    : onDark
+                      ? 'text-white/75 hover:text-white hover:bg-white/10'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
               <Icon size={13} />
