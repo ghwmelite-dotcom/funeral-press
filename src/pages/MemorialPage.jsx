@@ -7,6 +7,7 @@ import { themes } from '../utils/themes'
 import { DonatePanel } from '../components/donation/DonatePanel.jsx'
 import UpgradeTributeCard from '../components/memorial/UpgradeTributeCard.jsx'
 import TributeVideoStudio from '../components/memorial/TributeVideoStudio.jsx'
+import TributeWall from '../components/memorial/TributeWall.jsx'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -203,6 +204,9 @@ export default function MemorialPage() {
 
         {/* Donation panel — renders null unless donation is enabled & approved */}
         <DonatePanel memorial={data} />
+
+        {/* Tribute wall — paid candles, flowers & tributes */}
+        <TributeWall memorialId={id} deceasedName={data.fullName} />
 
         {/* Biography */}
         {data.biography && (

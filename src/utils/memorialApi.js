@@ -61,3 +61,21 @@ export async function createTributeVideo(memorialId, payload) {
 export async function getTributeVideoStatus(videoId) {
   return apiFetch(`/tribute-video/${videoId}/status`, { auth: false })
 }
+
+// ─── Candle / Flower / Tribute wall (public-facing paid tributes) ───────────
+
+export async function getTributes(memorialId) {
+  return apiFetch(`/memorial/${memorialId}/tributes`, { auth: false })
+}
+
+export async function initTribute(memorialId, { type, authorName, email, message }) {
+  return apiFetch(`/memorial/${memorialId}/tributes`, {
+    auth: false,
+    method: 'POST',
+    body: JSON.stringify({ type, authorName, email, message }),
+  })
+}
+
+export async function verifyTribute(reference) {
+  return apiFetch(`/tribute/${reference}/verify`, { auth: false })
+}
