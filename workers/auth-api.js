@@ -10,6 +10,7 @@ import { hashPin, verifyPin, isValidPinFormat } from './utils/pinHash.js'
 import { generateAuthEmailToken, consumeAuthEmailToken } from './utils/authEmailToken.js'
 import { sendVerifyEmail, sendPinResetEmail, sendPinChangedEmail } from './utils/authEmails.js'
 import { buildTributeEdit } from './utils/shotstackEdit.js'
+import { candleProduct } from './candleConfig.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -1055,6 +1056,93 @@ async function handlePremiumVerify(request, env, userId) {
   return json({ verified: true, premium: true }, 200, request)
 }
 
+// ─── Memorial Tributes (digital candles / flowers / written tribute) ─────────
+
+// Public: initialize a tribute purchase. No auth required — buyer supplies email.
+async function handleTributeInitialize(request, env, memorialId) {
+  if (!memorialId) return error('Missing memorialId', 400, request)
+
+  const body = await request.json().catch(() => ({}))
+  const type = (body.type || '').trim()
+  const authorName = sanitizeInput((body.authorName || '').trim())
+  const email = (body.email || '').trim().toLowerCase()
+  const rawMessage = (body.message || '').trim()
+
+  const product = candleProduct(type)
+  if (!product) return error('Unknown tribute type', 400, request)
+  if (!authorName || authorName.length > 60) return error('Author name required (1–60 characters)', 400, request)
+  if (!EMAIL_REGEX.test(email)) return error('Invalid email address', 400, request)
+
+  const message = sanitizeInput(rawMessage.slice(0, product.maxMessage))
+
+  const id = generateId()
+  const reference = `fp-candle-${generateId()}`
+  await env.DB.prepare(
+    `INSERT INTO memorial_tributes (id, memorial_id, type, author_name, message, amount_pesewas, paystack_reference, status, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
+  ).bind(id, memorialId, type, authorName, message, product.pesewas, reference, Date.now()).run()
+
+  const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email,
+      amount: product.pesewas,
+      reference,
+      metadata: { memorialId, type, kind: 'candle' },
+    }),
+  })
+  const psData = await psRes.json()
+  if (!psData.status || !psData.data?.authorization_url) {
+    return error('Payment initialization failed', 502, request)
+  }
+
+  return json({ authorization_url: psData.data.authorization_url, reference }, 200, request)
+}
+
+// Public: verify a tribute payment (client-side backstop).
+async function handleTributeVerify(request, env, reference) {
+  if (!reference) return error('Missing reference', 400, request)
+
+  const row = await env.DB.prepare(
+    'SELECT * FROM memorial_tributes WHERE paystack_reference = ?'
+  ).bind(reference).first()
+  if (!row) return error('Not found', 404, request)
+  if (row.status === 'paid') return json({ paid: true }, 200, request)
+
+  const psRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+    headers: { Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}` },
+  })
+  const psData = await psRes.json()
+  if (!psData.status || psData.data?.status !== 'success') return json({ paid: false }, 200, request)
+  if (psData.data.amount !== row.amount_pesewas) return json({ paid: false }, 200, request)
+
+  await env.DB.prepare(
+    "UPDATE memorial_tributes SET status='paid', paid_at=? WHERE id=? AND status='pending'"
+  ).bind(Date.now(), row.id).run()
+  return json({ paid: true }, 200, request)
+}
+
+// Public: list paid tributes for a memorial.
+async function handleListTributes(request, env, memorialId) {
+  const rows = await env.DB.prepare(
+    `SELECT id, type, author_name, message, created_at
+     FROM memorial_tributes
+     WHERE memorial_id = ? AND status = 'paid'
+     ORDER BY created_at DESC LIMIT 200`
+  ).bind(memorialId).all()
+
+  const tributes = rows.results || []
+  const counts = { candle: 0, flowers: 0, tribute: 0 }
+  for (const t of tributes) {
+    if (counts[t.type] !== undefined) counts[t.type]++
+  }
+  return json({ tributes, counts }, 200, request)
+}
+
 async function handlePaymentWebhook(request, env) {
   // Paystack webhook IP allowlist
   const PAYSTACK_IPS = ['52.31.139.75', '52.49.173.169', '52.214.14.220']
@@ -1111,6 +1199,20 @@ async function handlePaymentWebhook(request, env) {
     if (prem && prem.status !== 'succeeded' && event.data.amount === prem.amount_pesewas) {
       await markPremiumSucceeded(env, prem)
     }
+    return json({ ok: true }, 200, request)
+  }
+
+  // Digital candle/flower/tribute (fp-candle- prefix). Backstop for handleTributeVerify.
+  if (reference.startsWith('fp-candle-')) {
+    const tribute = await env.DB.prepare('SELECT * FROM memorial_tributes WHERE paystack_reference = ?').bind(reference).first()
+    if (!tribute || tribute.status === 'paid') return json({ ok: true }, 200, request)
+    if (event.data.amount !== tribute.amount_pesewas) {
+      console.error('[webhook] fp-candle- amount mismatch', { reference, expected: tribute.amount_pesewas, got: event.data.amount })
+      return json({ ok: true }, 200, request)
+    }
+    await env.DB.prepare(
+      "UPDATE memorial_tributes SET status='paid', paid_at=? WHERE id=? AND status='pending'"
+    ).bind(Date.now(), tribute.id).run()
     return json({ ok: true }, 200, request)
   }
 
@@ -2706,6 +2808,13 @@ const handler = {
       if (obituaryMatch) return await handleGetObituary(request, env, obituaryMatch[1])
       const premiumStatusMatch = method === 'GET' && path.match(/^\/memorial-premium\/([^/]+)$/)
       if (premiumStatusMatch) return await handlePremiumStatus(request, env, premiumStatusMatch[1])
+      // Memorial tributes (digital candles / flowers / written tributes)
+      const tributeListMatch = method === 'GET' && path.match(/^\/memorial\/([^/]+)\/tributes$/)
+      if (tributeListMatch) return await handleListTributes(request, env, tributeListMatch[1])
+      const tributeInitMatch = method === 'POST' && path.match(/^\/memorial\/([^/]+)\/tributes$/)
+      if (tributeInitMatch) return await handleTributeInitialize(request, env, tributeInitMatch[1])
+      const tributeVerifyMatch = method === 'GET' && path.match(/^\/tribute\/([^/]+)\/verify$/)
+      if (tributeVerifyMatch) return await handleTributeVerify(request, env, tributeVerifyMatch[1])
       const tributeStatusMatch = method === 'GET' && path.match(/^\/tribute-video\/([^/]+)\/status$/)
       if (tributeStatusMatch) return await handleTributeVideoStatus(request, env, tributeStatusMatch[1])
       const galleryMatch = method === 'GET' && path.match(/^\/gallery\/([^/]+)$/)
