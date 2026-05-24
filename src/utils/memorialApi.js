@@ -48,3 +48,16 @@ export async function verifyMemorialPremium(reference) {
     body: JSON.stringify({ reference }),
   })
 }
+
+// ─── AI Tribute Video (premium-gated, Shotstack-rendered) ──────────────────
+
+export async function createTributeVideo(memorialId, payload) {
+  return apiFetch(`/memorial-premium/${memorialId}/tribute-video`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function getTributeVideoStatus(videoId) {
+  return apiFetch(`/tribute-video/${videoId}/status`, { auth: false })
+}

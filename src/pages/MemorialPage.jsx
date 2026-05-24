@@ -6,6 +6,7 @@ import { getMemorial, getMemorialPremium } from '../utils/memorialApi'
 import { themes } from '../utils/themes'
 import { DonatePanel } from '../components/donation/DonatePanel.jsx'
 import UpgradeTributeCard from '../components/memorial/UpgradeTributeCard.jsx'
+import TributeVideoStudio from '../components/memorial/TributeVideoStudio.jsx'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -299,6 +300,17 @@ export default function MemorialPage() {
           premium={premium}
           onUpgraded={refreshPremium}
         />
+
+        {/* AI Tribute Video — premium only */}
+        {premium && (
+          <TributeVideoStudio
+            memorialId={id}
+            deceasedName={data.fullName}
+            subtitle={`${formatDate(data.dateOfBirth)} — ${formatDate(data.dateOfDeath)}`}
+            biography={data.biography}
+            coverPhoto={data.coverPhoto}
+          />
+        )}
 
         {/* Branding footer (free tier only) */}
         {!premium && (
