@@ -977,7 +977,7 @@ async function handleTributeVideoStatus(request, env, videoId) {
     const mp4 = await fetch(data.response.url)
     const key = `tribute-videos/${row.memorial_id}/${videoId}.mp4`
     await env.IMAGES.put(key, mp4.body, { httpMetadata: { contentType: 'video/mp4' } })
-    const publicUrl = `https://funeralpress.org/images/${key}`
+    const publicUrl = `${new URL(request.url).origin}/images/${key}`
     await env.DB.prepare("UPDATE tribute_videos SET status = 'ready', output_url = ?, ready_at = ? WHERE id = ?")
       .bind(publicUrl, Date.now(), videoId).run()
     return json({ status: 'ready', url: publicUrl }, 200, request)
