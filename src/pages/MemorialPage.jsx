@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { Heart, Calendar, MapPin, Clock, BookOpen, Loader2, Download } from 'lucide-react'
-import { getMemorial } from '../utils/memorialApi'
+import { getMemorial, getMemorialPremium } from '../utils/memorialApi'
 import { themes } from '../utils/themes'
 import { DonatePanel } from '../components/donation/DonatePanel.jsx'
+import UpgradeTributeCard from '../components/memorial/UpgradeTributeCard.jsx'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -30,6 +31,11 @@ export default function MemorialPage() {
   const [error, setError] = useState('')
   const contentRef = useRef(null)
   const [downloading, setDownloading] = useState(false)
+  const [premium, setPremium] = useState(false)
+
+  const refreshPremium = () => {
+    getMemorialPremium(id).then((p) => setPremium(!!p.premium)).catch(() => {})
+  }
 
   useEffect(() => {
     async function load() {
@@ -43,6 +49,8 @@ export default function MemorialPage() {
       }
     }
     load()
+    refreshPremium()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   if (loading) {
@@ -274,35 +282,49 @@ export default function MemorialPage() {
         {/* Footer */}
         <div className="text-center py-8 border-t" style={{ borderColor: theme.border + '30' }}>
           <div className="text-lg mb-2" style={{ color: theme.heading }}>&#10013;</div>
-          <p className="text-xs" style={{ color: theme.subtleText }}>
-            Created with{' '}
-            <Link to="/" className="hover:underline" style={{ color: theme.heading }}>
-              FuneralPress
-            </Link>
-          </p>
+          {!premium && (
+            <p className="text-xs" style={{ color: theme.subtleText }}>
+              Created with{' '}
+              <Link to="/" className="hover:underline" style={{ color: theme.heading }}>
+                FuneralPress
+              </Link>
+            </p>
+          )}
         </div>
 
-        {/* Branding footer */}
-        <div className="text-center py-6 border-t border-border mt-12">
-          <a href="https://funeralpress.org" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary transition-colors">
-            Created with FuneralPress
-          </a>
-        </div>
+        {/* Premium upgrade / status */}
+        <UpgradeTributeCard
+          memorialId={id}
+          deceasedName={data.fullName}
+          premium={premium}
+          onUpgraded={refreshPremium}
+        />
+
+        {/* Branding footer (free tier only) */}
+        {!premium && (
+          <div className="text-center py-6 border-t border-border mt-12">
+            <a href="https://funeralpress.org" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+              Created with FuneralPress
+            </a>
+          </div>
+        )}
       </div>
       </div>{/* end ref wrapper */}
 
-      {/* FuneralPress branding */}
-      <div className="max-w-2xl mx-auto px-4 py-8 text-center">
-        <a
-          href="https://funeralpress.org"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs opacity-40 hover:opacity-60 transition-opacity"
-          style={{ color: theme.subtleText }}
-        >
-          Created with FuneralPress
-        </a>
-      </div>
+      {/* FuneralPress branding (free tier only) */}
+      {!premium && (
+        <div className="max-w-2xl mx-auto px-4 py-8 text-center">
+          <a
+            href="https://funeralpress.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs opacity-40 hover:opacity-60 transition-opacity"
+            style={{ color: theme.subtleText }}
+          >
+            Created with FuneralPress
+          </a>
+        </div>
+      )}
     </div>
   )
 }
