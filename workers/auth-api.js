@@ -5,6 +5,7 @@ import { withSecurityHeaders } from './utils/securityHeaders.js'
 import { logAudit, getClientIP } from './utils/auditLog.js'
 import { signJWT, verifyJWT } from './utils/jwt.js'
 import { runDunningCron } from './utils/dunning.js'
+import { runAnniversarySweep } from './utils/anniversaryEmail.js'
 import { runD1Cleanup } from './utils/dbCleanup.js'
 import { hashPin, verifyPin, isValidPinFormat } from './utils/pinHash.js'
 import { generateAuthEmailToken, consumeAuthEmailToken } from './utils/authEmailToken.js'
@@ -1142,6 +1143,153 @@ async function handleListTributes(request, env, memorialId) {
     if (counts[t.type] !== undefined) counts[t.type]++
   }
   return json({ tributes, counts }, 200, request)
+}
+
+// ─── Memorial Followers: follow + unsubscribe ─────────────────────────────────
+
+/**
+ * POST /memorial/:id/follow  (public)
+ * Body: { email, deceasedName, dateOfBirth?, dateOfDeath? }
+ *
+ * Upserts memorial_meta and memorial_followers. Sends a confirmation email
+ * with an unsubscribe link. Per-IP rate-limited (20/hour).
+ *
+ * NOTE: Africa/Accra is UTC+0 year-round — updated_at uses UTC epoch millis.
+ */
+async function handleFollowMemorial(request, env, memorialId) {
+  if (!memorialId) return error('Missing memorialId', 400, request)
+
+  // Per-IP rate limit: 20 follows/hour — prevents email-harvest abuse
+  const ip = getClientIP(request)
+  if (await checkPhoneRateLimit(env, `follow:ip:${ip}`, 20, 3600)) {
+    return error('Too many requests from this IP. Try again later.', 429, request)
+  }
+
+  const body = await request.json().catch(() => ({}))
+  const email = (body.email || '').trim().toLowerCase()
+  const deceasedName = sanitizeInput((body.deceasedName || '').trim())
+
+  if (!EMAIL_REGEX.test(email)) return error('Invalid email address', 400, request)
+
+  // Derive 'MM-DD' from ISO-ish date strings (e.g. '1948-03-12' → '03-12').
+  // Store NULL if missing or unparseable.
+  function toMd(isoStr) {
+    if (!isoStr) return null
+    const d = new Date(isoStr)
+    if (isNaN(d.getTime())) return null
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0')
+    const dd = String(d.getUTCDate()).padStart(2, '0')
+    return `${mm}-${dd}`
+  }
+
+  const birth_md = toMd(body.dateOfBirth)
+  const death_md = toMd(body.dateOfDeath)
+  const now = Date.now()
+
+  // UPSERT memorial_meta — keep existing last_reminder_md untouched
+  await env.DB.prepare(
+    `INSERT INTO memorial_meta (memorial_id, deceased_name, birth_md, death_md, last_reminder_md, updated_at)
+     VALUES (?, ?, ?, ?, NULL, ?)
+     ON CONFLICT(memorial_id) DO UPDATE SET
+       deceased_name = excluded.deceased_name,
+       birth_md = excluded.birth_md,
+       death_md = excluded.death_md,
+       updated_at = excluded.updated_at`
+  ).bind(memorialId, deceasedName || null, birth_md, death_md, now).run()
+
+  // Generate unsubscribe token for this follower
+  const followerId = generateId()
+  const unsubscribeToken = randomHex(32) // 64 hex chars — unguessable
+
+  // UPSERT memorial_followers — ON CONFLICT (memorial_id, email) → no-op
+  // (already following; don't overwrite token so existing unsubscribe links stay valid)
+  await env.DB.prepare(
+    `INSERT INTO memorial_followers (id, memorial_id, email, user_id, unsubscribe_token, created_at)
+     VALUES (?, ?, ?, NULL, ?, ?)
+     ON CONFLICT(memorial_id, email) DO NOTHING`
+  ).bind(followerId, memorialId, email, unsubscribeToken, now).run()
+
+  // Fetch the canonical token (might differ if row already existed)
+  const followerRow = await env.DB.prepare(
+    `SELECT unsubscribe_token FROM memorial_followers WHERE memorial_id = ? AND email = ?`
+  ).bind(memorialId, email).first()
+
+  const token = followerRow?.unsubscribe_token || unsubscribeToken
+  const unsubscribeUrl = `https://funeralpress.org/reminders/unsubscribe?token=${encodeURIComponent(token)}`
+  const memorialUrl = `https://funeralpress.org/memorial/${encodeURIComponent(memorialId)}`
+
+  // Send confirmation email via Resend (best-effort — don't fail the request)
+  if (env.RESEND_API_KEY) {
+    const confirmHtml = `<p>You are now following the memorial page for <strong>${deceasedName || 'this person'}</strong>.</p>
+<p>We will send you a gentle reminder on their birthday and anniversary each year.</p>
+<p><a href="${memorialUrl}">Visit the memorial page</a></p>
+<p style="margin-top:32px;font-size:12px;color:#888;">
+  You can <a href="${unsubscribeUrl}">unsubscribe from reminders</a> at any time.
+</p>`
+    fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'FuneralPress <notifications@funeralpress.org>',
+        to: [email],
+        subject: `You're following ${deceasedName || 'this memorial'}`,
+        html: confirmHtml,
+      }),
+    }).catch((e) => console.error('[follow] Confirmation email failed:', e?.message || e))
+  }
+
+  return json({ ok: true }, 200, request)
+}
+
+/**
+ * GET /reminders/unsubscribe?token=<token>  (public)
+ *
+ * Removes the follower row identified by the unsubscribe_token.
+ * Idempotent — unknown tokens return a friendly 200 so link-scanners
+ * (Outlook Safe-Links, etc.) don't silently invalidate the token on first load.
+ * Returns a small HTML confirmation page.
+ */
+async function handleUnsubscribe(request, env) {
+  const url = new URL(request.url)
+  const token = (url.searchParams.get('token') || '').trim()
+
+  let memorialId = null
+  if (token) {
+    const row = await env.DB.prepare(
+      `SELECT memorial_id FROM memorial_followers WHERE unsubscribe_token = ?`
+    ).bind(token).first()
+    if (row) {
+      memorialId = row.memorial_id
+      await env.DB.prepare(
+        `DELETE FROM memorial_followers WHERE unsubscribe_token = ?`
+      ).bind(token).run()
+    }
+  }
+
+  const memorialLink = memorialId
+    ? `<p><a href="https://funeralpress.org/memorial/${encodeURIComponent(memorialId)}">Return to the memorial page</a></p>`
+    : ''
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Unsubscribed — FuneralPress</title></head>
+<body style="font-family:Georgia,'Times New Roman',serif;color:#2d2d2d;max-width:480px;margin:80px auto;padding:0 24px;text-align:center;">
+  <p style="font-size:13px;color:#8a7f74;letter-spacing:0.08em;text-transform:uppercase;">FuneralPress</p>
+  <h1 style="font-size:24px;font-weight:normal;margin:24px 0 16px;">You have been unsubscribed.</h1>
+  <p style="font-size:15px;line-height:1.7;color:#4a4440;">
+    You will no longer receive anniversary reminder emails for this memorial.
+  </p>
+  ${memorialLink}
+</body>
+</html>`
+
+  return new Response(html, {
+    status: 200,
+    headers: { 'Content-Type': 'text/html;charset=UTF-8' },
+  })
 }
 
 async function handlePaymentWebhook(request, env) {
@@ -2825,6 +2973,11 @@ const handler = {
       const galleryMatch = method === 'GET' && path.match(/^\/gallery\/([^/]+)$/)
       if (galleryMatch) return await handleGetGallery(request, env, galleryMatch[1])
 
+      // Memorial follow + reminder unsubscribe (public)
+      const followMatch = method === 'POST' && path.match(/^\/memorial\/([^/]+)\/follow$/)
+      if (followMatch) return await handleFollowMemorial(request, env, followMatch[1])
+      if (method === 'GET' && path === '/reminders/unsubscribe') return await handleUnsubscribe(request, env)
+
       // Public venues listing
       if (method === 'GET' && path === '/venues') return await handleListVenues(request, env)
 
@@ -3034,6 +3187,11 @@ const handler = {
     } else if (cron === '0 8 * * *') {
       ctx.waitUntil(runDunningCron(env).catch((e) => {
         console.error('[scheduled] runDunningCron failed:', e?.message || e)
+        Sentry.captureException(e)
+      }))
+    } else if (cron === '0 7 * * *') {
+      ctx.waitUntil(runAnniversarySweep(env).catch((e) => {
+        console.error('[scheduled] runAnniversarySweep failed:', e?.message || e)
         Sentry.captureException(e)
       }))
     } else {
