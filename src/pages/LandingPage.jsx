@@ -42,13 +42,10 @@ import {
   Calendar,
   HelpCircle,
 } from 'lucide-react'
-import { Sun, Moon } from 'lucide-react'
 import { useBrochureStore } from '../stores/brochureStore'
-import { useThemeStore } from '../stores/themeStore'
 import { useAuthStore } from '../stores/authStore'
 import { events } from '../utils/analytics'
 import { SignInPopover } from '../components/auth/SignInPopover'
-import UserMenu from '../components/auth/UserMenu'
 import MigrationDialog from '../components/auth/MigrationDialog'
 import { usePosterStore } from '../stores/posterStore'
 import { useInvitationStore } from '../stores/invitationStore'
@@ -174,7 +171,6 @@ const LANDING_FAQS = [
 export default function LandingPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { theme, toggleTheme } = useThemeStore()
   const user = useAuthStore((s) => s.user)
   const getReferralLink = useAuthStore((s) => s.getReferralLink)
   const store = useBrochureStore()
@@ -485,17 +481,7 @@ export default function LandingPage() {
       {/* Partner banner (shown when ?ref=CODE or ?partner=CODE) */}
       {partnerData && <PartnerBanner partner={partnerData} />}
 
-      {/* Top-right controls */}
-      <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
-        {user ? <UserMenu /> : <SignInPopover />}
-        <button
-          onClick={toggleTheme}
-          className="p-2.5 rounded-full bg-card border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shadow-lg"
-          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-      </div>
+      {/* Sign-in + theme controls now live in the global sticky SiteHeader. */}
 
       {/* Migration dialog (shown on first login with existing local designs) */}
       <MigrationDialog />
