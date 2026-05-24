@@ -5,11 +5,12 @@ import { useAuthStore } from '../../stores/authStore'
 import { SignInPopover } from '../auth/SignInPopover'
 import UserMenu from '../auth/UserMenu'
 
-// Persistent sticky header for the content/browse surfaces so the brand +
-// controls stay visible while scrolling. Deliberately NOT shown on the landing
-// page (own hero + fixed controls), editors (own toolbars), full-screen views,
-// dashboards, or immersive tribute pages — only the marketing/content routes
-// users browse through.
+// Persistent sticky header for the homepage and content/browse surfaces so the
+// brand + controls stay visible while scrolling. NOT shown on editors (own
+// toolbars), full-screen views, dashboards, or immersive tribute pages — only
+// the homepage and the marketing/content routes users browse through. The
+// homepage is matched exactly ('/'), not via SHOW_PREFIXES, because every path
+// startsWith('/') and would otherwise match every route.
 const SHOW_PREFIXES = [
   '/blog',
   '/hymns',
@@ -32,7 +33,7 @@ export default function SiteHeader() {
   const { theme, toggleTheme } = useThemeStore()
   const user = useAuthStore((s) => s.user)
 
-  const show = SHOW_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+  const show = pathname === '/' || SHOW_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
   if (!show) return null
 
   return (
