@@ -8,6 +8,7 @@ import { DonatePanel } from '../components/donation/DonatePanel.jsx'
 import UpgradeTributeCard from '../components/memorial/UpgradeTributeCard.jsx'
 import TributeVideoStudio from '../components/memorial/TributeVideoStudio.jsx'
 import TributeWall from '../components/memorial/TributeWall.jsx'
+import FollowMemorial from '../components/memorial/FollowMemorial.jsx'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -204,6 +205,14 @@ export default function MemorialPage() {
 
         {/* Donation panel — renders null unless donation is enabled & approved */}
         <DonatePanel memorial={data} />
+
+        {/* Follow memorial — yearly reminder opt-in */}
+        <FollowMemorial
+          memorialId={id}
+          deceasedName={data.fullName}
+          dateOfBirth={data.dateOfBirth}
+          dateOfDeath={data.dateOfDeath}
+        />
 
         {/* Tribute wall — paid candles, flowers & tributes */}
         <TributeWall memorialId={id} deceasedName={data.fullName} />

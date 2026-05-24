@@ -79,3 +79,17 @@ export async function initTribute(memorialId, { type, authorName, email, message
 export async function verifyTribute(reference) {
   return apiFetch(`/tribute/${reference}/verify`, { auth: false })
 }
+
+// ─── Memorial follow + reminder unsubscribe ──────────────────────────────────
+
+export async function followMemorial(memorialId, { email, deceasedName, dateOfBirth, dateOfDeath }) {
+  return apiFetch(`/memorial/${memorialId}/follow`, {
+    auth: false,
+    method: 'POST',
+    body: JSON.stringify({ email, deceasedName, dateOfBirth, dateOfDeath }),
+  })
+}
+
+export async function unsubscribeReminders(token) {
+  return apiFetch(`/reminders/unsubscribe?token=${encodeURIComponent(token)}`, { auth: false })
+}

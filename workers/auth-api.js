@@ -1248,48 +1248,29 @@ async function handleFollowMemorial(request, env, memorialId) {
  * GET /reminders/unsubscribe?token=<token>  (public)
  *
  * Removes the follower row identified by the unsubscribe_token.
- * Idempotent — unknown tokens return a friendly 200 so link-scanners
+ * Idempotent — unknown tokens still return { ok: true } 200 so link-scanners
  * (Outlook Safe-Links, etc.) don't silently invalidate the token on first load.
- * Returns a small HTML confirmation page.
+ *
+ * Returns JSON so the SPA page at https://funeralpress.org/reminders/unsubscribe
+ * can call this endpoint via fetch and render its own confirmation UI.
  */
 async function handleUnsubscribe(request, env) {
   const url = new URL(request.url)
   const token = (url.searchParams.get('token') || '').trim()
 
-  let memorialId = null
   if (token) {
     const row = await env.DB.prepare(
       `SELECT memorial_id FROM memorial_followers WHERE unsubscribe_token = ?`
     ).bind(token).first()
     if (row) {
-      memorialId = row.memorial_id
       await env.DB.prepare(
         `DELETE FROM memorial_followers WHERE unsubscribe_token = ?`
       ).bind(token).run()
     }
   }
 
-  const memorialLink = memorialId
-    ? `<p><a href="https://funeralpress.org/memorial/${encodeURIComponent(memorialId)}">Return to the memorial page</a></p>`
-    : ''
-
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><title>Unsubscribed — FuneralPress</title></head>
-<body style="font-family:Georgia,'Times New Roman',serif;color:#2d2d2d;max-width:480px;margin:80px auto;padding:0 24px;text-align:center;">
-  <p style="font-size:13px;color:#8a7f74;letter-spacing:0.08em;text-transform:uppercase;">FuneralPress</p>
-  <h1 style="font-size:24px;font-weight:normal;margin:24px 0 16px;">You have been unsubscribed.</h1>
-  <p style="font-size:15px;line-height:1.7;color:#4a4440;">
-    You will no longer receive anniversary reminder emails for this memorial.
-  </p>
-  ${memorialLink}
-</body>
-</html>`
-
-  return new Response(html, {
-    status: 200,
-    headers: { 'Content-Type': 'text/html;charset=UTF-8' },
-  })
+  // Unknown or missing token → still 200 { ok: true } (idempotent / link-scanner safe)
+  return json({ ok: true }, 200, request)
 }
 
 async function handlePaymentWebhook(request, env) {
