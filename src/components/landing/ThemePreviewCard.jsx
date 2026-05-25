@@ -1,9 +1,13 @@
 import BrochureMockup from './BrochureMockup'
 import { themes } from '../../utils/themes'
+import { isPremiumTheme } from '../../utils/memorialTheme'
+import { Lock } from 'lucide-react'
 
 export default function ThemePreviewCard({ themeKey, onClick }) {
   const t = themes[themeKey]
   if (!t) return null
+
+  const isPremium = isPremiumTheme(themeKey, themes)
 
   return (
     <button
@@ -11,10 +15,21 @@ export default function ThemePreviewCard({ themeKey, onClick }) {
       className="group flex flex-col bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 text-left w-full"
     >
       {/* Scaled brochure preview */}
-      <div className="p-4 pb-3 flex items-center justify-center">
+      <div className="relative p-4 pb-3 flex items-center justify-center">
         <div className="w-full max-w-[180px] rounded-lg overflow-hidden shadow-md group-hover:shadow-lg transition-shadow duration-200 ring-1 ring-border/50">
           <BrochureMockup themeKey={themeKey} className="text-[8px]" />
         </div>
+
+        {/* Premium badge overlay */}
+        {isPremium && (
+          <span
+            data-testid={`premium-badge-${themeKey}`}
+            className="absolute top-2 right-2 flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-900/80 text-amber-300 border border-amber-600/40 select-none"
+          >
+            <Lock size={9} />
+            Premium
+          </span>
+        )}
       </div>
 
       {/* Theme info */}

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { Heart, Calendar, MapPin, Clock, BookOpen, Loader2, Download } from 'lucide-react'
+import { Heart, Calendar, MapPin, Clock, BookOpen, Loader2, Download, Lock } from 'lucide-react'
 import { getMemorial, getMemorialEntitlement } from '../utils/memorialApi'
 import { themes } from '../utils/themes'
+import { resolveMemorialTheme } from '../utils/memorialTheme'
 import { DonatePanel } from '../components/donation/DonatePanel.jsx'
 import UpgradeTributeCard from '../components/memorial/UpgradeTributeCard.jsx'
 import UpgradeDialog from '../components/memorial/UpgradeDialog.jsx'
@@ -88,7 +89,7 @@ export default function MemorialPage() {
     )
   }
 
-  const theme = themes[data.theme] || themes.blackGold
+  const { theme, fellBack: themeFellBack } = resolveMemorialTheme(data.theme, features, themes)
 
   const handleDownload = async () => {
     if (!contentRef.current || downloading) return
@@ -127,7 +128,24 @@ export default function MemorialPage() {
       </Helmet>
 
       {/* Download button */}
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 flex justify-end">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 flex justify-end items-center gap-3">
+        {/* Theme fallback nudge — shown when a premium theme was chosen but not entitled */}
+        {themeFellBack && (
+          <button
+            data-testid="theme-upgrade-nudge"
+            onClick={() => setUpgradeOpen(true)}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-full transition-opacity opacity-60 hover:opacity-90"
+            style={{
+              backgroundColor: theme.secondaryBg,
+              color: theme.heading,
+              border: `1px solid ${theme.border}50`,
+            }}
+            aria-label="Unlock premium themes"
+          >
+            <Lock size={11} />
+            <span>Unlock premium themes</span>
+          </button>
+        )}
         <button
           onClick={handleDownload}
           disabled={downloading}
