@@ -2385,6 +2385,8 @@ async function handleMemorialSubscriptionCreate(request, env, userId, memorialId
     },
     body: JSON.stringify({
       email: user.email,
+      amount: TIERS[tier].annualPesewas, // Paystack requires amount even with a plan; must match the plan's price
+      currency: 'GHS',
       plan: planCode,
       callback_url: callbackUrl,
       metadata: { userId, memorialId, tier, kind: 'memorial_annual' },
@@ -2392,8 +2394,13 @@ async function handleMemorialSubscriptionCreate(request, env, userId, memorialId
   })
   const psData = await psRes.json()
 
-  if (!psData.status) {
-    return error('Failed to initialize memorial subscription', 500, request)
+  if (!psData.status || !psData.data?.authorization_url) {
+    // Surface Paystack's reason (e.g. plan not found / test-vs-live mismatch) so a
+    // failed payment init is debuggable instead of a silent 500.
+    console.error('[memorial-subscribe] paystack init failed', {
+      tier, planCode, httpStatus: psRes.status, paystackStatus: psData.status, message: psData.message,
+    })
+    return error('Failed to initialize memorial subscription', 502, request)
   }
 
   return json({
