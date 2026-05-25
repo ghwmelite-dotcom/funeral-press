@@ -32,8 +32,10 @@ function makeMockDb({ subId = 'sub-1' } = {}) {
           return { meta: { changes: 0 } }
         },
         first: async () => {
-          if (sql.includes('SELECT id FROM subscriptions WHERE paystack_subscription_code')) {
-            return { id: subId }
+          // The renewal branch now selects id, plan, memorial_id to detect
+          // memorial subs; this is an account (pro_monthly) sub.
+          if (sql.includes('FROM subscriptions WHERE paystack_subscription_code')) {
+            return { id: subId, plan: 'pro_monthly', memorial_id: null }
           }
           return null
         },
@@ -95,7 +97,7 @@ describe('subscription.create renewal — dunning state reset', () => {
     expect(res.status).toBe(200)
 
     const renewalUpdate = env.DB._updates.find((u) =>
-      u.sql.includes('monthly_credits_remaining = 15') && u.sql.includes("status = 'active'")
+      u.sql.includes('monthly_credits_remaining = CASE') && u.sql.includes("status = 'active'")
     )
     expect(renewalUpdate, 'expected the renewal UPDATE to fire').toBeTruthy()
     expect(renewalUpdate.sql).toMatch(/dunning_stage\s*=\s*0/)

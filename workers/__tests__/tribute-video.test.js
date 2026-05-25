@@ -33,8 +33,14 @@ function makeMockDb({ premium = [], videos = [] } = {}) {
           return { meta: { changes: 0 } }
         },
         first: async () => {
+          // resolveMemorialEntitlement query — honours expires_at for annual rows
           if (sql.includes('FROM memorial_premium') && sql.includes("status = 'succeeded'")) {
-            return state.premium.find((p) => p.memorial_id === args[0] && p.status === 'succeeded') || null
+            const nowMs = Date.now()
+            return state.premium.find((p) =>
+              p.memorial_id === args[0] &&
+              p.status === 'succeeded' &&
+              (p.expires_at == null || Number(p.expires_at) > nowMs)
+            ) || null
           }
           if (sql.includes('FROM tribute_videos WHERE id = ?')) {
             return state.videos.find((v) => v.id === args[0]) || null
@@ -82,14 +88,23 @@ describe('POST /memorial-premium/:id/tribute-video (create)', () => {
     expect(res.status).toBe(403)
   })
 
+  it('403s when the annual premium row is expired (entitlement gate, not raw status check)', async () => {
+    // I1 fix: expired annual row keeps status='succeeded' but resolveMemorialEntitlement
+    // returns features.tributeVideo=false — must 403, not let the request through.
+    const pastExpiry = Date.now() - 86400000  // −1 day
+    const env = makeEnv({ premium: [{ id: 'p-exp', memorial_id: 'mem1', status: 'succeeded', tier: 'premium', plan_type: 'annual', expires_at: pastExpiry }] })
+    const res = await worker.fetch(await authedPost('/memorial-premium/mem1/tribute-video', { title: 'Ama', imageUrls: ['https://img/1.jpg'] }), env)
+    expect(res.status).toBe(403)
+  })
+
   it('400s with no photos', async () => {
-    const env = makeEnv({ premium: [{ id: 'p1', memorial_id: 'mem1', status: 'succeeded' }] })
+    const env = makeEnv({ premium: [{ id: 'p1', memorial_id: 'mem1', status: 'succeeded', tier: 'premium', plan_type: 'lifetime', expires_at: null }] })
     const res = await worker.fetch(await authedPost('/memorial-premium/mem1/tribute-video', { title: 'Ama', imageUrls: [] }), env)
     expect(res.status).toBe(400)
   })
 
   it('starts a render and inserts a rendering row when premium', async () => {
-    const env = makeEnv({ premium: [{ id: 'p1', memorial_id: 'mem1', status: 'succeeded' }] })
+    const env = makeEnv({ premium: [{ id: 'p1', memorial_id: 'mem1', status: 'succeeded', tier: 'premium', plan_type: 'lifetime', expires_at: null }] })
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ response: { id: 'ss-render-1' } }), { status: 200 }))
     const res = await worker.fetch(await authedPost('/memorial-premium/mem1/tribute-video', {
       title: 'Ama Mensah', subtitle: '1950 — 2026', imageUrls: ['https://img/1.jpg', 'https://img/2.jpg'],
@@ -104,7 +119,7 @@ describe('POST /memorial-premium/:id/tribute-video (create)', () => {
   })
 
   it('falls back to a safe caption when the AI binding throws', async () => {
-    const env = makeEnv({ premium: [{ id: 'p1', memorial_id: 'mem1', status: 'succeeded' }] })
+    const env = makeEnv({ premium: [{ id: 'p1', memorial_id: 'mem1', status: 'succeeded', tier: 'premium', plan_type: 'lifetime', expires_at: null }] })
     env.AI.run = vi.fn(async () => { throw new Error('AI down') })
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ response: { id: 'ss-2' } }), { status: 200 }))
     const res = await worker.fetch(await authedPost('/memorial-premium/mem1/tribute-video', { title: 'Kofi', imageUrls: ['https://img/1.jpg'] }), env)
@@ -113,7 +128,7 @@ describe('POST /memorial-premium/:id/tribute-video (create)', () => {
   })
 
   it('401s without auth', async () => {
-    const env = makeEnv({ premium: [{ id: 'p1', memorial_id: 'mem1', status: 'succeeded' }] })
+    const env = makeEnv({ premium: [{ id: 'p1', memorial_id: 'mem1', status: 'succeeded', tier: 'premium', plan_type: 'lifetime', expires_at: null }] })
     const res = await worker.fetch(new Request(`${BASE}/memorial-premium/mem1/tribute-video`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '1.2.3.4' }, body: JSON.stringify({ title: 'X', imageUrls: ['https://img/1.jpg'] }),
     }), env)

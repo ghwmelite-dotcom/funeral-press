@@ -17,10 +17,12 @@ function makeMockDb({ premium = [], user = { id: USER_ID, email: 'buyer@example.
       bind: (...args) => ({
         run: async () => {
           if (sql.startsWith('INSERT INTO memorial_premium')) {
+            // Bind order: id, memorial_id, tier, reference, amount_pesewas, buyer_user_id, created_at
             state.premium.push({
-              id: args[0], memorial_id: args[1], paystack_reference: args[2],
-              amount_pesewas: args[3], buyer_user_id: args[4], created_at: args[5],
-              tier: 'tribute', status: 'pending',
+              id: args[0], memorial_id: args[1], tier: args[2],
+              paystack_reference: args[3], amount_pesewas: args[4],
+              buyer_user_id: args[5], created_at: args[6],
+              plan_type: 'lifetime', expires_at: null, status: 'pending',
             })
             return { meta: { changes: 1 } }
           }
@@ -92,13 +94,19 @@ describe('GET /memorial-premium/:id (status)', () => {
     const env = makeEnv({ premium: [{ id: 'p1', memorial_id: 'mem1', status: 'succeeded', tier: 'tribute' }] })
     const res = await worker.fetch(new Request(`${BASE}/memorial-premium/mem1`, { headers: { 'CF-Connecting-IP': '1.2.3.4' } }), env)
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ premium: true, tier: 'tribute' })
+    const body = await res.json()
+    expect(body.premium).toBe(true)
+    expect(body.tier).toBe('tribute')
+    expect(body.active).toBe(true)
   })
 
   it('returns premium:false when none', async () => {
     const env = makeEnv({ premium: [] })
     const res = await worker.fetch(new Request(`${BASE}/memorial-premium/memX`, { headers: { 'CF-Connecting-IP': '1.2.3.4' } }), env)
-    expect(await res.json()).toEqual({ premium: false, tier: null })
+    const body = await res.json()
+    expect(body.premium).toBe(false)
+    expect(body.tier).toBe('free')
+    expect(body.active).toBe(false)
   })
 
   it('ignores pending rows (not yet paid)', async () => {
@@ -114,7 +122,7 @@ describe('POST /memorial-premium/initialize', () => {
     const res = await worker.fetch(await authedReq('/memorial-premium/initialize', { memorialId: 'mem1' }), env)
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.amount).toBe(15000)
+    expect(body.amount).toBe(30000) // default tier=premium, lifetimePesewas=30000
     expect(body.email).toBe('buyer@example.com')
     expect(body.currency).toBe('GHS')
     expect(body.reference).toMatch(/^fp-premium-/)

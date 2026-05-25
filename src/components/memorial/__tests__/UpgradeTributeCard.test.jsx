@@ -1,51 +1,35 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 
-let mockUser = null
-const mockNotify = vi.fn()
-const mockInit = vi.fn()
-
-vi.mock('../../../stores/authStore', () => ({
-  useAuthStore: (selector) => selector({ user: mockUser }),
-}))
-vi.mock('../../ui/notification.jsx', () => ({
-  useNotification: () => ({ notify: mockNotify }),
-}))
-vi.mock('../../../utils/paystack', () => ({
-  loadPaystackInline: vi.fn(),
-  PAYSTACK_PUBLIC_KEY: 'pk_test',
-}))
-vi.mock('../../../utils/memorialApi', () => ({
-  initMemorialPremium: (...args) => mockInit(...args),
-  verifyMemorialPremium: vi.fn(),
-}))
-
 import UpgradeTributeCard from '../UpgradeTributeCard.jsx'
 
 describe('UpgradeTributeCard', () => {
   beforeEach(() => {
-    mockUser = null
-    mockNotify.mockClear()
-    mockInit.mockClear()
+    vi.clearAllMocks()
   })
 
-  it('shows the Forever Tribute badge (not the offer) when premium', () => {
-    render(<UpgradeTributeCard memorialId="m1" deceasedName="Ama" premium onUpgraded={() => {}} />)
+  it('shows the Forever Tribute badge (not the offer card) when premium', () => {
+    render(<UpgradeTributeCard deceasedName="Ama" premium onUpgrade={() => {}} />)
     expect(screen.getByTestId('premium-badge')).toBeInTheDocument()
     expect(screen.queryByTestId('upgrade-tribute-card')).not.toBeInTheDocument()
   })
 
-  it('shows the offer with name + GHS 150 when not premium', () => {
-    render(<UpgradeTributeCard memorialId="m1" deceasedName="Ama Mensah" premium={false} onUpgraded={() => {}} />)
+  it('shows the offer card with the deceased name when not premium', () => {
+    render(<UpgradeTributeCard deceasedName="Ama Mensah" premium={false} onUpgrade={() => {}} />)
     expect(screen.getByTestId('upgrade-tribute-card')).toBeInTheDocument()
     expect(screen.getByText(/Honor Ama Mensah/i)).toBeInTheDocument()
-    expect(screen.getByText(/Unlock Forever Tribute — GHS 150/i)).toBeInTheDocument()
+    expect(screen.queryByTestId('premium-badge')).not.toBeInTheDocument()
   })
 
-  it('prompts sign-in and does NOT start payment when logged out', () => {
-    render(<UpgradeTributeCard memorialId="m1" deceasedName="Ama" premium={false} onUpgraded={() => {}} />)
-    fireEvent.click(screen.getByRole('button', { name: /Unlock Forever Tribute/i }))
-    expect(mockNotify).toHaveBeenCalledWith(expect.stringMatching(/sign in/i), 'info')
-    expect(mockInit).not.toHaveBeenCalled()
+  it('CTA button label is "View premium plans" (no hardcoded price)', () => {
+    render(<UpgradeTributeCard deceasedName="Ama" premium={false} onUpgrade={() => {}} />)
+    expect(screen.getByRole('button', { name: /View premium plans/i })).toBeInTheDocument()
+  })
+
+  it('clicking the CTA calls onUpgrade exactly once', () => {
+    const onUpgrade = vi.fn()
+    render(<UpgradeTributeCard deceasedName="Ama" premium={false} onUpgrade={onUpgrade} />)
+    fireEvent.click(screen.getByRole('button', { name: /View premium plans/i }))
+    expect(onUpgrade).toHaveBeenCalledTimes(1)
   })
 })
