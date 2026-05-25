@@ -12,6 +12,7 @@ import { generateAuthEmailToken, consumeAuthEmailToken } from './utils/authEmail
 import { sendVerifyEmail, sendPinResetEmail, sendPinChangedEmail } from './utils/authEmails.js'
 import { buildTributeEdit } from './utils/shotstackEdit.js'
 import { candleProduct } from './candleConfig.js'
+import { FEATURE_MIN_RANK, tierHasFeature } from './tierConfig.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -1001,12 +1002,28 @@ async function markPremiumSucceeded(env, row) {
   ).bind(Date.now(), row.id).run()
 }
 
+// Single source of truth for a memorial's entitlement. Expiry-aware: a lifetime
+// row (expires_at NULL) is active forever; an annual row is active until
+// expires_at; anything expired or absent resolves to the free tier.
+export async function resolveMemorialEntitlement(env, memorialId) {
+  const row = await env.DB.prepare(
+    `SELECT tier, plan_type, expires_at, status FROM memorial_premium
+     WHERE memorial_id = ? AND status = 'succeeded'
+     ORDER BY (expires_at IS NULL) DESC, expires_at DESC LIMIT 1`
+  ).bind(memorialId).first()
+  const now = Date.now()
+  const active = !!row && (row.expires_at == null || row.expires_at > now)
+  const tier = active ? row.tier : 'free'
+  const features = Object.fromEntries(
+    Object.keys(FEATURE_MIN_RANK).map((f) => [f, tierHasFeature(tier, f)])
+  )
+  return { tier, planType: row?.plan_type ?? null, active, expiresAt: row?.expires_at ?? null, features }
+}
+
 // Public: is this memorial premium?
 async function handlePremiumStatus(request, env, memorialId) {
-  const row = await env.DB.prepare(
-    `SELECT tier FROM memorial_premium WHERE memorial_id = ? AND status = 'succeeded' LIMIT 1`
-  ).bind(memorialId).first()
-  return json({ premium: !!row, tier: row?.tier || null }, 200, request)
+  const ent = await resolveMemorialEntitlement(env, memorialId)
+  return json({ premium: ent.tier !== 'free', ...ent }, 200, request)
 }
 
 // Authed: create a pending entitlement + return Paystack inline params.
