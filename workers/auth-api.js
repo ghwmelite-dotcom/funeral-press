@@ -12,7 +12,7 @@ import { generateAuthEmailToken, consumeAuthEmailToken } from './utils/authEmail
 import { sendVerifyEmail, sendPinResetEmail, sendPinChangedEmail } from './utils/authEmails.js'
 import { buildTributeEdit } from './utils/shotstackEdit.js'
 import { candleProduct } from './candleConfig.js'
-import { FEATURE_MIN_RANK, tierHasFeature } from './tierConfig.js'
+import { TIERS, FEATURE_MIN_RANK, tierHasFeature } from './tierConfig.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -993,7 +993,6 @@ async function handleTributeVideoStatus(request, env, videoId) {
 }
 
 // ─── Memorial Premium (one-time per-memorial unlock) ───────────────────────
-const PREMIUM_AMOUNT_PESEWAS = 15000 // GHS 150 one-time "Forever Tribute"
 
 async function markPremiumSucceeded(env, row) {
   if (row.status === 'succeeded') return
@@ -1032,8 +1031,25 @@ async function handlePremiumStatus(request, env, memorialId) {
 // Authed: create a pending entitlement + return Paystack inline params.
 async function handlePremiumInitialize(request, env, userId) {
   if (!userId) return error('Sign in required', 401, request)
-  const { memorialId } = await request.json().catch(() => ({}))
+  const { memorialId, tier: rawTier, planType: rawPlanType } = await request.json().catch(() => ({}))
   if (!memorialId) return error('Missing memorialId', 400, request)
+
+  // Default backward-compatible values
+  const tier = rawTier ?? 'premium'
+  const planType = rawPlanType ?? 'lifetime'
+
+  // Validate tier — must be a paid tier
+  if (!TIERS[tier] || TIERS[tier].rank === 0) {
+    return error('Invalid tier. Must be "premium" or "heritage"', 400, request)
+  }
+
+  // This handler only supports lifetime purchases; annual is a separate task
+  if (planType !== 'lifetime') {
+    return error('Annual not yet supported here', 400, request)
+  }
+
+  // Amount is always resolved server-side from the catalog — never from client input
+  const amountPesewas = TIERS[tier].lifetimePesewas
 
   const existing = await env.DB.prepare(
     `SELECT id FROM memorial_premium WHERE memorial_id = ? AND status = 'succeeded' LIMIT 1`
@@ -1045,11 +1061,11 @@ async function handlePremiumInitialize(request, env, userId) {
 
   const reference = `fp-premium-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
   await env.DB.prepare(
-    `INSERT INTO memorial_premium (id, memorial_id, tier, status, paystack_reference, amount_pesewas, currency, buyer_user_id, created_at)
-     VALUES (?, ?, 'tribute', 'pending', ?, ?, 'GHS', ?, ?)`
-  ).bind(generateId(), memorialId, reference, PREMIUM_AMOUNT_PESEWAS, userId, Date.now()).run()
+    `INSERT INTO memorial_premium (id, memorial_id, tier, status, paystack_reference, amount_pesewas, currency, buyer_user_id, plan_type, expires_at, created_at)
+     VALUES (?, ?, ?, 'pending', ?, ?, 'GHS', ?, 'lifetime', NULL, ?)`
+  ).bind(generateId(), memorialId, tier, reference, amountPesewas, userId, Date.now()).run()
 
-  return json({ reference, amount: PREMIUM_AMOUNT_PESEWAS, email: user.email, currency: 'GHS' }, 200, request)
+  return json({ reference, amount: amountPesewas, email: user.email, currency: 'GHS' }, 200, request)
 }
 
 // Authed: verify with Paystack after the inline popup succeeds.
