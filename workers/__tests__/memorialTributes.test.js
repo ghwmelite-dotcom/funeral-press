@@ -112,11 +112,9 @@ afterEach(() => { vi.restoreAllMocks() })
 // ─── POST /memorial/:id/tributes — initialize ─────────────────────────────────
 
 describe('POST /memorial/:id/tributes (initialize)', () => {
-  it('inserts a pending row with the correct amount_pesewas from the catalog', async () => {
+  it('inserts a pending row + returns reference/amount/currency from the catalog (no server-side Paystack call)', async () => {
     const env = makeEnv({})
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ status: true, data: { authorization_url: 'https://checkout.paystack.com/abc' } }), { status: 200 })
-    )
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const res = await worker.fetch(
       publicReq('/memorial/mem1/tributes', 'POST', {
         type: 'candle',
@@ -129,11 +127,16 @@ describe('POST /memorial/:id/tributes (initialize)', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.reference).toMatch(/^fp-candle-/)
-    expect(body.authorization_url).toBe('https://checkout.paystack.com/abc')
+    expect(body.amount).toBe(1000) // candle = 1000 pesewas, from the server catalog
+    expect(body.email).toBe('kwame@example.com')
+    expect(body.currency).toBe('GHS')
+    // The client completes payment via inline PaystackPop — the handler must NOT
+    // call Paystack server-side (that pattern conflicts with the inline popup).
+    expect(fetchSpy).not.toHaveBeenCalled()
 
     expect(env.DB._state.tributes).toHaveLength(1)
     const row = env.DB._state.tributes[0]
-    expect(row.amount_pesewas).toBe(1000) // candle = 1000 pesewas
+    expect(row.amount_pesewas).toBe(1000)
     expect(row.status).toBe('pending')
     expect(row.memorial_id).toBe('mem1')
     expect(row.type).toBe('candle')
@@ -142,9 +145,6 @@ describe('POST /memorial/:id/tributes (initialize)', () => {
 
   it('inserts correct amount for flowers (2000 pesewas)', async () => {
     const env = makeEnv({})
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ status: true, data: { authorization_url: 'https://checkout.paystack.com/xyz' } }), { status: 200 })
-    )
     const res = await worker.fetch(
       publicReq('/memorial/mem1/tributes', 'POST', {
         type: 'flowers',
@@ -154,6 +154,7 @@ describe('POST /memorial/:id/tributes (initialize)', () => {
       env
     )
     expect(res.status).toBe(200)
+    expect((await res.json()).amount).toBe(2000)
     expect(env.DB._state.tributes[0].amount_pesewas).toBe(2000)
   })
 
@@ -227,9 +228,6 @@ describe('POST /memorial/:id/tributes (initialize)', () => {
 
   it('clamps message to maxMessage for the product', async () => {
     const env = makeEnv({})
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ status: true, data: { authorization_url: 'https://checkout.paystack.com/abc' } }), { status: 200 })
-    )
     const longMessage = 'X'.repeat(200) // candle maxMessage = 80
     await worker.fetch(
       publicReq('/memorial/mem1/tributes', 'POST', {
@@ -245,9 +243,6 @@ describe('POST /memorial/:id/tributes (initialize)', () => {
 
   it('inserts correct amount for tribute type (5000 pesewas, maxMessage 500)', async () => {
     const env = makeEnv({})
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ status: true, data: { authorization_url: 'https://checkout.paystack.com/trib' } }), { status: 200 })
-    )
     const res = await worker.fetch(
       publicReq('/memorial/mem1/tributes', 'POST', {
         type: 'tribute',
@@ -258,28 +253,10 @@ describe('POST /memorial/:id/tributes (initialize)', () => {
       env
     )
     expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.authorization_url).toBe('https://checkout.paystack.com/trib')
+    expect((await res.json()).amount).toBe(5000)
     expect(env.DB._state.tributes).toHaveLength(1)
     expect(env.DB._state.tributes[0].amount_pesewas).toBe(5000)
     expect(env.DB._state.tributes[0].message).toHaveLength(500)
-  })
-
-  it('does NOT insert a row when Paystack returns a failure', async () => {
-    const env = makeEnv({})
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ status: false, message: 'Invalid key' }), { status: 400 })
-    )
-    const res = await worker.fetch(
-      publicReq('/memorial/mem1/tributes', 'POST', {
-        type: 'candle',
-        authorName: 'Kwame',
-        email: 'kwame@example.com',
-      }),
-      env
-    )
-    expect(res.status).toBe(502)
-    expect(env.DB._state.tributes).toHaveLength(0)
   })
 })
 
