@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Presentation } from 'lucide-react'
 import { useBrochureStore } from '../stores/brochureStore'
@@ -7,14 +7,27 @@ import { useSlideshow } from '../hooks/useSlideshow'
 import { useRecorder } from '../hooks/useRecorder'
 import SlideshowPlayer from '../components/memorial/SlideshowPlayer'
 import SlideshowControls from '../components/memorial/SlideshowControls'
+import { getMemorialEntitlement } from '../utils/memorialApi'
+import { visibleGalleryPhotos } from '../config/memorialTiers'
 
 export default function MemorialSlideshowPage() {
   const store = useBrochureStore()
   const canvasRef = useRef(null)
+  const [entitlement, setEntitlement] = useState({ premium: false, tier: null, features: {} })
+
+  useEffect(() => {
+    if (store.memorialId) {
+      getMemorialEntitlement(store.memorialId).then(setEntitlement).catch(() => {})
+    }
+  }, [store.memorialId])
+
+  const features = entitlement.features ?? {}
+  const cappedGalleryPhotos = visibleGalleryPhotos(store.galleryPhotos, features)
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const slides = useMemo(() => generateSlides(store), [
+  const slides = useMemo(() => generateSlides({ ...store, galleryPhotos: cappedGalleryPhotos }), [
     store.title, store.fullName, store.coverPhoto, store.biography,
-    store.tributes, store.galleryPhotos, store.biographyPhotos,
+    store.tributes, cappedGalleryPhotos, store.biographyPhotos,
     store.backCoverPhrase, store.backCoverSubtext, store.backCoverVerse,
     store.coverVerse, store.coverSubtitle,
   ])

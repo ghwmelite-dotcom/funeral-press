@@ -38,3 +38,12 @@ export function tierHasFeature(tier, feature) {
   const rank = TIERS[tier]?.rank ?? 0
   return rank >= (FEATURE_MIN_RANK[feature] ?? Infinity)
 }
+
+// Returns the slice of gallery photos visible on a public surface.
+// Premium/heritage get all photos; free tier is capped at FREE_PHOTO_CAP.
+// Never mutates storage — display-only.
+export function visibleGalleryPhotos(photos, features) {
+  const all = photos ?? []
+  if (features?.unlimitedPhotos) return all
+  return all.slice(0, FREE_PHOTO_CAP)
+}

@@ -8,6 +8,8 @@ import { useBrochureStore } from '../stores/brochureStore'
 import BrochureDocument from '../components/pdf/BrochureDocument'
 import FlipbookViewer from '../components/flipbook/FlipbookViewer'
 import { usePdfToImages } from '../hooks/usePdfToImages'
+import { getMemorialEntitlement } from '../utils/memorialApi'
+import { visibleGalleryPhotos } from '../config/memorialTiers'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
@@ -21,6 +23,9 @@ export default function FlipbookPage() {
   const [uploadedFilename, setUploadedFilename] = useState('')
   const [generating, setGenerating] = useState(true)
   const [uploadError, setUploadError] = useState(null)
+  const [entitlement, setEntitlement] = useState({ premium: false, tier: null, features: {} })
+
+  const features = entitlement.features ?? {}
 
   const activePdfBlob = sourceMode === 'upload' ? uploadedBlob : brochureBlob
   const { images, loading, error, progress } = usePdfToImages(activePdfBlob)
@@ -47,7 +52,7 @@ export default function FlipbookPage() {
     biographyPhotos: store.biographyPhotos,
     biographyPhotoCaptions: store.biographyPhotoCaptions,
     tributes: store.tributes,
-    galleryPhotos: store.galleryPhotos,
+    galleryPhotos: visibleGalleryPhotos(store.galleryPhotos, features),
     acknowledgements: store.acknowledgements,
     familySignature: store.familySignature,
     backCoverVerse: store.backCoverVerse,
@@ -57,6 +62,13 @@ export default function FlipbookPage() {
     memorialId: store.memorialId,
     memorialQrCode: store.memorialQrCode,
   }
+
+  // Fetch entitlement to enforce the soft display cap on gallery photos
+  useEffect(() => {
+    if (store.memorialId) {
+      getMemorialEntitlement(store.memorialId).then(setEntitlement).catch(() => {})
+    }
+  }, [store.memorialId])
 
   // Generate brochure PDF from store
   useEffect(() => {
