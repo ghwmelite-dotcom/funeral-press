@@ -13,6 +13,8 @@
 // MM-DD" is simply the UTC date's month/day. No tz library needed.
 // ============================================================
 
+import { escapeHtml } from './sanitize.js'
+
 const MEMORIAL_BASE = 'https://funeralpress.org/memorial'
 const RESEND_FROM = 'FuneralPress <notifications@funeralpress.org>'
 
@@ -28,6 +30,7 @@ const RESEND_FROM = 'FuneralPress <notifications@funeralpress.org>'
  */
 export function buildAnniversaryEmail({ deceasedName, occasion, memorialId, unsubscribeToken }) {
   const name = deceasedName || 'your loved one'
+  const safeName = escapeHtml(name)
   const memorialUrl = `${MEMORIAL_BASE}/${encodeURIComponent(memorialId)}`
   const unsubscribeUrl = `https://funeralpress.org/reminders/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`
 
@@ -35,16 +38,16 @@ export function buildAnniversaryEmail({ deceasedName, occasion, memorialId, unsu
 
   if (occasion === 'birthday') {
     subject = `Remembering ${name} today`
-    intro = `Today marks the birthday of <strong>${name}</strong>.`
+    intro = `Today marks the birthday of <strong>${safeName}</strong>.`
     body = 'On this day, we remember them with love and gratitude for the life they shared with us. You are receiving this because you chose to follow their memorial page.'
   } else if (occasion === 'death_anniversary') {
     subject = `Remembering ${name} today`
-    intro = `Today is the anniversary of the passing of <strong>${name}</strong>.`
+    intro = `Today is the anniversary of the passing of <strong>${safeName}</strong>.`
     body = 'On this day of remembrance, we hold their memory close and honour the mark they left on all who knew them. You are receiving this because you chose to follow their memorial page.'
   } else {
     // remembrance — holiday context
     subject = `Remembering ${name} today`
-    intro = `On this day of remembrance, we think of <strong>${name}</strong>.`
+    intro = `On this day of remembrance, we think of <strong>${safeName}</strong>.`
     body = 'Today is a time to honour those who have gone before us. You are receiving this because you chose to follow their memorial page.'
   }
 

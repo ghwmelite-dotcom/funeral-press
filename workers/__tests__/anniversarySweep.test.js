@@ -189,6 +189,33 @@ describe('buildAnniversaryEmail', () => {
     })
     expect(html).toContain('your loved one')
   })
+
+  it('HTML-escapes a deceasedName containing injection markup', () => {
+    const { html } = buildAnniversaryEmail({
+      deceasedName: '<img src=x onerror=alert(1)>Bob',
+      occasion: 'birthday',
+      memorialId: 'mem-inject',
+      unsubscribeToken: 'tok_inject',
+    })
+    // < and > must be escaped to entities — the browser will not parse an img tag
+    expect(html).toContain('&lt;img')
+    expect(html).toContain('&gt;Bob')
+    // Raw unescaped open tag must not appear anywhere in the HTML
+    expect(html).not.toContain('<img')
+  })
+
+  it('HTML-escapes a deceasedName with anchor phishing payload', () => {
+    const { html } = buildAnniversaryEmail({
+      deceasedName: '<a href="evil.example.com">click</a>',
+      occasion: 'death_anniversary',
+      memorialId: 'mem-phish',
+      unsubscribeToken: 'tok_phish',
+    })
+    // Angle brackets and quotes must be escaped
+    expect(html).toContain('&lt;a href=')
+    expect(html).toContain('&quot;evil.example.com&quot;')
+    expect(html).not.toContain('<a href="evil.example.com">')
+  })
 })
 
 // ─── handleFollowMemorial (via auth-api worker) ───────────────────────────────

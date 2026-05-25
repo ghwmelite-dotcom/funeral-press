@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/cloudflare'
 import { checkRateLimit, getRouteGroup } from './utils/rateLimiter.js'
-import { sanitizeInput } from './utils/sanitize.js'
+import { sanitizeInput, escapeHtml } from './utils/sanitize.js'
 import { withSecurityHeaders } from './utils/securityHeaders.js'
 import { logAudit, getClientIP } from './utils/auditLog.js'
 import { signJWT, verifyJWT } from './utils/jwt.js'
@@ -1063,6 +1063,12 @@ async function handlePremiumVerify(request, env, userId) {
 async function handleTributeInitialize(request, env, memorialId) {
   if (!memorialId) return error('Missing memorialId', 400, request)
 
+  // Per-IP rate limit: 30 tribute initializations/hour — prevents Paystack quota abuse
+  const ip = getClientIP(request)
+  if (await checkPhoneRateLimit(env, `tribute:ip:${ip}`, 30, 3600)) {
+    return error('Too many requests from this IP. Try again later.', 429, request)
+  }
+
   const body = await request.json().catch(() => ({}))
   const type = (body.type || '').trim()
   const authorName = sanitizeInput((body.authorName || '').trim())
@@ -1222,7 +1228,8 @@ async function handleFollowMemorial(request, env, memorialId) {
 
   // Send confirmation email via Resend (best-effort — don't fail the request)
   if (env.RESEND_API_KEY) {
-    const confirmHtml = `<p>You are now following the memorial page for <strong>${deceasedName || 'this person'}</strong>.</p>
+    const safeDeceasedName = escapeHtml(deceasedName || 'this person')
+    const confirmHtml = `<p>You are now following the memorial page for <strong>${safeDeceasedName}</strong>.</p>
 <p>We will send you a gentle reminder on their birthday and anniversary each year.</p>
 <p><a href="${memorialUrl}">Visit the memorial page</a></p>
 <p style="margin-top:32px;font-size:12px;color:#888;">
