@@ -1,4 +1,21 @@
 /**
+ * Escape a string for safe interpolation into an HTML context.
+ * Replaces & < > " ' with their HTML entities.
+ * Null/undefined → ''.
+ * @param {*} str
+ * @returns {string}
+ */
+export function escapeHtml(str) {
+  if (str == null) return ''
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/**
  * Sanitize a string value to prevent XSS attacks.
  * Strips script tags, event handlers, javascript: protocol, and dangerous embed elements.
  * @param {*} value - input to sanitize

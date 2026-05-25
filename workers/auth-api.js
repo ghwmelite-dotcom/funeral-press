@@ -1,15 +1,17 @@
 import * as Sentry from '@sentry/cloudflare'
 import { checkRateLimit, getRouteGroup } from './utils/rateLimiter.js'
-import { sanitizeInput } from './utils/sanitize.js'
+import { sanitizeInput, escapeHtml } from './utils/sanitize.js'
 import { withSecurityHeaders } from './utils/securityHeaders.js'
 import { logAudit, getClientIP } from './utils/auditLog.js'
 import { signJWT, verifyJWT } from './utils/jwt.js'
 import { runDunningCron } from './utils/dunning.js'
+import { runAnniversarySweep } from './utils/anniversaryEmail.js'
 import { runD1Cleanup } from './utils/dbCleanup.js'
 import { hashPin, verifyPin, isValidPinFormat } from './utils/pinHash.js'
 import { generateAuthEmailToken, consumeAuthEmailToken } from './utils/authEmailToken.js'
 import { sendVerifyEmail, sendPinResetEmail, sendPinChangedEmail } from './utils/authEmails.js'
 import { buildTributeEdit } from './utils/shotstackEdit.js'
+import { candleProduct } from './candleConfig.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -1055,6 +1057,233 @@ async function handlePremiumVerify(request, env, userId) {
   return json({ verified: true, premium: true }, 200, request)
 }
 
+// ─── Memorial Tributes (digital candles / flowers / written tribute) ─────────
+
+// Public: initialize a tribute purchase. No auth required — buyer supplies email.
+async function handleTributeInitialize(request, env, memorialId) {
+  if (!memorialId) return error('Missing memorialId', 400, request)
+
+  // Per-IP rate limit: 30 tribute initializations/hour — prevents Paystack quota abuse
+  const ip = getClientIP(request)
+  if (await checkPhoneRateLimit(env, `tribute:ip:${ip}`, 30, 3600)) {
+    return error('Too many requests from this IP. Try again later.', 429, request)
+  }
+
+  const body = await request.json().catch(() => ({}))
+  const type = (body.type || '').trim()
+  const authorName = sanitizeInput((body.authorName || '').trim())
+  const email = (body.email || '').trim().toLowerCase()
+  const rawMessage = (body.message || '').trim()
+
+  const product = candleProduct(type)
+  if (!product) return error('Unknown tribute type', 400, request)
+  if (!authorName || authorName.length > 60) return error('Author name required (1–60 characters)', 400, request)
+  if (!EMAIL_REGEX.test(email)) return error('Invalid email address', 400, request)
+
+  const message = sanitizeInput(rawMessage.slice(0, product.maxMessage))
+
+  const id = generateId()
+  const reference = `fp-candle-${generateId()}`
+
+  const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email,
+      amount: product.pesewas,
+      reference,
+      metadata: { memorialId, type, kind: 'candle' },
+    }),
+  })
+  const psData = await psRes.json()
+  if (!psData.status || !psData.data?.authorization_url) {
+    return error('Payment initialization failed', 502, request)
+  }
+
+  await env.DB.prepare(
+    `INSERT INTO memorial_tributes (id, memorial_id, type, author_name, message, amount_pesewas, paystack_reference, status, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
+  ).bind(id, memorialId, type, authorName, message, product.pesewas, reference, Date.now()).run()
+
+  return json({ authorization_url: psData.data.authorization_url, reference }, 200, request)
+}
+
+// Public: verify a tribute payment (client-side backstop).
+async function handleTributeVerify(request, env, reference) {
+  if (!reference) return error('Missing reference', 400, request)
+
+  const row = await env.DB.prepare(
+    'SELECT * FROM memorial_tributes WHERE paystack_reference = ?'
+  ).bind(reference).first()
+  if (!row) return error('Not found', 404, request)
+  if (row.status === 'paid') return json({ paid: true }, 200, request)
+
+  const psRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+    headers: { Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}` },
+  })
+  const psData = await psRes.json()
+  if (!psData.status || psData.data?.status !== 'success') return json({ paid: false }, 200, request)
+  if (psData.data.amount !== row.amount_pesewas) return json({ paid: false }, 200, request)
+
+  await env.DB.prepare(
+    "UPDATE memorial_tributes SET status='paid', paid_at=? WHERE id=? AND status='pending'"
+  ).bind(new Date().toISOString(), row.id).run()
+  return json({ paid: true }, 200, request)
+}
+
+// Public: list paid tributes for a memorial.
+async function handleListTributes(request, env, memorialId) {
+  const rows = await env.DB.prepare(
+    `SELECT id, type, author_name, message, created_at
+     FROM memorial_tributes
+     WHERE memorial_id = ? AND status = 'paid'
+     ORDER BY created_at DESC LIMIT 200`
+  ).bind(memorialId).all()
+
+  const tributes = rows.results || []
+  const counts = { candle: 0, flowers: 0, tribute: 0 }
+  for (const t of tributes) {
+    if (counts[t.type] !== undefined) counts[t.type]++
+  }
+  return json({ tributes, counts }, 200, request)
+}
+
+// ─── Memorial Followers: follow + unsubscribe ─────────────────────────────────
+
+/**
+ * POST /memorial/:id/follow  (public)
+ * Body: { email, deceasedName, dateOfBirth?, dateOfDeath? }
+ *
+ * Upserts memorial_meta and memorial_followers. Sends a confirmation email
+ * with an unsubscribe link. Per-IP rate-limited (20/hour).
+ *
+ * NOTE: Africa/Accra is UTC+0 year-round — updated_at uses UTC epoch millis.
+ */
+async function handleFollowMemorial(request, env, memorialId) {
+  if (!memorialId) return error('Missing memorialId', 400, request)
+
+  // Per-IP rate limit: 20 follows/hour — prevents email-harvest abuse
+  const ip = getClientIP(request)
+  if (await checkPhoneRateLimit(env, `follow:ip:${ip}`, 20, 3600)) {
+    return error('Too many requests from this IP. Try again later.', 429, request)
+  }
+
+  const body = await request.json().catch(() => ({}))
+  const email = (body.email || '').trim().toLowerCase()
+  const deceasedName = sanitizeInput((body.deceasedName || '').trim())
+
+  if (!EMAIL_REGEX.test(email)) return error('Invalid email address', 400, request)
+
+  // Derive 'MM-DD' from ISO-ish date strings (e.g. '1948-03-12' → '03-12').
+  // Store NULL if missing or unparseable.
+  function toMd(isoStr) {
+    if (!isoStr) return null
+    const d = new Date(isoStr)
+    if (isNaN(d.getTime())) return null
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0')
+    const dd = String(d.getUTCDate()).padStart(2, '0')
+    return `${mm}-${dd}`
+  }
+
+  const birth_md = toMd(body.dateOfBirth)
+  const death_md = toMd(body.dateOfDeath)
+  const now = Date.now()
+
+  // UPSERT memorial_meta — keep existing last_reminder_md untouched.
+  // COALESCE preserves existing non-null dates so a second follower subscribing
+  // from a context without dates cannot silently clear anniversary dates.
+  await env.DB.prepare(
+    `INSERT INTO memorial_meta (memorial_id, deceased_name, birth_md, death_md, last_reminder_md, updated_at)
+     VALUES (?, ?, ?, ?, NULL, ?)
+     ON CONFLICT(memorial_id) DO UPDATE SET
+       deceased_name = COALESCE(excluded.deceased_name, deceased_name),
+       birth_md = COALESCE(excluded.birth_md, birth_md),
+       death_md = COALESCE(excluded.death_md, death_md),
+       updated_at = excluded.updated_at`
+  ).bind(memorialId, deceasedName || null, birth_md, death_md, now).run()
+
+  // Generate unsubscribe token for this follower
+  const followerId = generateId()
+  const unsubscribeToken = randomHex(32) // 64 hex chars — unguessable
+
+  // UPSERT memorial_followers — ON CONFLICT (memorial_id, email) → no-op
+  // (already following; don't overwrite token so existing unsubscribe links stay valid)
+  await env.DB.prepare(
+    `INSERT INTO memorial_followers (id, memorial_id, email, user_id, unsubscribe_token, created_at)
+     VALUES (?, ?, ?, NULL, ?, ?)
+     ON CONFLICT(memorial_id, email) DO NOTHING`
+  ).bind(followerId, memorialId, email, unsubscribeToken, now).run()
+
+  // Fetch the canonical token (might differ if row already existed)
+  const followerRow = await env.DB.prepare(
+    `SELECT unsubscribe_token FROM memorial_followers WHERE memorial_id = ? AND email = ?`
+  ).bind(memorialId, email).first()
+
+  const token = followerRow?.unsubscribe_token || unsubscribeToken
+  const unsubscribeUrl = `https://funeralpress.org/reminders/unsubscribe?token=${encodeURIComponent(token)}`
+  const memorialUrl = `https://funeralpress.org/memorial/${encodeURIComponent(memorialId)}`
+
+  // Send confirmation email via Resend (best-effort — don't fail the request)
+  if (env.RESEND_API_KEY) {
+    const safeDeceasedName = escapeHtml(deceasedName || 'this person')
+    const confirmHtml = `<p>You are now following the memorial page for <strong>${safeDeceasedName}</strong>.</p>
+<p>We will send you a gentle reminder on their birthday and anniversary each year.</p>
+<p><a href="${memorialUrl}">Visit the memorial page</a></p>
+<p style="margin-top:32px;font-size:12px;color:#888;">
+  You can <a href="${unsubscribeUrl}">unsubscribe from reminders</a> at any time.
+</p>`
+    fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'FuneralPress <notifications@funeralpress.org>',
+        to: [email],
+        subject: `You're following ${deceasedName || 'this memorial'}`,
+        html: confirmHtml,
+      }),
+    }).catch((e) => console.error('[follow] Confirmation email failed:', e?.message || e))
+  }
+
+  return json({ ok: true }, 200, request)
+}
+
+/**
+ * POST /reminders/unsubscribe  (public)
+ * Body: { token }
+ *
+ * Removes the follower row identified by the unsubscribe_token.
+ * Using POST so email link-scanners (Outlook SafeLinks, Gmail, Apple Mail)
+ * that pre-fetch GET URLs cannot silently unsubscribe users.
+ * Idempotent — unknown tokens still return { ok: true } 200.
+ *
+ * Returns JSON so the SPA page at https://funeralpress.org/reminders/unsubscribe
+ * can call this endpoint via fetch and render its own confirmation UI.
+ */
+async function handleUnsubscribe(request, env) {
+  const body = await request.json().catch(() => ({}))
+  const token = (body.token || '').trim()
+
+  if (token) {
+    const row = await env.DB.prepare(
+      `SELECT memorial_id FROM memorial_followers WHERE unsubscribe_token = ?`
+    ).bind(token).first()
+    if (row) {
+      await env.DB.prepare(
+        `DELETE FROM memorial_followers WHERE unsubscribe_token = ?`
+      ).bind(token).run()
+    }
+  }
+
+  // Unknown or missing token → still 200 { ok: true } (idempotent / link-scanner safe)
+  return json({ ok: true }, 200, request)
+}
+
 async function handlePaymentWebhook(request, env) {
   // Paystack webhook IP allowlist
   const PAYSTACK_IPS = ['52.31.139.75', '52.49.173.169', '52.214.14.220']
@@ -1111,6 +1340,24 @@ async function handlePaymentWebhook(request, env) {
     if (prem && prem.status !== 'succeeded' && event.data.amount === prem.amount_pesewas) {
       await markPremiumSucceeded(env, prem)
     }
+    return json({ ok: true }, 200, request)
+  }
+
+  // Digital candle/flower/tribute (fp-candle- prefix). Backstop for handleTributeVerify.
+  if (reference.startsWith('fp-candle-')) {
+    const tribute = await env.DB.prepare('SELECT * FROM memorial_tributes WHERE paystack_reference = ?').bind(reference).first()
+    if (!tribute) {
+      console.warn('[webhook] fp-candle- reference not found', { reference })
+      return json({ ok: true }, 200, request)
+    }
+    if (tribute.status === 'paid') return json({ ok: true }, 200, request)
+    if (event.data.amount !== tribute.amount_pesewas) {
+      console.error('[webhook] fp-candle- amount mismatch', { reference, expected: tribute.amount_pesewas, got: event.data.amount })
+      return json({ ok: true }, 200, request)
+    }
+    await env.DB.prepare(
+      "UPDATE memorial_tributes SET status='paid', paid_at=? WHERE id=? AND status='pending'"
+    ).bind(new Date().toISOString(), tribute.id).run()
     return json({ ok: true }, 200, request)
   }
 
@@ -2706,10 +2953,22 @@ const handler = {
       if (obituaryMatch) return await handleGetObituary(request, env, obituaryMatch[1])
       const premiumStatusMatch = method === 'GET' && path.match(/^\/memorial-premium\/([^/]+)$/)
       if (premiumStatusMatch) return await handlePremiumStatus(request, env, premiumStatusMatch[1])
+      // Memorial tributes (digital candles / flowers / written tributes)
+      const tributeListMatch = method === 'GET' && path.match(/^\/memorial\/([^/]+)\/tributes$/)
+      if (tributeListMatch) return await handleListTributes(request, env, tributeListMatch[1])
+      const tributeInitMatch = method === 'POST' && path.match(/^\/memorial\/([^/]+)\/tributes$/)
+      if (tributeInitMatch) return await handleTributeInitialize(request, env, tributeInitMatch[1])
+      const tributeVerifyMatch = method === 'GET' && path.match(/^\/tribute\/([^/]+)\/verify$/)
+      if (tributeVerifyMatch) return await handleTributeVerify(request, env, tributeVerifyMatch[1])
       const tributeStatusMatch = method === 'GET' && path.match(/^\/tribute-video\/([^/]+)\/status$/)
       if (tributeStatusMatch) return await handleTributeVideoStatus(request, env, tributeStatusMatch[1])
       const galleryMatch = method === 'GET' && path.match(/^\/gallery\/([^/]+)$/)
       if (galleryMatch) return await handleGetGallery(request, env, galleryMatch[1])
+
+      // Memorial follow + reminder unsubscribe (public)
+      const followMatch = method === 'POST' && path.match(/^\/memorial\/([^/]+)\/follow$/)
+      if (followMatch) return await handleFollowMemorial(request, env, followMatch[1])
+      if (method === 'POST' && path === '/reminders/unsubscribe') return await handleUnsubscribe(request, env)
 
       // Public venues listing
       if (method === 'GET' && path === '/venues') return await handleListVenues(request, env)
@@ -2920,6 +3179,11 @@ const handler = {
     } else if (cron === '0 8 * * *') {
       ctx.waitUntil(runDunningCron(env).catch((e) => {
         console.error('[scheduled] runDunningCron failed:', e?.message || e)
+        Sentry.captureException(e)
+      }))
+    } else if (cron === '0 7 * * *') {
+      ctx.waitUntil(runAnniversarySweep(env).catch((e) => {
+        console.error('[scheduled] runAnniversarySweep failed:', e?.message || e)
         Sentry.captureException(e)
       }))
     } else {
