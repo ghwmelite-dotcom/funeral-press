@@ -1017,6 +1017,9 @@ export async function resolveMemorialEntitlement(env, memorialId) {
   const features = Object.fromEntries(
     Object.keys(FEATURE_MIN_RANK).map((f) => [f, tierHasFeature(tier, f)])
   )
+  // `tier`/`active`/`features` are the access-control truth. planType/expiresAt
+  // reflect the most-relevant row even when it has expired (so callers can show
+  // a "your annual plan lapsed — renew" prompt) — never gate features on them.
   return { tier, planType: row?.plan_type ?? null, active, expiresAt: row?.expires_at ?? null, features }
 }
 
