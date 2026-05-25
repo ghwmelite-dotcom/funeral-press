@@ -91,5 +91,9 @@ export async function followMemorial(memorialId, { email, deceasedName, dateOfBi
 }
 
 export async function unsubscribeReminders(token) {
-  return apiFetch(`/reminders/unsubscribe?token=${encodeURIComponent(token)}`, { auth: false })
+  return apiFetch('/reminders/unsubscribe', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify({ token }),
+  })
 }

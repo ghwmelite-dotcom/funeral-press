@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
+import { CheckCircle2, XCircle } from 'lucide-react'
 import { unsubscribeReminders } from '../utils/memorialApi'
 
 export default function UnsubscribePage() {
@@ -24,7 +25,7 @@ export default function UnsubscribePage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-sm text-center">
+      <div className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-sm text-center" aria-live="polite">
 
         {status === 'loading' && (
           <>
@@ -39,7 +40,7 @@ export default function UnsubscribePage() {
 
         {status === 'success' && (
           <>
-            <div className="text-emerald-500 text-4xl mb-3" aria-hidden="true">&#10003;</div>
+            <CheckCircle2 size={40} className="mx-auto mb-3 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
             <h1 className="text-xl font-semibold text-foreground mb-1">You&apos;ve been unsubscribed</h1>
             <p className="text-muted-foreground text-sm mb-5">
               You won&apos;t receive reminders for this memorial.
@@ -55,7 +56,7 @@ export default function UnsubscribePage() {
 
         {status === 'error' && (
           <>
-            <div className="text-destructive text-4xl mb-3" aria-hidden="true">&#10005;</div>
+            <XCircle size={40} className="mx-auto mb-3 text-destructive" aria-hidden="true" />
             <h1 className="text-xl font-semibold text-foreground mb-1">Something went wrong</h1>
             <p className="text-muted-foreground text-sm mb-5" role="alert">
               We couldn&apos;t process your unsubscribe request. If this keeps happening,
@@ -79,7 +80,7 @@ export default function UnsubscribePage() {
 
         {status === 'no-token' && (
           <>
-            <div className="text-muted-foreground text-4xl mb-3" aria-hidden="true">&#10005;</div>
+            <XCircle size={40} className="mx-auto mb-3 text-muted-foreground" aria-hidden="true" />
             <h1 className="text-xl font-semibold text-foreground mb-1">Invalid link</h1>
             <p className="text-muted-foreground text-sm mb-5" role="alert">
               This unsubscribe link is missing a token. Please use the link from your

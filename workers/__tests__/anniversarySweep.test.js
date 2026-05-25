@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   buildAnniversaryEmail,
-  sendReminderEmail,
   runAnniversarySweep,
   HOLIDAYS,
 } from '../utils/anniversaryEmail.js'
@@ -296,7 +295,6 @@ describe('handleFollowMemorial via auth-api worker', () => {
     await worker.fetch(makeRequest('mem-dup', body), env)
     await worker.fetch(makeRequest('mem-dup', body), env)
 
-    const key = 'mem-dup:dup@example.com'
     // Only one follower row should exist (ON CONFLICT DO NOTHING)
     const inserts = db._state.inserts.filter(i => i.memId === 'mem-dup' && i.email === 'dup@example.com')
     expect(inserts).toHaveLength(1)
@@ -354,31 +352,32 @@ describe('handleUnsubscribe via auth-api worker', () => {
     }
   }
 
-  it('removes the follower row by token and returns a friendly HTML page', async () => {
+  it('removes the follower row by token and returns { ok: true }', async () => {
     const token = 'valid-token-abc'
     const db = makeUnsubDb(token)
-    const req = new Request(`https://auth-api.funeralpress.org/reminders/unsubscribe?token=${token}`, {
-      method: 'GET',
-      headers: { 'CF-Connecting-IP': '1.2.3.4' },
+    const req = new Request('https://auth-api.funeralpress.org/reminders/unsubscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '1.2.3.4' },
+      body: JSON.stringify({ token }),
     })
     const res = await worker.fetch(req, makeEnv(db))
     expect(res.status).toBe(200)
-    const text = await res.text()
-    expect(text).toContain('unsubscribed')
+    const data = await res.json()
+    expect(data.ok).toBe(true)
     expect(db._state.deleted).toContain(token)
   })
 
   it('returns a friendly 200 for an unknown token (idempotent no-op)', async () => {
     const db = makeUnsubDb(null) // no token stored
-    const req = new Request(
-      'https://auth-api.funeralpress.org/reminders/unsubscribe?token=unknown-xyz',
-      { method: 'GET', headers: { 'CF-Connecting-IP': '1.2.3.4' } }
-    )
+    const req = new Request('https://auth-api.funeralpress.org/reminders/unsubscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '1.2.3.4' },
+      body: JSON.stringify({ token: 'unknown-xyz' }),
+    })
     const res = await worker.fetch(req, makeEnv(db))
     expect(res.status).toBe(200)
-    const text = await res.text()
-    // Still shows the unsubscribed confirmation — friendly regardless
-    expect(text).toContain('unsubscribed')
+    const data = await res.json()
+    expect(data.ok).toBe(true)
     // DELETE was not called for a missing row
     expect(db._state.deleted).toHaveLength(0)
   })

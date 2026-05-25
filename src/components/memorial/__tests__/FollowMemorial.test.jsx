@@ -109,4 +109,23 @@ describe('FollowMemorial', () => {
       expect(screen.getByRole('alert')).toHaveTextContent(/Server error/i)
     )
   })
+
+  it('disables the submit button and shows loading label while followMemorial is pending', async () => {
+    let resolve
+    mockFollowMemorial.mockReturnValueOnce(new Promise((res) => { resolve = res }))
+    renderComponent()
+
+    fireEvent.change(screen.getByLabelText(/Your email address/i), {
+      target: { value: 'pending@test.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /Remind me/i }))
+
+    // Button should be disabled with a loading label while the promise is still pending
+    const btn = screen.getByRole('button', { name: /Saving/i })
+    expect(btn).toBeDisabled()
+
+    // Clean up — resolve so the component doesn't leak a pending state update
+    resolve({ ok: true })
+    await waitFor(() => expect(screen.queryByRole('button', { name: /Saving/i })).not.toBeInTheDocument())
+  })
 })

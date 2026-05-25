@@ -1186,14 +1186,16 @@ async function handleFollowMemorial(request, env, memorialId) {
   const death_md = toMd(body.dateOfDeath)
   const now = Date.now()
 
-  // UPSERT memorial_meta — keep existing last_reminder_md untouched
+  // UPSERT memorial_meta — keep existing last_reminder_md untouched.
+  // COALESCE preserves existing non-null dates so a second follower subscribing
+  // from a context without dates cannot silently clear anniversary dates.
   await env.DB.prepare(
     `INSERT INTO memorial_meta (memorial_id, deceased_name, birth_md, death_md, last_reminder_md, updated_at)
      VALUES (?, ?, ?, ?, NULL, ?)
      ON CONFLICT(memorial_id) DO UPDATE SET
-       deceased_name = excluded.deceased_name,
-       birth_md = excluded.birth_md,
-       death_md = excluded.death_md,
+       deceased_name = COALESCE(excluded.deceased_name, deceased_name),
+       birth_md = COALESCE(excluded.birth_md, birth_md),
+       death_md = COALESCE(excluded.death_md, death_md),
        updated_at = excluded.updated_at`
   ).bind(memorialId, deceasedName || null, birth_md, death_md, now).run()
 
@@ -1245,18 +1247,20 @@ async function handleFollowMemorial(request, env, memorialId) {
 }
 
 /**
- * GET /reminders/unsubscribe?token=<token>  (public)
+ * POST /reminders/unsubscribe  (public)
+ * Body: { token }
  *
  * Removes the follower row identified by the unsubscribe_token.
- * Idempotent — unknown tokens still return { ok: true } 200 so link-scanners
- * (Outlook Safe-Links, etc.) don't silently invalidate the token on first load.
+ * Using POST so email link-scanners (Outlook SafeLinks, Gmail, Apple Mail)
+ * that pre-fetch GET URLs cannot silently unsubscribe users.
+ * Idempotent — unknown tokens still return { ok: true } 200.
  *
  * Returns JSON so the SPA page at https://funeralpress.org/reminders/unsubscribe
  * can call this endpoint via fetch and render its own confirmation UI.
  */
 async function handleUnsubscribe(request, env) {
-  const url = new URL(request.url)
-  const token = (url.searchParams.get('token') || '').trim()
+  const body = await request.json().catch(() => ({}))
+  const token = (body.token || '').trim()
 
   if (token) {
     const row = await env.DB.prepare(
@@ -2957,7 +2961,7 @@ const handler = {
       // Memorial follow + reminder unsubscribe (public)
       const followMatch = method === 'POST' && path.match(/^\/memorial\/([^/]+)\/follow$/)
       if (followMatch) return await handleFollowMemorial(request, env, followMatch[1])
-      if (method === 'GET' && path === '/reminders/unsubscribe') return await handleUnsubscribe(request, env)
+      if (method === 'POST' && path === '/reminders/unsubscribe') return await handleUnsubscribe(request, env)
 
       // Public venues listing
       if (method === 'GET' && path === '/venues') return await handleListVenues(request, env)
