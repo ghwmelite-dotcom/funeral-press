@@ -2453,6 +2453,15 @@ async function handleSubscriptionWebhook(request, env) {
       const amountPesewas = TIERS[tier].annualPesewas
       const subCode = data.subscription_code || null
 
+      // Guard: subscription_code is virtually always present on subscription.create,
+      // but if Paystack omits it we cannot store a renewable row (renewals look up by
+      // paystack_subscription_code; a NULL value would never match). Bail loudly so
+      // ops can investigate rather than silently creating an unrenewable row.
+      if (!subCode) {
+        console.error('[webhook] memorial subscription.create missing subscription_code', { memorialId })
+        return json({ ok: true }, 200, request)
+      }
+
       // UPSERT into subscriptions (keyed on paystack_subscription_code).
       // A memorial can have multiple subs over time (e.g. cancel + re-subscribe);
       // ON CONFLICT on paystack_subscription_code is the correct key.
@@ -2642,8 +2651,12 @@ async function handleSubscriptionWebhook(request, env) {
       // user doesn't carry stale dunning state into the next billing cycle.
       // (charge.failed sets dunning_stage=0 + status='past_due'; this is the
       // symmetric reset for successful retries.)
+      //
+      // IMPORTANT: memorial_annual subs must NOT receive design-download credits
+      // (created with monthly_credits_remaining = 0; pay only for memorial-page
+      // features). Use CASE to preserve their existing value; account subs reset to 15.
       await env.DB.prepare(
-        "UPDATE subscriptions SET monthly_credits_remaining = 15, current_period_start = datetime('now'), current_period_end = ?, status = 'active', dunning_stage = 0, last_dunning_sent_at = NULL, updated_at = datetime('now') WHERE id = ?"
+        "UPDATE subscriptions SET monthly_credits_remaining = CASE WHEN plan = 'memorial_annual' THEN monthly_credits_remaining ELSE 15 END, current_period_start = datetime('now'), current_period_end = ?, status = 'active', dunning_stage = 0, last_dunning_sent_at = NULL, updated_at = datetime('now') WHERE id = ?"
       ).bind(periodEnd, sub.id).run()
 
       // For memorial annual renewals: extend the entitlement row so the page

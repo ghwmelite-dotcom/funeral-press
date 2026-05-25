@@ -217,7 +217,13 @@ function makeMockDb({ user = { id: USER_ID, email: 'buyer@example.com' }, premiu
               if (sql.includes("status = 'active'")) sub.status = 'active'
               if (sql.includes("status = 'cancelled'")) sub.status = 'cancelled'
               if (sql.includes("status = 'past_due'")) sub.status = 'past_due'
-              if (sql.includes('monthly_credits_remaining = 15')) sub.monthly_credits_remaining = 15
+              // Handle CASE-based credit reset:
+              //   CASE WHEN plan = 'memorial_annual' THEN monthly_credits_remaining ELSE 15 END
+              //   memorial subs keep their current value; account subs reset to 15.
+              if (sql.includes('CASE WHEN plan =')) {
+                if (sub.plan !== 'memorial_annual') sub.monthly_credits_remaining = 15
+                // else: leave monthly_credits_remaining unchanged
+              }
               if (sql.includes('dunning_stage = 0')) sub.dunning_stage = 0
               if (args[0] && sql.includes('current_period_end = ?')) sub.current_period_end = args[0]
             }
@@ -460,6 +466,50 @@ describe('POST /subscriptions/webhook — memorial_annual subscription.create', 
     expect(premRow.tier).toBe('heritage')
     expect(premRow.amount_pesewas).toBe(28000)   // TIERS.heritage.annualPesewas
   })
+
+  it('memorial subscription.create with NO subscription_code → returns ok but inserts NO subscriptions or memorial_premium rows', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const env = makeEnv()
+    const nextPaymentDate = new Date(Date.now() + 365 * 86400000).toISOString()
+    const event = {
+      event: 'subscription.create',
+      data: {
+        // subscription_code intentionally absent — defensive edge case
+        plan: { plan_code: 'PLN_prem_annual_test' },
+        customer: { customer_code: 'CUS_001' },
+        email_token: 'tok_001',
+        next_payment_date: nextPaymentDate,
+        reference: 'ref_nocode_001',
+        metadata: {
+          kind: 'memorial_annual',
+          memorialId: MEMORIAL_ID,
+          tier: 'premium',
+          userId: USER_ID,
+        },
+      },
+    }
+
+    const req = await webhookReq(event)
+    const res = await worker.fetch(req, env)
+
+    // Must ack Paystack (no retry storm)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.ok).toBe(true)
+
+    // Must NOT have inserted any rows (unrenewable row would silently lapse)
+    expect(env.DB._state.inserts.filter((i) => i.type === 'subscription')).toHaveLength(0)
+    expect(env.DB._state.inserts.filter((i) => i.type === 'memorial_premium')).toHaveLength(0)
+    expect(env.DB._state.premium).toHaveLength(0)
+    expect(env.DB._state.subscriptions).toHaveLength(0)
+
+    // Must have logged the error loudly
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('memorial subscription.create missing subscription_code'),
+      expect.objectContaining({ memorialId: MEMORIAL_ID })
+    )
+    consoleSpy.mockRestore()
+  })
 })
 
 // ─── Webhook: memorial annual charge.success (renewal) ───────────────────────
@@ -496,6 +546,7 @@ describe('POST /subscriptions/webhook — memorial_annual charge.success (renewa
         last_dunning_sent_at: new Date().toISOString(),
         memorial_id: MEMORIAL_ID,
         memorial_tier: 'premium',
+        monthly_credits_remaining: 0,  // memorial subs start at 0 and must stay 0
       }],
     })
 
@@ -534,6 +585,12 @@ describe('POST /subscriptions/webhook — memorial_annual charge.success (renewa
       (u) => u.type === 'subscription_update' && u.sql.includes('dunning_stage = 0')
     )
     expect(subUpdateCall).toBeDefined()
+
+    // CRITICAL: memorial_annual renewal must NOT grant design-download credits.
+    // monthly_credits_remaining must remain 0, not be reset to 15.
+    const subRow = env.DB._state.subscriptions.find((s) => s.id === 'sub-ren-01')
+    expect(subRow).toBeDefined()
+    expect(subRow.monthly_credits_remaining).toBe(0)
   })
 })
 
@@ -730,11 +787,11 @@ describe('POST /subscriptions/webhook — account pro_monthly regression smoke t
     const mpUpdate = env.DB._state.updates.find((u) => u.type === 'memorial_premium_update')
     expect(mpUpdate).toBeUndefined()
 
-    // But the subscription should have been updated (credits reset)
-    const subUpdateCall = env.DB._state.updates.find(
-      (u) => u.type === 'subscription_update' && u.sql.includes('monthly_credits_remaining = 15')
-    )
-    expect(subUpdateCall).toBeDefined()
+    // The subscription should have been updated — credits reset to 15 for account plans.
+    // Verify via the actual row value (not just the SQL string) to catch CASE regressions.
+    const subRow = env.DB._state.subscriptions.find((s) => s.paystack_subscription_code === 'SUB_pm_001')
+    expect(subRow).toBeDefined()
+    expect(subRow.monthly_credits_remaining).toBe(15)
   })
 })
 
