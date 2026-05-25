@@ -12,6 +12,8 @@ GOOGLE_CLIENT_ID = "820118502550-4cju49bcbn2btvr3d31k5cpgdefpv0j1.apps.googleuse
 CORS_ORIGIN = "https://funeralpress.org"
 PAYSTACK_PLAN_MONTHLY = "PLN_e0z9m03nuwd582x"
 PAYSTACK_PLAN_ANNUAL = "PLN_2ijmz43rukw84ql"
+PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL = "PLN_placeholder_premium"
+PAYSTACK_PLAN_MEMORIAL_HERITAGE_ANNUAL = "PLN_placeholder_heritage"
 SHOTSTACK_ENV = "stage"   # 'stage' = free sandbox (watermarked) · 'v1' = production
 
 [[d1_databases]]

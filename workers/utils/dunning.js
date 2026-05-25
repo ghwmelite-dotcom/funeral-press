@@ -156,18 +156,74 @@ async function sendResendEmail(env, to, { subject, html, text }) {
   }
 }
 
+// ─── Memorial annual renewal reminder emails ─────────────────────────────────
+
+// How far before expires_at to send each reminder.
+const MEMORIAL_REMINDER_T14_MS = 14 * DAY_MS
+const MEMORIAL_REMINDER_T3_MS = 3 * DAY_MS
+
+export function memorialRenewalT14Email(user, memorialName, renewUrl = FALLBACK_PORTAL_URL) {
+  const name = recipientName(user)
+  const memorial = memorialName || 'the memorial page'
+  const subject = `Renewal reminder: ${memorial}'s premium features`
+  const text = `Hi ${name},
+
+A quick heads-up: the premium features on ${memorial}'s memorial page are set to lapse in about 14 days.
+
+Renew to keep features like unlimited photos, all themes, and tribute video active.
+
+Renew here: ${renewUrl}
+
+If you choose not to renew, the page will remain online and all content is preserved — only the premium features will lapse.
+
+— The FuneralPress team`
+  const html = `<p>Hi ${name},</p>
+<p>A quick heads-up: the premium features on <strong>${memorial}</strong>'s memorial page are set to lapse in about 14 days.</p>
+<p>Renew to keep features like unlimited photos, all themes, and tribute video active.</p>
+<p><a href="${renewUrl}">Renew here</a></p>
+<p style="font-size:13px;color:#666;">If you choose not to renew, the page will remain online and all content is preserved — only the premium features will lapse.</p>
+<p>— The FuneralPress team</p>`
+  return { subject, text, html }
+}
+
+export function memorialRenewalT3Email(user, memorialName, renewUrl = FALLBACK_PORTAL_URL) {
+  const name = recipientName(user)
+  const memorial = memorialName || 'the memorial page'
+  const subject = `3 days left: keep ${memorial}'s premium features active`
+  const text = `Hi ${name},
+
+Just 3 days left before the premium features on ${memorial}'s memorial page lapse.
+
+Renew now to keep everything active: ${renewUrl}
+
+The page and all content are always preserved — only premium features change.
+
+— The FuneralPress team`
+  const html = `<p>Hi ${name},</p>
+<p>Just 3 days left before the premium features on <strong>${memorial}</strong>'s memorial page lapse.</p>
+<p><a href="${renewUrl}">Renew now</a> to keep everything active.</p>
+<p style="font-size:13px;color:#666;">The page and all content are always preserved — only premium features change.</p>
+<p>— The FuneralPress team</p>`
+  return { subject, text, html }
+}
+
 // ─── Cron entry point ───────────────────────────────────────────────────────
 
 /**
  * Daily dunning sweep. Walks past_due subscriptions through Day 1 / Day 3 /
  * Day 7 downgrade stages and sends Resend emails.
  *
+ * Also sends renewal reminders for memorial annual subs nearing expires_at
+ * (T-14 and T-3 days). Uses last_dunning_sent_at as the duplicate-send guard:
+ * a reminder sets last_dunning_sent_at on the subscriptions row (keyed by
+ * paystack_subscription_code) so the cron won't re-send within 5 days.
+ *
  * Exported for direct testing.
  */
 export async function runDunningCron(env) {
   if (!env?.DB) {
     console.warn('[dunning] No DB binding; skipping')
-    return { processed: 0, day1: 0, day3: 0, downgraded: 0 }
+    return { processed: 0, day1: 0, day3: 0, downgraded: 0, memorialReminders: 0 }
   }
 
   // Pull every past_due subscription that has not yet hit terminal stage 3.
@@ -256,5 +312,65 @@ export async function runDunningCron(env) {
     // stage >= 3 is filtered out by the SELECT; no-op safety
   }
 
-  return { processed: results.length, day1, day3, downgraded }
+  // ── Memorial annual renewal reminders ─────────────────────────────────────
+  // Find active annual memorial_premium rows expiring within the next 14 days.
+  // We use last_dunning_sent_at on the linked subscriptions row as a duplicate-
+  // send guard (avoid resending within 5 days of the last reminder).
+  let memorialReminders = 0
+  try {
+    const t14Threshold = now + MEMORIAL_REMINDER_T14_MS  // expires within 14 days
+    const { results: expiringRows = [] } = await env.DB.prepare(
+      `SELECT mp.memorial_id, mp.expires_at, mp.paystack_subscription_code,
+              mm.deceased_name,
+              s.id AS sub_id, s.last_dunning_sent_at AS last_reminder_sent,
+              u.email AS user_email, u.name AS user_name
+         FROM memorial_premium mp
+         LEFT JOIN subscriptions s ON s.paystack_subscription_code = mp.paystack_subscription_code
+         LEFT JOIN users u ON u.id = s.user_id
+         LEFT JOIN memorial_meta mm ON mm.memorial_id = mp.memorial_id
+        WHERE mp.plan_type = 'annual'
+          AND mp.status = 'succeeded'
+          AND mp.expires_at IS NOT NULL
+          AND mp.expires_at > ?
+          AND mp.expires_at <= ?`
+    ).bind(now, t14Threshold).all()
+
+    for (const row of expiringRows) {
+      if (!row.user_email) continue
+
+      const expiresAtMs = Number(row.expires_at)
+      const timeToExpiry = expiresAtMs - now
+      const lastReminderMs = row.last_reminder_sent ? Date.parse(row.last_reminder_sent) : 0
+      // Guard: don't send another reminder if we sent one within the last 5 days
+      const REMINDER_DEDUP_MS = 5 * DAY_MS
+      if (now - lastReminderMs < REMINDER_DEDUP_MS) continue
+
+      const user = { email: row.user_email, name: row.user_name }
+      const memorialName = row.deceased_name || null
+      const renewUrl = await fetchPaystackManageLink(env, row.paystack_subscription_code)
+
+      // T-3 reminder has priority over T-14 so we pick the right template.
+      let tpl
+      if (timeToExpiry <= MEMORIAL_REMINDER_T3_MS) {
+        tpl = memorialRenewalT3Email(user, memorialName, renewUrl)
+      } else {
+        tpl = memorialRenewalT14Email(user, memorialName, renewUrl)
+      }
+
+      await sendResendEmail(env, row.user_email, tpl)
+
+      // Mark last_dunning_sent_at on the subscriptions row to prevent re-send.
+      if (row.sub_id) {
+        await env.DB.prepare(
+          `UPDATE subscriptions SET last_dunning_sent_at = ?, updated_at = datetime('now') WHERE id = ?`
+        ).bind(nowIso, row.sub_id).run()
+      }
+
+      memorialReminders++
+    }
+  } catch (e) {
+    console.error('[dunning] memorial renewal reminder sweep failed:', e?.message || e)
+  }
+
+  return { processed: results.length, day1, day3, downgraded, memorialReminders }
 }

@@ -1069,6 +1069,14 @@ async function handlePremiumInitialize(request, env, userId) {
 }
 
 // Authed: verify with Paystack after the inline popup succeeds.
+// TODO(annual): once annual subs exist, the verify response should use
+//   resolveMemorialEntitlement(env, row.memorial_id) so that an EXPIRED annual
+//   row correctly reports premium:false instead of reading the raw status column.
+//   Currently annual rows come through the webhook (not verify), but if a caller
+//   ever hits verify after an annual transaction the response may be stale.
+//   Cheap fix: replace the final `return json({ verified: true, premium: true })`
+//   with `const ent = await resolveMemorialEntitlement(env, row.memorial_id);
+//            return json({ verified: true, premium: ent.tier !== 'free', ...ent })`.
 async function handlePremiumVerify(request, env, userId) {
   if (!userId) return error('Sign in required', 401, request)
   const { reference } = await request.json().catch(() => ({}))
@@ -1078,7 +1086,11 @@ async function handlePremiumVerify(request, env, userId) {
     `SELECT * FROM memorial_premium WHERE paystack_reference = ? AND buyer_user_id = ?`
   ).bind(reference, userId).first()
   if (!row) return error('Not found', 404, request)
-  if (row.status === 'succeeded') return json({ verified: true, premium: true }, 200, request)
+  if (row.status === 'succeeded') {
+    // Use resolveMemorialEntitlement so an expired annual row is not reported as active.
+    const ent = await resolveMemorialEntitlement(env, row.memorial_id)
+    return json({ verified: true, premium: ent.tier !== 'free', ...ent }, 200, request)
+  }
 
   const psRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
     headers: { Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}` },
@@ -2308,6 +2320,11 @@ async function handleSubscriptionCancel(request, env, userId) {
  * `recognized: false` means the caller should alert (Sentry + audit) — we still
  * default to pro_monthly so we never lose the subscription, but a misconfigured
  * env var or a Paystack-side plan rename should never silently miscategorize.
+ *
+ * NOTE: Memorial annual plan codes are intentionally NOT mapped here — they are
+ * detected in the webhook via event.data.metadata.kind === 'memorial_annual'
+ * to avoid passing env into every callsite. This function remains scoped to
+ * account-level (pro_monthly / pro_annual) plans only.
  */
 export function mapPaystackPlanCode(planCode, env) {
   if (planCode && env?.PAYSTACK_PLAN_ANNUAL && planCode === env.PAYSTACK_PLAN_ANNUAL) {
@@ -2317,6 +2334,64 @@ export function mapPaystackPlanCode(planCode, env) {
     return { plan: 'pro_monthly', recognized: true }
   }
   return { plan: 'pro_monthly', recognized: false }
+}
+
+/**
+ * POST /memorial-premium/:id/subscribe  (authed)
+ * Body: { tier }   — memorialId comes from the path param.
+ *
+ * Initializes a Paystack subscription transaction for a memorial annual plan.
+ * Does NOT create any DB rows — the subscription.create webhook does that.
+ * Mirrors handleSubscriptionCreate's Paystack call + error handling.
+ */
+async function handleMemorialSubscriptionCreate(request, env, userId, memorialId) {
+  if (!userId) return error('Sign in required', 401, request)
+  if (!memorialId) return error('Missing memorialId', 400, request)
+
+  const body = await request.json().catch(() => ({}))
+  const { tier } = body
+
+  if (!tier || !['premium', 'heritage'].includes(tier)) {
+    return error('Invalid tier. Must be "premium" or "heritage"', 400, request)
+  }
+
+  const user = await env.DB.prepare('SELECT id, email FROM users WHERE id = ?').bind(userId).first()
+  if (!user) return error('User not found', 404, request)
+
+  // Amount and plan code are always resolved server-side from the catalog.
+  const planCodeEnvVar = TIERS[tier].planCodeAnnual  // e.g. 'PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL'
+  const planCode = env[planCodeEnvVar]
+  if (!planCode) {
+    console.error('[memorial-subscribe] missing plan code env var:', planCodeEnvVar)
+    return error('Subscription plan not configured', 500, request)
+  }
+
+  const callbackUrl = `${env.CORS_ORIGIN}/memorial/${encodeURIComponent(memorialId)}`
+
+  const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: user.email,
+      plan: planCode,
+      callback_url: callbackUrl,
+      metadata: { userId, memorialId, tier, kind: 'memorial_annual' },
+    }),
+  })
+  const psData = await psRes.json()
+
+  if (!psData.status) {
+    return error('Failed to initialize memorial subscription', 500, request)
+  }
+
+  return json({
+    authorization_url: psData.data.authorization_url,
+    access_code: psData.data.access_code,
+    reference: psData.data.reference,
+  }, 200, request)
 }
 
 async function handleSubscriptionWebhook(request, env) {
@@ -2345,6 +2420,175 @@ async function handleSubscriptionWebhook(request, env) {
 
   const event = JSON.parse(body)
   const data = event.data || {}
+
+  // ── Helper: is this event a memorial annual subscription event? ──────────────
+  // Detected via the metadata we send in handleMemorialSubscriptionCreate.
+  // Both subscription.create and charge.success echo back the metadata.
+  const isMemorialAnnual = data.metadata?.kind === 'memorial_annual'
+
+  // ── Memorial annual branch ──────────────────────────────────────────────────
+  // Must be checked BEFORE the account-subscription branches to avoid
+  // accidentally processing a memorial event as an account sub.
+
+  if (isMemorialAnnual) {
+    const memorialId = data.metadata?.memorialId
+    const tier = data.metadata?.tier
+    const buyerUserId = data.metadata?.userId
+
+    // Validate metadata — if any field is missing we can't safely act.
+    if (!memorialId || !tier || !['premium', 'heritage'].includes(tier)) {
+      console.error('[subscription_webhook] memorial_annual event with incomplete metadata', {
+        memorialId, tier, event: event.event,
+      })
+      return json({ ok: true }, 200, request)
+    }
+
+    if (event.event === 'subscription.create') {
+      const now = new Date().toISOString()
+      // next_payment_date is the ISO timestamp Paystack provides for the next
+      // billing cycle. Use it as expires_at so resolveMemorialEntitlement stays active
+      // until that date. Fall back to +1 year if missing.
+      const periodEnd = data.next_payment_date || new Date(Date.now() + 365 * 86400000).toISOString()
+      const periodEndMs = new Date(periodEnd).getTime()
+      const amountPesewas = TIERS[tier].annualPesewas
+      const subCode = data.subscription_code || null
+
+      // UPSERT into subscriptions (keyed on paystack_subscription_code).
+      // A memorial can have multiple subs over time (e.g. cancel + re-subscribe);
+      // ON CONFLICT on paystack_subscription_code is the correct key.
+      const subId = generateId()
+      await env.DB.prepare(
+        `INSERT INTO subscriptions
+           (id, user_id, plan, status, paystack_subscription_code, paystack_customer_code,
+            paystack_email_token, current_period_start, current_period_end,
+            monthly_credits_remaining, memorial_id, memorial_tier)
+         VALUES (?, ?, 'memorial_annual', 'active', ?, ?, ?, ?, ?, 0, ?, ?)
+         ON CONFLICT(paystack_subscription_code) DO UPDATE SET
+           status = 'active',
+           current_period_start = excluded.current_period_start,
+           current_period_end = excluded.current_period_end,
+           memorial_id = excluded.memorial_id,
+           memorial_tier = excluded.memorial_tier,
+           updated_at = datetime('now')`
+      ).bind(
+        subId,
+        buyerUserId || null,
+        subCode,
+        data.customer?.customer_code || null,
+        data.email_token || null,
+        now,
+        periodEnd,
+        memorialId,
+        tier,
+      ).run()
+
+      // Fetch the actual subscription row id (needed for subscription_events).
+      const subRow = await env.DB.prepare(
+        'SELECT id FROM subscriptions WHERE paystack_subscription_code = ?'
+      ).bind(subCode).first()
+      const actualSubId = subRow?.id || subId
+
+      await env.DB.prepare(
+        "INSERT INTO subscription_events (subscription_id, event_type, detail) VALUES (?, 'created', ?)"
+      ).bind(actualSubId, JSON.stringify({ plan: 'memorial_annual', tier, memorialId, reference: data.reference })).run()
+
+      // UPSERT memorial_premium. Conflict on (memorial_id, plan_type) so a re-subscribe
+      // refreshes the existing annual row rather than leaving orphans.
+      await env.DB.prepare(
+        `INSERT INTO memorial_premium
+           (id, memorial_id, tier, plan_type, paystack_subscription_code, status,
+            amount_pesewas, currency, buyer_user_id, expires_at, created_at)
+         VALUES (?, ?, ?, 'annual', ?, 'succeeded', ?, 'GHS', ?, ?, ?)
+         ON CONFLICT(memorial_id, plan_type) DO UPDATE SET
+           tier = excluded.tier,
+           paystack_subscription_code = excluded.paystack_subscription_code,
+           status = 'succeeded',
+           amount_pesewas = excluded.amount_pesewas,
+           buyer_user_id = COALESCE(excluded.buyer_user_id, buyer_user_id),
+           expires_at = excluded.expires_at,
+           updated_at = datetime('now')`
+      ).bind(
+        generateId(),
+        memorialId,
+        tier,
+        subCode,
+        amountPesewas,
+        buyerUserId || null,
+        periodEndMs,
+        Date.now(),
+      ).run()
+
+      return json({ ok: true }, 200, request)
+    }
+
+    if (event.event === 'charge.success') {
+      // Annual renewal — extend expires_at to the new period end and clear dunning.
+      const subCode = data.subscription_code
+      const periodEnd = data.next_payment_date || new Date(Date.now() + 365 * 86400000).toISOString()
+      const periodEndMs = new Date(periodEnd).getTime()
+
+      if (subCode) {
+        await env.DB.prepare(
+          "UPDATE subscriptions SET status = 'active', current_period_start = datetime('now'), current_period_end = ?, dunning_stage = 0, last_dunning_sent_at = NULL, updated_at = datetime('now') WHERE paystack_subscription_code = ?"
+        ).bind(periodEnd, subCode).run()
+
+        await env.DB.prepare(
+          "UPDATE memorial_premium SET expires_at = ?, updated_at = datetime('now') WHERE memorial_id = ? AND plan_type = 'annual'"
+        ).bind(periodEndMs, memorialId).run()
+
+        const subRow = await env.DB.prepare(
+          'SELECT id FROM subscriptions WHERE paystack_subscription_code = ?'
+        ).bind(subCode).first()
+        if (subRow) {
+          await env.DB.prepare(
+            "INSERT INTO subscription_events (subscription_id, event_type, detail) VALUES (?, 'renewed', ?)"
+          ).bind(subRow.id, JSON.stringify({ reference: data.reference, memorialId, tier })).run()
+        }
+      }
+
+      return json({ ok: true }, 200, request)
+    }
+
+    if (event.event === 'subscription.not_renew' || event.event === 'subscription.disable') {
+      // Mark the subscriptions row cancelled. Do NOT delete or modify the
+      // memorial_premium row — let expires_at lapse naturally. The page is
+      // never deleted and resolveMemorialEntitlement reverts to free after expiry.
+      const subCode = data.subscription_code
+      if (subCode) {
+        await env.DB.prepare(
+          "UPDATE subscriptions SET status = 'cancelled', cancel_at_period_end = 1, updated_at = datetime('now') WHERE paystack_subscription_code = ?"
+        ).bind(subCode).run()
+      }
+      return json({ ok: true }, 200, request)
+    }
+
+    // charge.failed for a memorial annual sub — mark past_due so the dunning
+    // cron can pick it up.
+    if (event.event === 'charge.failed') {
+      const subCode = data.subscription_code || data.plan?.subscription_code
+      if (subCode) {
+        await env.DB.prepare(
+          "UPDATE subscriptions SET status = 'past_due', dunning_stage = 0, last_dunning_sent_at = NULL, updated_at = datetime('now') WHERE paystack_subscription_code = ?"
+        ).bind(subCode).run()
+
+        const subRow = await env.DB.prepare(
+          'SELECT id FROM subscriptions WHERE paystack_subscription_code = ?'
+        ).bind(subCode).first()
+        if (subRow) {
+          await env.DB.prepare(
+            "INSERT INTO subscription_events (subscription_id, event_type, detail) VALUES (?, 'charge.failed', ?)"
+          ).bind(subRow.id, JSON.stringify({ reference: data.reference, gateway_response: data.gateway_response })).run()
+        }
+      }
+      return json({ ok: true }, 200, request)
+    }
+
+    // Unknown memorial_annual event — ack and move on.
+    return json({ ok: true }, 200, request)
+  }
+
+  // ── Account subscription branch (pro_monthly / pro_annual) ──────────────────
+  // Only reached when isMemorialAnnual is false.
 
   if (event.event === 'subscription.create') {
     const userId = data.metadata?.userId
@@ -3137,6 +3381,9 @@ const handler = {
       if (method === 'POST' && path === '/payments/verify') return await handlePaymentVerify(request, env, userId)
       if (method === 'POST' && path === '/memorial-premium/initialize') return await handlePremiumInitialize(request, env, userId)
       if (method === 'POST' && path === '/memorial-premium/verify') return await handlePremiumVerify(request, env, userId)
+      // Annual memorial subscription — POST /memorial-premium/:id/subscribe
+      const memorialSubscribeMatch = method === 'POST' && path.match(/^\/memorial-premium\/([^/]+)\/subscribe$/)
+      if (memorialSubscribeMatch) return await handleMemorialSubscriptionCreate(request, env, userId, memorialSubscribeMatch[1])
       const tributeCreateMatch = method === 'POST' && path.match(/^\/memorial-premium\/([^/]+)\/tribute-video$/)
       if (tributeCreateMatch) return await handleCreateTributeVideo(request, env, userId, tributeCreateMatch[1])
       if (method === 'POST' && path === '/payments/unlock-design') return await handleUnlockDesign(request, env, userId)
