@@ -1058,9 +1058,20 @@ async function handlePremiumInitialize(request, env, userId) {
   if (!user) return error('User not found', 404, request)
 
   const reference = `fp-premium-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
+  // Upsert on (memorial_id, plan_type) — the UNIQUE index means a plain INSERT
+  // would collide when the buyer retries or switches tier before paying (a prior
+  // pending lifetime row exists). A succeeded row is already short-circuited above
+  // (409), so any conflict here is a pending/failed row safe to refresh.
   await env.DB.prepare(
-    `INSERT INTO memorial_premium (id, memorial_id, tier, status, paystack_reference, amount_pesewas, currency, buyer_user_id, plan_type, expires_at, created_at)
-     VALUES (?, ?, ?, 'pending', ?, ?, 'GHS', ?, 'lifetime', NULL, ?)`
+    `INSERT INTO memorial_premium (id, memorial_id, tier, status, paystack_reference, amount_pesewas, currency, buyer_user_id, plan_type, expires_at, created_at, updated_at)
+     VALUES (?, ?, ?, 'pending', ?, ?, 'GHS', ?, 'lifetime', NULL, ?, datetime('now'))
+     ON CONFLICT(memorial_id, plan_type) DO UPDATE SET
+       tier = excluded.tier,
+       status = 'pending',
+       paystack_reference = excluded.paystack_reference,
+       amount_pesewas = excluded.amount_pesewas,
+       buyer_user_id = excluded.buyer_user_id,
+       updated_at = datetime('now')`
   ).bind(generateId(), memorialId, tier, reference, amountPesewas, userId, Date.now()).run()
 
   return json({ reference, amount: amountPesewas, email: user.email, currency: 'GHS' }, 200, request)
