@@ -134,7 +134,7 @@ export default function MemorialPage() {
           <button
             data-testid="theme-upgrade-nudge"
             onClick={() => setUpgradeOpen(true)}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-full transition-opacity opacity-60 hover:opacity-90"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-full transition-opacity opacity-60 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
             style={{
               backgroundColor: theme.secondaryBg,
               color: theme.heading,
@@ -332,10 +332,9 @@ export default function MemorialPage() {
 
         {/* Premium upgrade / status — opens tier dialog when not yet premium */}
         <UpgradeTributeCard
-          memorialId={id}
           deceasedName={data.fullName}
           premium={premium}
-          onUpgraded={() => setUpgradeOpen(true)}
+          onUpgrade={() => setUpgradeOpen(true)}
         />
 
         {/* Tier upgrade dialog */}
