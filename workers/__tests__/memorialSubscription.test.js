@@ -147,9 +147,9 @@ function makeMockDb({ user = { id: USER_ID, email: 'buyer@example.com' }, premiu
 
           // INSERT INTO memorial_premium (UPSERT)
           if (sql.includes('INSERT INTO memorial_premium')) {
-            // VALUES (?, ?, ?, 'annual', ?, 'succeeded', ?, 'GHS', ?, ?, ?)
-            // bind: id[0], memorialId[1], tier[2], subCode[3], amountPesewas[4],
-            //       buyerUserId[5], periodEndMs[6], createdAt[7]
+            // VALUES (?, ?, ?, 'annual', ?, ?, 'succeeded', ?, 'GHS', ?, ?, ?)
+            // bind: id[0], memorialId[1], tier[2], subCode[3], paystackRef[4],
+            //       amountPesewas[5], buyerUserId[6], periodEndMs[7], createdAt[8]
             const memId = args[1]
             const planType = 'annual'  // literal in SQL
             const existing = state.premium.find(
@@ -158,9 +158,10 @@ function makeMockDb({ user = { id: USER_ID, email: 'buyer@example.com' }, premiu
             if (existing && sql.includes('ON CONFLICT')) {
               existing.tier = args[2]
               existing.paystack_subscription_code = args[3]
+              existing.paystack_reference = args[4]
               existing.status = 'succeeded'
-              existing.amount_pesewas = args[4]
-              existing.expires_at = args[6]
+              existing.amount_pesewas = args[5]
+              existing.expires_at = args[7]
               state.updates.push({ sql, args, type: 'memorial_premium_upsert' })
               return { meta: { changes: 1 } }
             }
@@ -170,12 +171,13 @@ function makeMockDb({ user = { id: USER_ID, email: 'buyer@example.com' }, premiu
               tier: args[2],
               plan_type: 'annual',
               paystack_subscription_code: args[3],
+              paystack_reference: args[4],
               status: 'succeeded',
-              amount_pesewas: args[4],
+              amount_pesewas: args[5],
               currency: 'GHS',
-              buyer_user_id: args[5],
-              expires_at: args[6],
-              created_at: args[7],
+              buyer_user_id: args[6],
+              expires_at: args[7],
+              created_at: args[8],
             }
             state.premium.push(row)
             state.inserts.push({ sql, args, type: 'memorial_premium' })
@@ -432,6 +434,8 @@ describe('POST /subscriptions/webhook — memorial_annual subscription.create', 
     expect(premRow.status).toBe('succeeded')
     expect(premRow.amount_pesewas).toBe(12000)   // TIERS.premium.annualPesewas
     expect(premRow.paystack_subscription_code).toBe('SUB_ann_001')
+    // C2 fix: paystack_reference must be present (NOT NULL in schema)
+    expect(premRow.paystack_reference).toBe('sub-SUB_ann_001')
     // expires_at should be the period end in milliseconds
     const expectedExpiresAt = new Date(nextPaymentDate).getTime()
     expect(premRow.expires_at).toBe(expectedExpiresAt)
@@ -509,6 +513,102 @@ describe('POST /subscriptions/webhook — memorial_annual subscription.create', 
       expect.objectContaining({ memorialId: MEMORIAL_ID })
     )
     consoleSpy.mockRestore()
+  })
+
+  it('M3: subscription.create with missing userId in metadata → ok but inserts NO rows', async () => {
+    // buyerUserId maps to subscriptions.user_id NOT NULL; must bail rather than insert NULL.
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const env = makeEnv()
+    const event = {
+      event: 'subscription.create',
+      data: {
+        subscription_code: 'SUB_nouserId_001',
+        next_payment_date: new Date(Date.now() + 365 * 86400000).toISOString(),
+        metadata: {
+          kind: 'memorial_annual',
+          memorialId: MEMORIAL_ID,
+          tier: 'premium',
+          // userId intentionally absent
+        },
+      },
+    }
+
+    const req = await webhookReq(event)
+    const res = await worker.fetch(req, env)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.ok).toBe(true)
+
+    // No rows inserted
+    expect(env.DB._state.inserts.filter((i) => i.type === 'subscription')).toHaveLength(0)
+    expect(env.DB._state.inserts.filter((i) => i.type === 'memorial_premium')).toHaveLength(0)
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('memorial_annual event with incomplete metadata'),
+      expect.objectContaining({ buyerUserId: false })
+    )
+    consoleSpy.mockRestore()
+  })
+
+  it('I2: subscription.create amount mismatch → ok but inserts NO rows', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const env = makeEnv()
+    const event = {
+      event: 'subscription.create',
+      data: {
+        subscription_code: 'SUB_mismatch_001',
+        amount: 999,  // wrong amount (catalog expects 12000 for premium)
+        next_payment_date: new Date(Date.now() + 365 * 86400000).toISOString(),
+        metadata: {
+          kind: 'memorial_annual',
+          memorialId: MEMORIAL_ID,
+          tier: 'premium',
+          userId: USER_ID,
+        },
+      },
+    }
+
+    const req = await webhookReq(event)
+    const res = await worker.fetch(req, env)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.ok).toBe(true)
+
+    expect(env.DB._state.inserts.filter((i) => i.type === 'memorial_premium')).toHaveLength(0)
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('memorial annual amount mismatch'),
+      expect.objectContaining({ tier: 'premium', got: 999, expected: 12000 })
+    )
+    consoleSpy.mockRestore()
+  })
+
+  it('I2: subscription.create with no data.amount field → grants normally (skip check when absent)', async () => {
+    // data.amount not present on all subscription.create events — must not block
+    const env = makeEnv()
+    const nextPaymentDate = new Date(Date.now() + 365 * 86400000).toISOString()
+    const event = {
+      event: 'subscription.create',
+      data: {
+        subscription_code: 'SUB_noamt_001',
+        // amount intentionally absent
+        next_payment_date: nextPaymentDate,
+        metadata: {
+          kind: 'memorial_annual',
+          memorialId: MEMORIAL_ID,
+          tier: 'premium',
+          userId: USER_ID,
+        },
+      },
+    }
+
+    const req = await webhookReq(event)
+    const res = await worker.fetch(req, env)
+    expect(res.status).toBe(200)
+
+    // premium row should have been inserted
+    const premRow = env.DB._state.premium[0]
+    expect(premRow).toBeDefined()
+    expect(premRow.tier).toBe('premium')
+    expect(premRow.status).toBe('succeeded')
   })
 })
 

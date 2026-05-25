@@ -6,6 +6,7 @@
 ALTER TABLE memorial_premium ADD COLUMN plan_type TEXT NOT NULL DEFAULT 'lifetime'; -- 'lifetime' | 'annual'
 ALTER TABLE memorial_premium ADD COLUMN expires_at INTEGER;                          -- NULL = lifetime/never
 ALTER TABLE memorial_premium ADD COLUMN paystack_subscription_code TEXT;             -- annual only
+ALTER TABLE memorial_premium ADD COLUMN updated_at TEXT;                             -- ISO timestamp; set on UPSERT/renewal
 
 UPDATE memorial_premium SET tier = 'premium' WHERE tier = 'tribute' AND status = 'succeeded';
 

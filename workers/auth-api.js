@@ -935,10 +935,8 @@ async function aiTributeCaption(env, { name, notes }) {
 
 async function handleCreateTributeVideo(request, env, userId, memorialId) {
   if (!userId) return error('Sign in required', 401, request)
-  const ent = await env.DB.prepare(
-    `SELECT id FROM memorial_premium WHERE memorial_id = ? AND status = 'succeeded' LIMIT 1`
-  ).bind(memorialId).first()
-  if (!ent) return error('Premium required', 403, request)
+  const ent = await resolveMemorialEntitlement(env, memorialId)
+  if (!ent.features.tributeVideo) return error('Premium required', 403, request)
 
   const body = await request.json().catch(() => ({}))
   const { title, subtitle, notes, imageUrls = [], soundtrackUrl } = body
@@ -2435,10 +2433,11 @@ async function handleSubscriptionWebhook(request, env) {
     const tier = data.metadata?.tier
     const buyerUserId = data.metadata?.userId
 
-    // Validate metadata — if any field is missing we can't safely act.
-    if (!memorialId || !tier || !['premium', 'heritage'].includes(tier)) {
+    // Validate metadata — if any required field is missing we can't safely act.
+    // buyerUserId maps to subscriptions.user_id which is NOT NULL, so it must be present.
+    if (!memorialId || !tier || !['premium', 'heritage'].includes(tier) || !buyerUserId) {
       console.error('[subscription_webhook] memorial_annual event with incomplete metadata', {
-        memorialId, tier, event: event.event,
+        memorialId, tier, buyerUserId: !!buyerUserId, event: event.event,
       })
       return json({ ok: true }, 200, request)
     }
@@ -2459,6 +2458,16 @@ async function handleSubscriptionWebhook(request, env) {
       // ops can investigate rather than silently creating an unrenewable row.
       if (!subCode) {
         console.error('[webhook] memorial subscription.create missing subscription_code', { memorialId })
+        return json({ ok: true }, 200, request)
+      }
+
+      // Defense-in-depth: assert the charged amount matches the catalog price.
+      // Mirrors the lifetime/candle amount guards in the payments webhook.
+      // data.amount may be absent on subscription.create events — skip check if so.
+      if (data.amount != null && data.amount !== amountPesewas) {
+        console.error('[webhook] memorial annual amount mismatch', {
+          tier, got: data.amount, expected: amountPesewas,
+        })
         return json({ ok: true }, 200, request)
       }
 
@@ -2503,14 +2512,17 @@ async function handleSubscriptionWebhook(request, env) {
 
       // UPSERT memorial_premium. Conflict on (memorial_id, plan_type) so a re-subscribe
       // refreshes the existing annual row rather than leaving orphans.
+      // paystack_reference is NOT NULL UNIQUE in the original schema; annual rows use
+      // a synthetic value derived from the subscription code so it's always unique.
       await env.DB.prepare(
         `INSERT INTO memorial_premium
-           (id, memorial_id, tier, plan_type, paystack_subscription_code, status,
-            amount_pesewas, currency, buyer_user_id, expires_at, created_at)
-         VALUES (?, ?, ?, 'annual', ?, 'succeeded', ?, 'GHS', ?, ?, ?)
+           (id, memorial_id, tier, plan_type, paystack_subscription_code, paystack_reference,
+            status, amount_pesewas, currency, buyer_user_id, expires_at, created_at)
+         VALUES (?, ?, ?, 'annual', ?, ?, 'succeeded', ?, 'GHS', ?, ?, ?)
          ON CONFLICT(memorial_id, plan_type) DO UPDATE SET
            tier = excluded.tier,
            paystack_subscription_code = excluded.paystack_subscription_code,
+           paystack_reference = excluded.paystack_reference,
            status = 'succeeded',
            amount_pesewas = excluded.amount_pesewas,
            buyer_user_id = COALESCE(excluded.buyer_user_id, buyer_user_id),
@@ -2521,6 +2533,7 @@ async function handleSubscriptionWebhook(request, env) {
         memorialId,
         tier,
         subCode,
+        `sub-${subCode}`,
         amountPesewas,
         buyerUserId || null,
         periodEndMs,
