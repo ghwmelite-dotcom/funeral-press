@@ -1085,30 +1085,17 @@ async function handleTributeInitialize(request, env, memorialId) {
   const id = generateId()
   const reference = `fp-candle-${generateId()}`
 
-  const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      email,
-      amount: product.pesewas,
-      reference,
-      metadata: { memorialId, type, kind: 'candle' },
-    }),
-  })
-  const psData = await psRes.json()
-  if (!psData.status || !psData.data?.authorization_url) {
-    return error('Payment initialization failed', 502, request)
-  }
-
+  // Insert the pending tribute; the client completes payment via Paystack inline
+  // (PaystackPop) using this reference — same pattern as the premium unlock
+  // (handlePremiumInitialize). No server-side transaction/initialize: the inline
+  // popup initializes with the public key, and the webhook + verify reconcile by
+  // reference and re-check the amount server-side against the catalog.
   await env.DB.prepare(
     `INSERT INTO memorial_tributes (id, memorial_id, type, author_name, message, amount_pesewas, paystack_reference, status, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
   ).bind(id, memorialId, type, authorName, message, product.pesewas, reference, Date.now()).run()
 
-  return json({ authorization_url: psData.data.authorization_url, reference }, 200, request)
+  return json({ reference, amount: product.pesewas, email, currency: 'GHS' }, 200, request)
 }
 
 // Public: verify a tribute payment (client-side backstop).
