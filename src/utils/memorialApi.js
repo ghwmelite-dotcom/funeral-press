@@ -35,10 +35,37 @@ export async function getMemorialPremium(id) {
   }
 }
 
+// Full entitlement object: { premium, tier, planType, active, expiresAt, features:{...} }
+export async function getMemorialEntitlement(id) {
+  try {
+    return await apiFetch(`/memorial-premium/${id}`, { auth: false })
+  } catch {
+    return { premium: false, tier: null, planType: null, active: false, features: {} }
+  }
+}
+
 export async function initMemorialPremium(memorialId) {
   return apiFetch('/memorial-premium/initialize', {
     method: 'POST',
     body: JSON.stringify({ memorialId }),
+  })
+}
+
+// Initialize a lifetime purchase for a specific tier.
+// Returns { reference, amount, email, currency } for inline PaystackPop.
+export async function initMemorialTierLifetime(memorialId, tier) {
+  return apiFetch('/memorial-premium/initialize', {
+    method: 'POST',
+    body: JSON.stringify({ memorialId, tier, planType: 'lifetime' }),
+  })
+}
+
+// Start an annual subscription for a specific tier.
+// Returns { authorization_url } — redirect user to complete checkout.
+export async function subscribeMemorialTier(memorialId, tier) {
+  return apiFetch(`/memorial-premium/${memorialId}/subscribe`, {
+    method: 'POST',
+    body: JSON.stringify({ tier }),
   })
 }
 
