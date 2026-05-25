@@ -183,12 +183,26 @@ function makeMockDb({ user = { id: USER_ID, email: 'buyer@example.com' }, premiu
           }
 
           // UPDATE memorial_premium (renewal expires_at extension)
+          // Two shapes:
+          //   account branch: WHERE paystack_subscription_code = ? AND plan_type = 'annual'
+          //                   args = [periodEndMs, subCode]
+          //   (dead) memorial branch was: WHERE memorial_id = ? AND plan_type = 'annual'
+          //                   args = [periodEndMs, memorialId]
           if (sql.includes('UPDATE memorial_premium')) {
-            const memId = args[1]
-            const rows = state.premium.filter(
-              (p) => p.memorial_id === memId && p.plan_type === 'annual'
-            )
-            for (const r of rows) r.expires_at = args[0]
+            const newExpiresAt = args[0]
+            const key = args[1]
+            let rows
+            if (sql.includes('paystack_subscription_code = ?')) {
+              rows = state.premium.filter(
+                (p) => p.paystack_subscription_code === key && p.plan_type === 'annual'
+              )
+            } else {
+              // fallback: keyed on memorial_id
+              rows = state.premium.filter(
+                (p) => p.memorial_id === key && p.plan_type === 'annual'
+              )
+            }
+            for (const r of rows) r.expires_at = newExpiresAt
             state.updates.push({ sql, args, type: 'memorial_premium_update' })
             return { meta: { changes: rows.length } }
           }
@@ -449,10 +463,18 @@ describe('POST /subscriptions/webhook — memorial_annual subscription.create', 
 })
 
 // ─── Webhook: memorial annual charge.success (renewal) ───────────────────────
+//
+// Real-world renewal events do NOT carry metadata — Paystack only echoes
+// metadata on the initial subscription.create / first charge.success pair.
+// Auto-generated renewal charge.success events have no metadata.kind, so
+// isMemorialAnnual is false and they fall through to the account charge.success
+// branch which identifies the memorial sub via the stored subscriptions row
+// (plan = 'memorial_annual') and extends memorial_premium.expires_at via
+// paystack_subscription_code.
 
 describe('POST /subscriptions/webhook — memorial_annual charge.success (renewal)', () => {
-  it('extends memorial_premium.expires_at to new period end and clears dunning on the subscriptions row', async () => {
-    const originalExpiry = Date.now() + 5 * 86400000  // 5 days from now
+  it('realistic renewal (NO metadata): routes via account charge.success branch, extends memorial_premium.expires_at via subscription_code lookup, clears dunning', async () => {
+    const originalExpiry = Date.now() + 5 * 86400000  // 5 days from now — about to lapse
     const env = makeEnv({
       premium: [{
         id: 'mp-01',
@@ -467,7 +489,7 @@ describe('POST /subscriptions/webhook — memorial_annual charge.success (renewa
       subscriptions: [{
         id: 'sub-ren-01',
         user_id: USER_ID,
-        plan: 'memorial_annual',
+        plan: 'memorial_annual',       // identifies this as a memorial sub
         status: 'active',
         paystack_subscription_code: 'SUB_ren_001',
         dunning_stage: 1,
@@ -478,6 +500,7 @@ describe('POST /subscriptions/webhook — memorial_annual charge.success (renewa
     })
 
     const newPeriodEnd = new Date(Date.now() + 365 * 86400000).toISOString()
+    // Realistic renewal event — NO metadata field at all
     const event = {
       event: 'charge.success',
       data: {
@@ -485,12 +508,7 @@ describe('POST /subscriptions/webhook — memorial_annual charge.success (renewa
         plan: { plan_code: 'PLN_prem_annual_test' },
         next_payment_date: newPeriodEnd,
         reference: 'ref_renewal_001',
-        metadata: {
-          kind: 'memorial_annual',
-          memorialId: MEMORIAL_ID,
-          tier: 'premium',
-          userId: USER_ID,
-        },
+        // metadata intentionally absent — Paystack does not echo it for renewals
       },
     }
 
@@ -498,13 +516,20 @@ describe('POST /subscriptions/webhook — memorial_annual charge.success (renewa
     const res = await worker.fetch(req, env)
     expect(res.status).toBe(200)
 
-    // memorial_premium.expires_at should be extended
+    // memorial_premium.expires_at must be extended to the new period end
     const premRow = env.DB._state.premium[0]
     const expectedExpiresAt = new Date(newPeriodEnd).getTime()
     expect(premRow.expires_at).toBe(expectedExpiresAt)
     expect(premRow.expires_at).toBeGreaterThan(originalExpiry)
 
-    // subscriptions row dunning should be cleared
+    // The UPDATE used paystack_subscription_code, not memorial_id
+    const mpUpdate = env.DB._state.updates.find(
+      (u) => u.type === 'memorial_premium_update'
+    )
+    expect(mpUpdate).toBeDefined()
+    expect(mpUpdate.args[1]).toBe('SUB_ren_001')   // keyed on subscription code
+
+    // subscriptions row dunning must be cleared
     const subUpdateCall = env.DB._state.updates.find(
       (u) => u.type === 'subscription_update' && u.sql.includes('dunning_stage = 0')
     )
@@ -665,6 +690,51 @@ describe('POST /subscriptions/webhook — account pro_monthly regression smoke t
     const subRow = env.DB._state.subscriptions.find((s) => s.paystack_subscription_code === 'SUB_acct_001')
     expect(subRow).toBeDefined()
     expect(subRow.monthly_credits_remaining).toBe(15)
+  })
+
+  it('charge.success for pro_monthly renewal (no memorial metadata, plan=pro_monthly) does NOT touch memorial_premium', async () => {
+    const env = makeEnv({
+      user: { id: USER_ID, email: 'acct@example.com' },
+      subscriptions: [{
+        id: 'sub-pm-01',
+        user_id: USER_ID,
+        plan: 'pro_monthly',
+        status: 'active',
+        paystack_subscription_code: 'SUB_pm_001',
+        dunning_stage: 0,
+        memorial_id: null,
+        memorial_tier: null,
+        monthly_credits_remaining: 0,
+      }],
+      premium: [],
+    })
+
+    const newPeriodEnd = new Date(Date.now() + 30 * 86400000).toISOString()
+    const event = {
+      event: 'charge.success',
+      data: {
+        subscription_code: 'SUB_pm_001',
+        plan: { plan_code: 'PLN_test_monthly' },
+        next_payment_date: newPeriodEnd,
+        reference: 'ref_pm_ren_001',
+        // no metadata
+      },
+    }
+
+    const req = await webhookReq(event)
+    const res = await worker.fetch(req, env)
+    expect(res.status).toBe(200)
+
+    // No memorial_premium rows should have been touched
+    expect(env.DB._state.premium).toHaveLength(0)
+    const mpUpdate = env.DB._state.updates.find((u) => u.type === 'memorial_premium_update')
+    expect(mpUpdate).toBeUndefined()
+
+    // But the subscription should have been updated (credits reset)
+    const subUpdateCall = env.DB._state.updates.find(
+      (u) => u.type === 'subscription_update' && u.sql.includes('monthly_credits_remaining = 15')
+    )
+    expect(subUpdateCall).toBeDefined()
   })
 })
 

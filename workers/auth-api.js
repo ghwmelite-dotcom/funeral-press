@@ -2522,30 +2522,12 @@ async function handleSubscriptionWebhook(request, env) {
     }
 
     if (event.event === 'charge.success') {
-      // Annual renewal — extend expires_at to the new period end and clear dunning.
-      const subCode = data.subscription_code
-      const periodEnd = data.next_payment_date || new Date(Date.now() + 365 * 86400000).toISOString()
-      const periodEndMs = new Date(periodEnd).getTime()
-
-      if (subCode) {
-        await env.DB.prepare(
-          "UPDATE subscriptions SET status = 'active', current_period_start = datetime('now'), current_period_end = ?, dunning_stage = 0, last_dunning_sent_at = NULL, updated_at = datetime('now') WHERE paystack_subscription_code = ?"
-        ).bind(periodEnd, subCode).run()
-
-        await env.DB.prepare(
-          "UPDATE memorial_premium SET expires_at = ?, updated_at = datetime('now') WHERE memorial_id = ? AND plan_type = 'annual'"
-        ).bind(periodEndMs, memorialId).run()
-
-        const subRow = await env.DB.prepare(
-          'SELECT id FROM subscriptions WHERE paystack_subscription_code = ?'
-        ).bind(subCode).first()
-        if (subRow) {
-          await env.DB.prepare(
-            "INSERT INTO subscription_events (subscription_id, event_type, detail) VALUES (?, 'renewed', ?)"
-          ).bind(subRow.id, JSON.stringify({ reference: data.reference, memorialId, tier })).run()
-        }
-      }
-
+      // NOTE: This branch is only reached for the INITIAL charge.success that
+      // Paystack fires together with subscription.create (metadata is echoed on
+      // that first event). Subsequent auto-renewal charge.success events have NO
+      // metadata, so isMemorialAnnual is false and they are handled by the account
+      // charge.success branch below which now extends memorial_premium.expires_at
+      // via the paystack_subscription_code lookup. Nothing to do here for renewals.
       return json({ ok: true }, 200, request)
     }
 
@@ -2635,16 +2617,27 @@ async function handleSubscriptionWebhook(request, env) {
   }
 
   if (event.event === 'charge.success' && data.plan) {
-    // Subscription renewal — reset monthly credits
+    // Subscription renewal — reset monthly credits.
+    // NOTE: Memorial annual renewals also arrive here on subsequent billing cycles
+    // because Paystack only echoes back metadata on the initial charge; auto-generated
+    // renewal charge.success events have no metadata.kind, so isMemorialAnnual is false
+    // and they fall through to this branch. We detect memorial subs by the stored
+    // subscriptions row (plan = 'memorial_annual' / memorial_id set) and extend
+    // memorial_premium.expires_at accordingly.
     const subCode = data.subscription_code
     if (!subCode) return json({ ok: true }, 200, request)
 
     const sub = await env.DB.prepare(
-      'SELECT id FROM subscriptions WHERE paystack_subscription_code = ?'
+      'SELECT id, plan, memorial_id FROM subscriptions WHERE paystack_subscription_code = ?'
     ).bind(subCode).first()
 
     if (sub) {
-      const periodEnd = data.next_payment_date || new Date(Date.now() + 30 * 86400000).toISOString()
+      const isMemorialRenewal = sub.plan === 'memorial_annual' || !!sub.memorial_id
+      const periodEnd = data.next_payment_date || new Date(
+        Date.now() + (isMemorialRenewal ? 365 : 30) * 86400000
+      ).toISOString()
+      const periodEndMs = new Date(periodEnd).getTime()
+
       // Reset dunning_stage + last_dunning_sent_at so a past_due → recovered
       // user doesn't carry stale dunning state into the next billing cycle.
       // (charge.failed sets dunning_stage=0 + status='past_due'; this is the
@@ -2652,6 +2645,15 @@ async function handleSubscriptionWebhook(request, env) {
       await env.DB.prepare(
         "UPDATE subscriptions SET monthly_credits_remaining = 15, current_period_start = datetime('now'), current_period_end = ?, status = 'active', dunning_stage = 0, last_dunning_sent_at = NULL, updated_at = datetime('now') WHERE id = ?"
       ).bind(periodEnd, sub.id).run()
+
+      // For memorial annual renewals: extend the entitlement row so the page
+      // stays premium past the old expires_at. Keyed on paystack_subscription_code
+      // because renewals DO carry it (unlike metadata which is absent after year 1).
+      if (isMemorialRenewal) {
+        await env.DB.prepare(
+          "UPDATE memorial_premium SET expires_at = ?, updated_at = datetime('now') WHERE paystack_subscription_code = ? AND plan_type = 'annual'"
+        ).bind(periodEndMs, subCode).run()
+      }
 
       await env.DB.prepare(
         "INSERT INTO subscription_events (subscription_id, event_type, detail) VALUES (?, 'renewed', ?)"
