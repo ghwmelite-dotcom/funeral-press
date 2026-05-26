@@ -12,6 +12,7 @@ export function EmailVerificationBanner() {
   const [dismissed, setDismissed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState(false)
+  const [resultMessage, setResultMessage] = useState(null)
   const [error, setError] = useState(null)
 
   // Only show when logged in AND email is not verified.
@@ -24,7 +25,10 @@ export function EmailVerificationBanner() {
     setBusy(true)
     setError(null)
     try {
-      await phonePinApi.resendVerification()
+      const res = await phonePinApi.resendVerification()
+      // The backend no-ops (without sending) when the email is already
+      // verified; surface its actual message instead of always claiming a send.
+      setResultMessage(res?.message || null)
       setSent(true)
     } catch (e) {
       setError(e?.message || 'Could not resend. Try again later.')
@@ -43,7 +47,7 @@ export function EmailVerificationBanner() {
           {error
             ? error
             : sent
-              ? "We've sent another verification email — check your inbox."
+              ? resultMessage || "We've sent another verification email — check your inbox."
               : 'Please verify your email so we can help you recover your PIN if you forget it.'}
         </span>
         {!sent && (

@@ -495,7 +495,7 @@ async function handleLogout(request, env, userId) {
 }
 
 async function handleGetMe(request, env, userId) {
-  const user = await env.DB.prepare('SELECT id, email, name, picture, is_partner, referral_code, partner_name, partner_type, partner_logo_url, partner_denomination, onboarded_at FROM users WHERE id = ? AND deleted_at IS NULL').bind(userId).first()
+  const user = await env.DB.prepare('SELECT id, email, name, picture, is_partner, referral_code, partner_name, partner_type, partner_logo_url, partner_denomination, onboarded_at, email_verified_at FROM users WHERE id = ? AND deleted_at IS NULL').bind(userId).first()
   if (!user) return error('User not found', 404, request)
   const purchaseData = await getUserPurchaseData(env, userId)
   const hasAdminPriv = await isAdmin(userId, user.email, env)
@@ -510,6 +510,7 @@ async function handleGetMe(request, env, userId) {
       isUnlimited: purchaseData.isUnlimited,
       unlockedDesigns: purchaseData.unlockedDesigns,
       onboarded_at: user.onboarded_at || null,
+      email_verified_at: user.email_verified_at || null,
     },
   }, 200, request)
 }
