@@ -48,8 +48,8 @@ describe('EmailVerificationBanner', () => {
     expect(queryByText('Resend verification email')).toBeNull()
   })
 
-  it('calls phonePinApi.resendVerification on click and shows success copy', async () => {
-    const resend = vi.fn().mockResolvedValue({ message: 'Verification email sent.' })
+  it('calls phonePinApi.resendVerification on click and shows the backend message', async () => {
+    const resend = vi.fn().mockResolvedValue({ message: 'Verification email sent. Check your inbox.' })
     vi.doMock('../../../utils/phonePinApi.js', () => ({
       phonePinApi: { resendVerification: resend },
       PhonePinError: class extends Error {},
@@ -60,7 +60,23 @@ describe('EmailVerificationBanner', () => {
     fireEvent.click(getByText('Resend verification email'))
     await waitFor(() => {
       expect(resend).toHaveBeenCalled()
-      expect(getByText(/sent another verification email/i)).toBeTruthy()
+      expect(getByText(/verification email sent/i)).toBeTruthy()
+    })
+  })
+
+  it('shows the "already verified" message instead of claiming a send', async () => {
+    const resend = vi.fn().mockResolvedValue({ message: 'Email already verified.' })
+    vi.doMock('../../../utils/phonePinApi.js', () => ({
+      phonePinApi: { resendVerification: resend },
+      PhonePinError: class extends Error {},
+    }))
+    const { EmailVerificationBanner, useAuthStore } = await loadBanner()
+    useAuthStore.setState({ user: { id: '1', email_verified_at: null } })
+    const { getByText, queryByText } = render(<EmailVerificationBanner />)
+    fireEvent.click(getByText('Resend verification email'))
+    await waitFor(() => {
+      expect(getByText(/already verified/i)).toBeTruthy()
+      expect(queryByText(/sent another verification email/i)).toBeNull()
     })
   })
 
