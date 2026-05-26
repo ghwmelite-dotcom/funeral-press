@@ -15,6 +15,29 @@
 
 import * as Sentry from '@sentry/cloudflare'
 import { checkRateLimit } from './utils/rateLimiter.js'
+import { LIVESTREAM_RETENTION_DAYS } from './tierConfig.js'
+
+const DAY_SECONDS = 24 * 60 * 60
+const DEFAULT_AUTH_API_ORIGIN = 'https://auth-api.funeralpress.org'
+
+// Resolve the KV retention TTL (seconds) for a live service from the linked
+// memorial's premium tier. Fails open to the free retention so a publish never
+// breaks if entitlement lookup is slow, unreachable, or the service isn't
+// linked to a memorial.
+export async function resolveRetentionTtl(env, memorialId) {
+  const freeTtl = LIVESTREAM_RETENTION_DAYS.free * DAY_SECONDS
+  if (!memorialId) return freeTtl
+  try {
+    const origin = env?.AUTH_API_ORIGIN || DEFAULT_AUTH_API_ORIGIN
+    const res = await fetch(`${origin}/memorial-premium/${encodeURIComponent(memorialId)}`)
+    if (!res.ok) return freeTtl
+    const ent = await res.json()
+    const days = LIVESTREAM_RETENTION_DAYS[ent?.tier]
+    return (days ?? LIVESTREAM_RETENTION_DAYS.free) * DAY_SECONDS
+  } catch {
+    return freeTtl
+  }
+}
 
 const PROD_ORIGINS = [
   'https://funeral-brochure-app.pages.dev',
@@ -107,11 +130,13 @@ async function handlePost(request, env) {
       id = generateId() + id.slice(0, 2)
     }
 
-    // Store with 1-year TTL (365 days in seconds)
+    // Retention scales with the linked memorial's tier (free 1yr / premium 3yr
+    // / heritage 5yr); fails open to free retention when unlinked or unresolved.
+    const expirationTtl = await resolveRetentionTtl(env, body.memorialId)
     await env.LIVE_SERVICE_KV.put(id, JSON.stringify({
       ...body,
       publishedAt: new Date().toISOString(),
-    }), { expirationTtl: 365 * 24 * 60 * 60 })
+    }), { expirationTtl })
 
     // Queue anonymized tweet for X auto-poster
     if (env.DB) {

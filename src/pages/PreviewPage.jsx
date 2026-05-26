@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Download, Share2, BookOpenCheck, Presentation } from 'lucide-react'
@@ -5,11 +6,23 @@ import { useBrochureStore } from '../stores/brochureStore'
 import { useAuthStore } from '../stores/authStore'
 import { useNotification } from '../components/ui/notification'
 import BrochureDocument from '../components/pdf/BrochureDocument'
+import { getMemorialEntitlement } from '../utils/memorialApi'
+import { visibleGalleryPhotos } from '../config/memorialTiers'
 
 export default function PreviewPage() {
   const store = useBrochureStore()
   const user = useAuthStore(s => s.user)
   const { notify } = useNotification()
+  const [entitlement, setEntitlement] = useState({ premium: false, tier: null, features: {} })
+  const features = entitlement.features ?? {}
+
+  // Soft display cap: the previewed/downloaded brochure shows all photos only
+  // for premium tiers; free memorials are capped to FREE_PHOTO_CAP.
+  useEffect(() => {
+    if (store.memorialId) {
+      getMemorialEntitlement(store.memorialId).then(setEntitlement).catch(() => {})
+    }
+  }, [store.memorialId])
 
   const pdfData = {
     title: store.title,
@@ -33,7 +46,7 @@ export default function PreviewPage() {
     biographyPhotos: store.biographyPhotos,
     biographyPhotoCaptions: store.biographyPhotoCaptions,
     tributes: store.tributes,
-    galleryPhotos: store.galleryPhotos,
+    galleryPhotos: visibleGalleryPhotos(store.galleryPhotos, features),
     acknowledgements: store.acknowledgements,
     familySignature: store.familySignature,
     backCoverVerse: store.backCoverVerse,

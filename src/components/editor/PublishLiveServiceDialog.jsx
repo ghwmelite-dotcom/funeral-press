@@ -70,6 +70,7 @@ export default function PublishLiveServiceDialog({ open, onOpenChange }) {
     try {
       const data = {
         liveServiceId: store.liveServiceId,
+        memorialId: store.memorialId,
         fullName: `${store.title} ${store.fullName}`,
         birthDate: store.dateOfBirth,
         deathDate: store.dateOfDeath,

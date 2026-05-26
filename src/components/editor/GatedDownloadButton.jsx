@@ -9,9 +9,22 @@ import { usePurchaseStore } from '../../stores/purchaseStore'
 // server-side behind a signed URL is tracked as a P1 follow-up. Bypass requires
 // real technical effort, and anyone willing to do it is unlikely to ever pay,
 // so the leakage is bounded in practice.
-export default function GatedDownloadButton({ document, fileName, designId, productType }) {
+export default function GatedDownloadButton({ document, fileName, designId, productType, disabled = false }) {
   const canDownload = usePurchaseStore(s => s.canDownload)
   const requestDownload = usePurchaseStore(s => s.requestDownload)
+
+  if (disabled) {
+    return (
+      <button
+        disabled
+        className="flex items-center gap-1.5 px-4 py-1.5 bg-muted text-white text-xs font-medium rounded-md cursor-not-allowed"
+        aria-label="Preparing download"
+      >
+        <Download size={14} />
+        Download PDF
+      </button>
+    )
+  }
 
   if (canDownload(designId)) {
     return (
