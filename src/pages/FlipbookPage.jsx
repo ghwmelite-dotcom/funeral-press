@@ -83,8 +83,10 @@ export default function FlipbookPage() {
       }
     }
     generate()
+    // Regenerate when entitlement resolves so a premium memorial's flipbook
+    // stops being photo-capped once the tier is known.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [entitlement])
 
   // Handle file upload
   const handleFileChange = useCallback((e) => {

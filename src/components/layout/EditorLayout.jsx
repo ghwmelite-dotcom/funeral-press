@@ -15,6 +15,8 @@ import ShareWhatsAppDialog from '../editor/ShareWhatsAppDialog'
 import PublishMemorialDialog from '../editor/PublishMemorialDialog'
 import PublishLiveServiceDialog from '../editor/PublishLiveServiceDialog'
 import { useAuthStore } from '../../stores/authStore'
+import { getMemorialEntitlement } from '../../utils/memorialApi'
+import { visibleGalleryPhotos } from '../../config/memorialTiers'
 
 import BasicInfoForm from '../editor/BasicInfoForm'
 import CoverForm from '../editor/CoverForm'
@@ -42,7 +44,7 @@ const sections = [
   { key: 'print', title: 'Print Materials', icon: '11', component: PrintMaterialsForm },
 ]
 
-function extractPdfData() {
+function extractPdfData(features) {
   const state = useBrochureStore.getState()
   return {
     title: state.title,
@@ -66,7 +68,7 @@ function extractPdfData() {
     biographyPhotos: state.biographyPhotos,
     biographyPhotoCaptions: state.biographyPhotoCaptions,
     tributes: state.tributes,
-    galleryPhotos: state.galleryPhotos,
+    galleryPhotos: visibleGalleryPhotos(state.galleryPhotos, features),
     acknowledgements: state.acknowledgements,
     familySignature: state.familySignature,
     backCoverPhoto: state.backCoverPhoto,
@@ -139,8 +141,13 @@ function PdfSkeleton() {
 export default function EditorLayout() {
   useAutoSave()
   const user = useAuthStore(s => s.user)
+  const memorialId = useBrochureStore(s => s.memorialId)
   const [openSections, setOpenSections] = useState(['basic'])
-  const [pdfData, setPdfData] = useState(() => extractPdfData())
+  // Default features {} = fail-closed (free → photos capped) until entitlement resolves.
+  const [features, setFeatures] = useState({})
+  const [entResolved, setEntResolved] = useState(false)
+  const featuresRef = useRef({})
+  const [pdfData, setPdfData] = useState(() => extractPdfData({}))
   const [pdfReady, setPdfReady] = useState(false)
   const [showMobilePreview, setShowMobilePreview] = useState(false)
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
@@ -155,12 +162,34 @@ export default function EditorLayout() {
     return () => clearTimeout(t)
   }, [])
 
+  // Resolve the memorial's tier so the brochure PDF (preview + download) honors
+  // the free-tier photo cap. Fails open to free (capped) when unlinked.
+  useEffect(() => {
+    if (!memorialId) {
+      setFeatures({})
+      setEntResolved(true)
+      return
+    }
+    setEntResolved(false)
+    getMemorialEntitlement(memorialId)
+      .then((e) => setFeatures(e.features ?? {}))
+      .catch(() => setFeatures({}))
+      .finally(() => setEntResolved(true))
+  }, [memorialId])
+
+  // Recompute the PDF data whenever entitlement changes so a premium user's
+  // brochure stops being capped once their tier resolves.
+  useEffect(() => {
+    featuresRef.current = features
+    setPdfData(extractPdfData(features))
+  }, [features])
+
   // Subscribe to store changes with debounce
   useEffect(() => {
     const unsub = useBrochureStore.subscribe(() => {
       if (timerRef.current) clearTimeout(timerRef.current)
       timerRef.current = setTimeout(() => {
-        setPdfData(extractPdfData())
+        setPdfData(extractPdfData(featuresRef.current))
       }, 600)
     })
     return () => {
@@ -260,6 +289,7 @@ export default function EditorLayout() {
                 fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Memorial'}-Funeral-Brochure.pdf`}
                 designId={useBrochureStore.getState().currentId}
                 productType="brochure"
+                disabled={!entResolved}
               />
             </div>
           </div>
@@ -311,6 +341,7 @@ export default function EditorLayout() {
                       fileName={`${pdfData.fullName?.replace(/\s+/g, '-') || 'Memorial'}-Funeral-Brochure.pdf`}
                       designId={useBrochureStore.getState().currentId}
                       productType="brochure"
+                      disabled={!entResolved}
                     />
                   </div>
                 </div>
