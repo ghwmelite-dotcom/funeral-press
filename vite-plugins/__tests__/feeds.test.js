@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildRssFeed, buildAtomFeed } from '../feeds.js'
+import { buildRssFeed, buildAtomFeed, buildJsonFeed } from '../feeds.js'
 
 // Two posts, deliberately given to the builder oldest-first so we can assert
 // the builder re-orders them newest-first. The newer title carries XML-special
@@ -90,5 +90,25 @@ describe('buildAtomFeed', () => {
   it('orders entries newest-first', () => {
     const xml = buildAtomFeed({ blogPosts: SAMPLE })
     expect(xml.indexOf('older-post')).toBeGreaterThan(xml.indexOf('newer-post'))
+  })
+})
+
+describe('buildJsonFeed', () => {
+  it('produces valid JSON Feed 1.1', () => {
+    const feed = JSON.parse(buildJsonFeed({ blogPosts: SAMPLE }))
+    expect(feed.version).toBe('https://jsonfeed.org/version/1.1')
+    expect(feed.items).toHaveLength(2)
+  })
+
+  it('orders items newest-first with full content', () => {
+    const feed = JSON.parse(buildJsonFeed({ blogPosts: SAMPLE }))
+    expect(feed.items[0].url).toBe('https://funeralpress.org/blog/newer-post')
+    expect(feed.items[0].content_html).toContain('Newer body text marker')
+    expect(feed.items[0].date_published).toBe('2026-03-11T00:00:00Z')
+  })
+
+  it('maps keywords to tags', () => {
+    const feed = JSON.parse(buildJsonFeed({ blogPosts: SAMPLE }))
+    expect(feed.items[0].tags).toEqual(['costs', 'tips'])
   })
 })

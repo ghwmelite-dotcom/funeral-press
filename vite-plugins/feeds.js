@@ -138,3 +138,32 @@ export function buildAtomFeed({ blogPosts = [] } = {}) {
     '',
   ].join('\n')
 }
+
+export function buildJsonFeed({ blogPosts = [] } = {}) {
+  const posts = orderedPosts(blogPosts)
+  const author = { name: AUTHOR_NAME, url: SITE_URL }
+
+  const feed = {
+    version: 'https://jsonfeed.org/version/1.1',
+    title: FEED_TITLE,
+    home_page_url: BLOG_URL,
+    feed_url: `${SITE_URL}/feed.json`,
+    description: FEED_DESCRIPTION,
+    language: 'en',
+    icon: FEED_IMAGE,
+    favicon: FEED_ICON,
+    authors: [author],
+    items: posts.map((post) => ({
+      id: postUrl(post.slug),
+      url: postUrl(post.slug),
+      title: post.title,
+      summary: post.description,
+      content_html: renderContentToHtml(post.content),
+      date_published: toRfc3339(postDate(post)),
+      tags: post.keywords || [],
+      authors: [author],
+    })),
+  }
+
+  return `${JSON.stringify(feed, null, 2)}\n`
+}
