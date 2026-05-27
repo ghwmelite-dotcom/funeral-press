@@ -1,0 +1,69 @@
+import { describe, it, expect } from 'vitest'
+import { buildRssFeed } from '../feeds.js'
+
+// Two posts, deliberately given to the builder oldest-first so we can assert
+// the builder re-orders them newest-first. The newer title carries XML-special
+// characters to test escaping.
+const SAMPLE = [
+  {
+    slug: 'older-post',
+    title: 'Older Post',
+    description: 'An older guide',
+    date: '2026-01-10',
+    keywords: ['planning'],
+    content: [{ type: 'paragraph', text: 'Older body text marker' }],
+  },
+  {
+    slug: 'newer-post',
+    title: 'Newer & Better <Post>',
+    description: 'A newer guide',
+    date: '2026-03-11',
+    keywords: ['costs', 'tips'],
+    content: [{ type: 'paragraph', text: 'Newer body text marker' }],
+  },
+]
+
+describe('buildRssFeed', () => {
+  it('produces a well-formed RSS 2.0 document', () => {
+    const xml = buildRssFeed({ blogPosts: SAMPLE })
+    expect(xml).toMatch(/^<\?xml version="1\.0" encoding="UTF-8"\?>/)
+    expect(xml).toContain('<rss version="2.0"')
+    expect(xml).toContain('</rss>')
+  })
+
+  it('includes every post with full content, not just the summary', () => {
+    const xml = buildRssFeed({ blogPosts: SAMPLE })
+    expect(xml).toContain('https://funeralpress.org/blog/newer-post')
+    expect(xml).toContain('https://funeralpress.org/blog/older-post')
+    expect(xml).toContain('Newer body text marker')
+    expect(xml).toContain('<content:encoded><![CDATA[')
+  })
+
+  it('orders items newest-first', () => {
+    const xml = buildRssFeed({ blogPosts: SAMPLE })
+    expect(xml.indexOf('older-post')).toBeGreaterThan(xml.indexOf('newer-post'))
+  })
+
+  it('uses RFC-822 publish dates', () => {
+    const xml = buildRssFeed({ blogPosts: SAMPLE })
+    expect(xml).toContain('<pubDate>Wed, 11 Mar 2026 00:00:00 GMT</pubDate>')
+  })
+
+  it('escapes XML-special characters in titles', () => {
+    const xml = buildRssFeed({ blogPosts: SAMPLE })
+    expect(xml).toContain('Newer &amp; Better &lt;Post&gt;')
+  })
+
+  it('maps keywords to categories', () => {
+    const xml = buildRssFeed({ blogPosts: SAMPLE })
+    expect(xml).toContain('<category>costs</category>')
+  })
+
+  it('skips posts without a slug', () => {
+    const xml = buildRssFeed({
+      blogPosts: [...SAMPLE, { title: 'No slug', date: '2026-04-01' }],
+    })
+    const itemCount = (xml.match(/<item>/g) || []).length
+    expect(itemCount).toBe(2)
+  })
+})
