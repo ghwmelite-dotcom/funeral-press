@@ -167,3 +167,32 @@ export function buildJsonFeed({ blogPosts = [] } = {}) {
 
   return `${JSON.stringify(feed, null, 2)}\n`
 }
+
+/**
+ * Vite plugin that emits dist/rss.xml, dist/atom.xml, and dist/feed.json after
+ * the build completes. Runs on closeBundle so it executes after Vite copies
+ * public/ assets, mirroring funeralpress-sitemap.
+ *
+ * @param {object} [opts]
+ * @param {Array<{slug: string, title?: string, description?: string, date?: string, keywords?: string[], content?: object[]}>} [opts.blogPosts]
+ * @param {string} [opts.outDir='dist']
+ */
+export default function feedsPlugin(opts = {}) {
+  return {
+    name: 'funeralpress-feeds',
+    apply: 'build',
+    closeBundle() {
+      const outDir = opts.outDir || 'dist'
+      const files = [
+        ['rss.xml', buildRssFeed(opts)],
+        ['atom.xml', buildAtomFeed(opts)],
+        ['feed.json', buildJsonFeed(opts)],
+      ]
+      for (const [name, content] of files) {
+        const outPath = resolve(outDir, name)
+        writeFileSync(outPath, content, 'utf8')
+        console.log(`[feeds] wrote ${outPath}`)
+      }
+    },
+  }
+}
