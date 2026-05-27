@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildRssFeed } from '../feeds.js'
+import { buildRssFeed, buildAtomFeed } from '../feeds.js'
 
 // Two posts, deliberately given to the builder oldest-first so we can assert
 // the builder re-orders them newest-first. The newer title carries XML-special
@@ -65,5 +65,30 @@ describe('buildRssFeed', () => {
     })
     const itemCount = (xml.match(/<item>/g) || []).length
     expect(itemCount).toBe(2)
+  })
+})
+
+describe('buildAtomFeed', () => {
+  it('produces a well-formed Atom 1.0 document', () => {
+    const xml = buildAtomFeed({ blogPosts: SAMPLE })
+    expect(xml).toMatch(/^<\?xml version="1\.0" encoding="UTF-8"\?>/)
+    expect(xml).toContain('<feed xmlns="http://www.w3.org/2005/Atom"')
+    expect(xml).toContain('</feed>')
+  })
+
+  it('uses RFC-3339 publish dates', () => {
+    const xml = buildAtomFeed({ blogPosts: SAMPLE })
+    expect(xml).toContain('<published>2026-03-11T00:00:00Z</published>')
+  })
+
+  it('includes full content as type="html"', () => {
+    const xml = buildAtomFeed({ blogPosts: SAMPLE })
+    expect(xml).toContain('<content type="html"><![CDATA[')
+    expect(xml).toContain('Newer body text marker')
+  })
+
+  it('orders entries newest-first', () => {
+    const xml = buildAtomFeed({ blogPosts: SAMPLE })
+    expect(xml.indexOf('older-post')).toBeGreaterThan(xml.indexOf('newer-post'))
   })
 })

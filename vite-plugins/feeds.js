@@ -89,3 +89,52 @@ export function buildRssFeed({ blogPosts = [] } = {}) {
     '',
   ].join('\n')
 }
+
+export function buildAtomFeed({ blogPosts = [] } = {}) {
+  const posts = orderedPosts(blogPosts)
+  const updated = posts.length ? postDate(posts[0]) : new Date()
+  const year = new Date().getFullYear()
+
+  const entries = posts.map((post) => {
+    const url = postUrl(post.slug)
+    const html = renderContentToHtml(post.content)
+    const published = toRfc3339(postDate(post))
+    const categories = (post.keywords || [])
+      .map((kw) => `    <category term="${escapeXml(kw)}" />`)
+      .join('\n')
+    return [
+      '  <entry>',
+      `    <title>${escapeXml(post.title)}</title>`,
+      `    <link rel="alternate" href="${escapeXml(url)}" />`,
+      `    <id>${escapeXml(url)}</id>`,
+      `    <published>${published}</published>`,
+      `    <updated>${published}</updated>`,
+      `    <summary>${escapeXml(post.description)}</summary>`,
+      `    <content type="html"><![CDATA[${html}]]></content>`,
+      categories,
+      `    <author><name>${escapeXml(AUTHOR_NAME)}</name></author>`,
+      '  </entry>',
+    ]
+      .filter(Boolean)
+      .join('\n')
+  })
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">',
+    `  <title>${escapeXml(FEED_TITLE)}</title>`,
+    `  <subtitle>${escapeXml(FEED_DESCRIPTION)}</subtitle>`,
+    `  <link rel="alternate" href="${escapeXml(BLOG_URL)}" />`,
+    `  <link rel="self" href="${escapeXml(`${SITE_URL}/atom.xml`)}" />`,
+    `  <id>${escapeXml(BLOG_URL)}</id>`,
+    `  <updated>${toRfc3339(updated)}</updated>`,
+    `  <icon>${escapeXml(FEED_ICON)}</icon>`,
+    `  <logo>${escapeXml(FEED_IMAGE)}</logo>`,
+    `  <rights>© ${year} ${escapeXml(AUTHOR_NAME)}</rights>`,
+    '  <generator>FuneralPress</generator>',
+    `  <author><name>${escapeXml(AUTHOR_NAME)}</name></author>`,
+    ...entries,
+    '</feed>',
+    '',
+  ].join('\n')
+}
