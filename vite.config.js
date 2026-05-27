@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 import path from 'path'
 import sitemapPlugin from './vite-plugins/sitemap.js'
+import feedsPlugin from './vite-plugins/feeds.js'
 import blogPosts from './src/data/blogPosts.js'
 
 export default defineConfig({
@@ -55,6 +56,9 @@ export default defineConfig({
     // Generate dist/sitemap.xml at build time so the sitemap stays in sync
     // with our static routes, region list, and blog posts without manual edits.
     sitemapPlugin({ blogPosts }),
+    // Generate dist/rss.xml, dist/atom.xml, and dist/feed.json at build time so
+    // the blog's syndication feeds stay in sync with src/data/blogPosts.js.
+    feedsPlugin({ blogPosts }),
   ],
   resolve: {
     alias: {
