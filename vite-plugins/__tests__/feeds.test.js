@@ -66,6 +66,25 @@ describe('buildRssFeed', () => {
     const itemCount = (xml.match(/<item>/g) || []).length
     expect(itemCount).toBe(2)
   })
+
+  it('emits no blank category line for a post with no keywords', () => {
+    const xml = buildRssFeed({
+      blogPosts: [
+        {
+          slug: 'no-keywords',
+          title: 'No Keywords',
+          description: 'A guide with no keywords',
+          date: '2026-02-01',
+          content: [{ type: 'paragraph', text: 'body' }],
+        },
+      ],
+    })
+    // The keyword-less item still appears, and the filter(Boolean) chain must
+    // not leave an empty line where the <category> block would have been.
+    expect(xml).toContain('/blog/no-keywords')
+    expect(xml).not.toContain('<category></category>')
+    expect(xml).not.toMatch(/\n\n\s*<dc:creator>/)
+  })
 })
 
 describe('buildAtomFeed', () => {
@@ -110,5 +129,15 @@ describe('buildJsonFeed', () => {
   it('maps keywords to tags', () => {
     const feed = JSON.parse(buildJsonFeed({ blogPosts: SAMPLE }))
     expect(feed.items[0].tags).toEqual(['costs', 'tips'])
+  })
+
+  it('uses a square icon and a small square favicon', () => {
+    // JSON Feed 1.1: `icon` is the large square image, `favicon` the small one.
+    // The wide OG banner must not be used for either.
+    const feed = JSON.parse(buildJsonFeed({ blogPosts: SAMPLE }))
+    expect(feed.icon).toBe('https://funeralpress.org/icon-512.png')
+    expect(feed.favicon).toBe('https://funeralpress.org/favicon.svg')
+    expect(feed.icon).not.toContain('og-image')
+    expect(feed.favicon).not.toContain('og-image')
   })
 })

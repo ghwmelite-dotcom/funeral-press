@@ -7,8 +7,9 @@ const FEED_DESCRIPTION =
   'Expert guides on funeral planning in Ghana. Learn about costs, customs, ' +
   'brochure design tips, hymn selections, and how to honour your loved ones beautifully.'
 const BLOG_URL = `${SITE_URL}/blog`
-const FEED_IMAGE = `${SITE_URL}/og-image.png`
-const FEED_ICON = `${SITE_URL}/icon-512.png`
+const FEED_IMAGE = `${SITE_URL}/og-image.png` // wide banner — RSS <image>, Atom <logo>
+const FEED_ICON = `${SITE_URL}/icon-512.png` // large square — Atom <icon>, JSON Feed icon
+const FEED_FAVICON = `${SITE_URL}/favicon.svg` // small square — JSON Feed favicon
 const AUTHOR_NAME = 'FuneralPress'
 
 // post.date is 'YYYY-MM-DD'; interpret it as midnight UTC.
@@ -150,8 +151,8 @@ export function buildJsonFeed({ blogPosts = [] } = {}) {
     feed_url: `${SITE_URL}/feed.json`,
     description: FEED_DESCRIPTION,
     language: 'en',
-    icon: FEED_IMAGE,
-    favicon: FEED_ICON,
+    icon: FEED_ICON,
+    favicon: FEED_FAVICON,
     authors: [author],
     items: posts.map((post) => ({
       id: postUrl(post.slug),
