@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { getStoredReferralCode, clearStoredReferralCode } from '../utils/referralTracker'
+import { getStoredLoopSurface, clearStoredLoopSurface, recordLoopEvent } from '../utils/loopAnalytics'
 import { trackEvent } from '../utils/trackEvent'
 import { usePurchaseStore } from './purchaseStore'
 
@@ -87,6 +88,15 @@ export const useAuthStore = create((set, get) => ({
       saveAuth({ ...state, hasMigrated: get().hasMigrated })
 
       trackEvent('signup_completed', { method: 'google' })
+
+      // Loop attribution (spec §2.6): which growth surface brought this signup.
+      // The token makes /analytics/event store user_id, enabling the
+      // signup → first_design → purchase funnel joins in D1.
+      const loopSurface = getStoredLoopSurface()
+      if (loopSurface) {
+        recordLoopEvent('loop_signup', loopSurface, {}, { token: data.accessToken })
+        clearStoredLoopSurface()
+      }
 
       // Hydrate purchase data from login response
       usePurchaseStore.getState().hydrateFromUser(data.user)
