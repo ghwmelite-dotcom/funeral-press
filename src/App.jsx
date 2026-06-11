@@ -35,6 +35,7 @@ const BudgetPlannerPage = lazy(() => import('./pages/BudgetPlannerPage'))
 const CollageMakerPage = lazy(() => import('./pages/CollageMakerPage'))
 const ReminderPage = lazy(() => import('./pages/ReminderPage'))
 const MyDesignsPage = lazy(() => import('./pages/MyDesignsPage'))
+const HonourPage = lazy(() => import('./pages/HonourPage'))
 const PartnerDashboardPage = lazy(() => import('./pages/PartnerDashboardPage'))
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'))
 const LiveServicePage = lazy(() => import('./pages/LiveServicePage'))
@@ -159,6 +160,7 @@ export default function App() {
               <Route path="/anniversaries" element={<AnniversaryTrackerPage />} />
               <Route path="/aseda-editor" element={<AsedaEditorPage />} />
               <Route path="/my-designs" element={<MyDesignsPage />} />
+              <Route path="/honour" element={<HonourPage />} />
               <Route path="/partner-dashboard" element={<PartnerDashboardPage />} />
               <Route path="/admin" element={<AdminDashboardPage />} />
               <Route path="/live-service/:id" element={<LiveServicePage />} />
