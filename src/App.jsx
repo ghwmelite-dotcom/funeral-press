@@ -8,6 +8,7 @@ import { Skeleton } from './components/ui/skeleton'
 import { useThemeStore } from './stores/themeStore'
 import { useAuthStore } from './stores/authStore'
 import { usePurchaseStore } from './stores/purchaseStore'
+import { useCurrencyStore } from './stores/currencyStore'
 import { useGoogleOneTap } from './hooks/useGoogleOneTap'
 import CheckoutDialog from './components/editor/CheckoutDialog'
 import PrintOrderDialog from './components/editor/PrintOrderDialog'
@@ -114,6 +115,7 @@ export default function App() {
 
   // Hydrate auth state from localStorage on app start
   useEffect(() => {
+    useCurrencyStore.getState().hydrate()
     useAuthStore.getState().hydrate()
     // If logged in, fetch purchase status and refresh user data
     if (useAuthStore.getState().isLoggedIn()) {
