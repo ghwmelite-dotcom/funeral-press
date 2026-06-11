@@ -20,6 +20,7 @@ import {
   canGrantReward,
   applyReferralDiscount,
 } from './familyReferral.js'
+import { currencyForCountry } from './priceBook.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -3351,6 +3352,12 @@ const handler = {
           'INSERT INTO analytics_events (event_type, user_id, session_id, metadata) VALUES (?, ?, ?, ?)'
         ).bind(body.event_type, userId, body.session_id || null, JSON.stringify(body.metadata || {})).run()
         return json({ ok: true }, 200, request)
+      }
+
+      // Geo currency resolution (public, no auth)
+      if (method === 'GET' && path === '/geo') {
+        const country = request.cf?.country || null
+        return json({ country, currency: currencyForCountry(country) }, 200, request)
       }
 
       // Public routes
