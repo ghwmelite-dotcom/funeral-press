@@ -36,6 +36,7 @@ import { loadCloudDesign } from '../utils/syncEngine'
 import { usePrintOrderStore } from '../stores/printOrderStore'
 import GoogleLoginButton from '../components/auth/GoogleLoginButton'
 import UserMenu from '../components/auth/UserMenu'
+import FamilyReferralCard from '../components/referral/FamilyReferralCard'
 
 export default function MyDesignsPage() {
   const navigate = useNavigate()
@@ -346,6 +347,9 @@ export default function MyDesignsPage() {
             </div>
           </div>
         )}
+      <div className="mt-8">
+        <FamilyReferralCard />
+      </div>
       </div>
     </div>
   )
