@@ -680,7 +680,8 @@ async function handleGetMyReferralCode(request, env, userId) {
   // Lazy generation: any user can refer (spec §2.5). The IP hash at creation
   // time supports the same-IP fraud check in handleTrackReferral.
   const code = generateReferralCode()
-  const ipHash = await hashToken(getClientIP(request) || '')
+  const clientIP = getClientIP(request)
+  const ipHash = clientIP ? await hashToken(clientIP) : null
   await env.DB.prepare(
     'UPDATE users SET referral_code = ?, referral_code_ip_hash = ? WHERE id = ?'
   ).bind(code, ipHash, userId).run()
@@ -706,23 +707,29 @@ async function handleTrackReferral(request, env, userId) {
   if (existing) return json({ ok: false, reason: 'already_referred' }, 200, request)
 
   const type = referralTypeFor(referrer)
-  const ipHash = await hashToken(getClientIP(request) || '')
+  const clientIP = getClientIP(request)
+  const ipHash = clientIP ? await hashToken(clientIP) : null
   // Same-IP pairs go to admin review instead of auto-reward (spec §2.5)
   const rewardStatus = type === 'family'
     ? initialRewardStatus({ trackIpHash: ipHash, codeIpHash: referrer.referral_code_ip_hash })
     : null
 
-  await env.DB.prepare(
-    'INSERT INTO referrals (id, partner_id, referred_user_id, type, reward_status, ip_hash) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(generateId(), referrer.id, userId, type, rewardStatus, ipHash).run()
-
+  const statements = [
+    env.DB.prepare(
+      'INSERT INTO referrals (id, partner_id, referred_user_id, type, reward_status, ip_hash) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(generateId(), referrer.id, userId, type, rewardStatus, ipHash),
+  ]
   if (type === 'family') {
     // Welcome gift: one free design unlock for the referred family (spec §2.5).
-    // Guard preserves -1 (unlimited) accounts.
-    await env.DB.prepare(
-      'UPDATE users SET credits_remaining = credits_remaining + 1 WHERE id = ? AND credits_remaining >= 0'
-    ).bind(userId).run()
+    // Guard preserves -1 (unlimited) accounts. Batched with the INSERT so the
+    // referral row and its welcome credit commit atomically.
+    statements.push(
+      env.DB.prepare(
+        'UPDATE users SET credits_remaining = credits_remaining + 1 WHERE id = ? AND credits_remaining >= 0'
+      ).bind(userId)
+    )
   }
+  await env.DB.batch(statements)
 
   notifyAdmin(env, 'referral_tracked', `Referral tracked (${type}): code ${referralCode}`, { referralCode: referralCode || '', type })
 
@@ -1466,6 +1473,11 @@ async function handlePaymentWebhook(request, env) {
   const order = await env.DB.prepare('SELECT * FROM orders WHERE paystack_reference = ?').bind(reference).first()
   if (!order) return json({ ok: true }, 200, request)
 
+  if (event.data.amount != null && event.data.amount !== order.amount_pesewas) {
+    console.error('[webhook] order amount mismatch', { reference, expected: order.amount_pesewas, got: event.data.amount })
+    return json({ ok: true }, 200, request)
+  }
+
   await markOrderPaid(env, order)
   await logAudit(env.DB, {
     action: 'webhook.payment',
@@ -1495,13 +1507,19 @@ async function grantFamilyReferralReward(env, referredUserId) {
     "SELECT COUNT(*) as count FROM referrals WHERE partner_id = ? AND type = 'family' AND reward_status = 'granted' AND reward_granted_at >= datetime('now', '-365 days')"
   ).bind(referral.partner_id).first()
   if (!canGrantReward({ grantedLast12Months: granted?.count || 0 })) {
-    await env.DB.prepare("UPDATE referrals SET reward_status = 'capped' WHERE id = ?").bind(referral.id).run()
+    await env.DB.prepare(
+      "UPDATE referrals SET reward_status = 'capped' WHERE id = ? AND reward_status = 'pending'"
+    ).bind(referral.id).run()
     return
   }
 
-  await env.DB.prepare(
-    "UPDATE referrals SET reward_status = 'granted', reward_granted_at = datetime('now') WHERE id = ?"
+  // Conditional claim: only one concurrent request can flip pending → granted;
+  // losers see zero changed rows and must not credit the balance.
+  const claim = await env.DB.prepare(
+    "UPDATE referrals SET reward_status = 'granted', reward_granted_at = datetime('now') WHERE id = ? AND reward_status = 'pending'"
   ).bind(referral.id).run()
+  if (!claim.meta.changes) return
+
   await env.DB.prepare(
     'UPDATE users SET referral_balance_pesewas = COALESCE(referral_balance_pesewas, 0) + ? WHERE id = ?'
   ).bind(FAMILY_REWARD_PESEWAS, referral.partner_id).run()

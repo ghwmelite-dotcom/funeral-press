@@ -66,4 +66,12 @@ describe('applyReferralDiscount', () => {
   it('reward constant is GHS 20 in pesewas', () => {
     expect(FAMILY_REWARD_PESEWAS).toBe(2000)
   })
+  it('clamps exactly at the boundary where balance equals amount minus minimum', () => {
+    expect(applyReferralDiscount({ balancePesewas: 3400, amountPesewas: 3500 }))
+      .toEqual({ discount: 3400, amount: 100 })
+  })
+  it('clamps when balance equals the full amount', () => {
+    expect(applyReferralDiscount({ balancePesewas: 3500, amountPesewas: 3500 }))
+      .toEqual({ discount: 3400, amount: 100 })
+  })
 })
