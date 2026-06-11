@@ -13,6 +13,13 @@ import { sendVerifyEmail, sendPinResetEmail, sendPinChangedEmail } from './utils
 import { buildTributeEdit } from './utils/shotstackEdit.js'
 import { candleProduct } from './candleConfig.js'
 import { TIERS, FEATURE_MIN_RANK, tierHasFeature } from './tierConfig.js'
+import {
+  FAMILY_REWARD_PESEWAS,
+  referralTypeFor,
+  initialRewardStatus,
+  canGrantReward,
+  applyReferralDiscount,
+} from './familyReferral.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -663,27 +670,63 @@ async function handleMakePartner(request, env) {
   return json({ ok: true, referralCode: code }, 200, request)
 }
 
+async function handleGetMyReferralCode(request, env, userId) {
+  const user = await env.DB.prepare(
+    'SELECT id, referral_code FROM users WHERE id = ? AND deleted_at IS NULL'
+  ).bind(userId).first()
+  if (!user) return error('User not found', 404, request)
+  if (user.referral_code) return json({ code: user.referral_code }, 200, request)
+
+  // Lazy generation: any user can refer (spec §2.5). The IP hash at creation
+  // time supports the same-IP fraud check in handleTrackReferral.
+  const code = generateReferralCode()
+  const ipHash = await hashToken(getClientIP(request) || '')
+  await env.DB.prepare(
+    'UPDATE users SET referral_code = ?, referral_code_ip_hash = ? WHERE id = ?'
+  ).bind(code, ipHash, userId).run()
+  return json({ code }, 200, request)
+}
+
 async function handleTrackReferral(request, env, userId) {
   const { referralCode } = await request.json()
   if (!referralCode) return error('Missing referralCode', 400, request)
 
-  // Find the partner by referral code
-  const partner = await env.DB.prepare('SELECT id FROM users WHERE referral_code = ? AND is_partner = 1').bind(referralCode).first()
-  if (!partner) return json({ ok: false, reason: 'invalid_code' }, 200, request)
+  const referrer = await env.DB.prepare(
+    'SELECT id, is_partner, referral_code_ip_hash FROM users WHERE referral_code = ?'
+  ).bind(referralCode).first()
+  if (!referrer) return json({ ok: false, reason: 'invalid_code' }, 200, request)
 
   // Don't self-refer
-  if (partner.id === userId) return json({ ok: false, reason: 'self_referral' }, 200, request)
+  if (referrer.id === userId) return json({ ok: false, reason: 'self_referral' }, 200, request)
 
-  // Check if already referred
-  const existing = await env.DB.prepare('SELECT id FROM referrals WHERE referred_user_id = ?').bind(userId).first()
+  // Check if already referred (one referrer per user, ever)
+  const existing = await env.DB.prepare(
+    'SELECT id FROM referrals WHERE referred_user_id = ?'
+  ).bind(userId).first()
   if (existing) return json({ ok: false, reason: 'already_referred' }, 200, request)
 
-  await env.DB.prepare('INSERT INTO referrals (id, partner_id, referred_user_id) VALUES (?, ?, ?)')
-    .bind(generateId(), partner.id, userId).run()
+  const type = referralTypeFor(referrer)
+  const ipHash = await hashToken(getClientIP(request) || '')
+  // Same-IP pairs go to admin review instead of auto-reward (spec §2.5)
+  const rewardStatus = type === 'family'
+    ? initialRewardStatus({ trackIpHash: ipHash, codeIpHash: referrer.referral_code_ip_hash })
+    : null
 
-  notifyAdmin(env, 'referral_tracked', `Referral tracked: code ${referralCode}`, { referralCode: referralCode || '' })
+  await env.DB.prepare(
+    'INSERT INTO referrals (id, partner_id, referred_user_id, type, reward_status, ip_hash) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(generateId(), referrer.id, userId, type, rewardStatus, ipHash).run()
 
-  return json({ ok: true }, 200, request)
+  if (type === 'family') {
+    // Welcome gift: one free design unlock for the referred family (spec §2.5).
+    // Guard preserves -1 (unlimited) accounts.
+    await env.DB.prepare(
+      'UPDATE users SET credits_remaining = credits_remaining + 1 WHERE id = ? AND credits_remaining >= 0'
+    ).bind(userId).run()
+  }
+
+  notifyAdmin(env, 'referral_tracked', `Referral tracked (${type}): code ${referralCode}`, { referralCode: referralCode || '', type })
+
+  return json({ ok: true, type }, 200, request)
 }
 
 async function handleGetPartnerProfile(request, env, userId) {
@@ -817,11 +860,11 @@ async function handlePaymentInitialize(request, env, userId) {
   if (!plan || !PLANS[plan]) return error('Invalid plan', 400, request)
 
   const planInfo = PLANS[plan]
-  const user = await env.DB.prepare('SELECT id, email FROM users WHERE id = ?').bind(userId).first()
+  const user = await env.DB.prepare('SELECT id, email, referral_balance_pesewas FROM users WHERE id = ?').bind(userId).first()
   if (!user) return error('User not found', 404, request)
 
   // Check for referral partner (for commission tracking)
-  const referral = await env.DB.prepare('SELECT partner_id FROM referrals WHERE referred_user_id = ?').bind(userId).first()
+  const referral = await env.DB.prepare("SELECT partner_id FROM referrals WHERE referred_user_id = ? AND type = 'partner'").bind(userId).first()
   const partnerId = referral?.partner_id || null
   let commissionRate = null
   let commissionAmount = null
@@ -831,17 +874,24 @@ async function handlePaymentInitialize(request, env, userId) {
     commissionAmount = Math.round(planInfo.amount * commissionRate)
   }
 
+  // Referral balance auto-applies as a discount (spec §2.5). Commission (above)
+  // stays computed on the full plan price.
+  const { discount: referralDiscount, amount: chargeAmount } = applyReferralDiscount({
+    balancePesewas: user.referral_balance_pesewas || 0,
+    amountPesewas: planInfo.amount,
+  })
+
   const reference = `fp-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
   const orderId = generateId()
 
   await env.DB.prepare(
-    `INSERT INTO orders (id, user_id, plan, amount_pesewas, paystack_reference, partner_id, commission_rate, commission_amount)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(orderId, userId, plan, planInfo.amount, reference, partnerId, commissionRate, commissionAmount).run()
+    `INSERT INTO orders (id, user_id, plan, amount_pesewas, paystack_reference, partner_id, commission_rate, commission_amount, referral_discount_pesewas)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(orderId, userId, plan, chargeAmount, reference, partnerId, commissionRate, commissionAmount, referralDiscount).run()
 
   return json({
     reference,
-    amount: planInfo.amount,
+    amount: chargeAmount,
     email: user.email,
     currency: 'GHS',
   }, 200, request)
@@ -867,6 +917,13 @@ async function markOrderPaid(env, order) {
     await env.DB.prepare('UPDATE users SET credits_remaining = credits_remaining + ? WHERE id = ?').bind(planInfo.credits, order.user_id).run()
   }
   // If already unlimited, don't downgrade
+
+  // Consume the referral balance only on confirmed payment
+  if (order.referral_discount_pesewas > 0) {
+    await env.DB.prepare(
+      'UPDATE users SET referral_balance_pesewas = MAX(0, COALESCE(referral_balance_pesewas, 0) - ?) WHERE id = ?'
+    ).bind(order.referral_discount_pesewas, order.user_id).run()
+  }
 }
 
 async function handlePaymentVerify(request, env, userId) {
@@ -1421,6 +1478,37 @@ async function handlePaymentWebhook(request, env) {
   return json({ ok: true }, 200, request)
 }
 
+async function grantFamilyReferralReward(env, referredUserId) {
+  // Reward fires only on the referred user's FIRST export (spec §2.5).
+  const unlockCount = await env.DB.prepare(
+    'SELECT COUNT(*) as count FROM unlocked_designs WHERE user_id = ?'
+  ).bind(referredUserId).first()
+  if (!unlockCount || unlockCount.count !== 1) return
+
+  const referral = await env.DB.prepare(
+    "SELECT id, partner_id FROM referrals WHERE referred_user_id = ? AND type = 'family' AND reward_status = 'pending'"
+  ).bind(referredUserId).first()
+  if (!referral) return // none, already granted, capped, or held for review
+
+  // Cap: max 10 granted rewards per referrer per rolling 12 months
+  const granted = await env.DB.prepare(
+    "SELECT COUNT(*) as count FROM referrals WHERE partner_id = ? AND type = 'family' AND reward_status = 'granted' AND reward_granted_at >= datetime('now', '-365 days')"
+  ).bind(referral.partner_id).first()
+  if (!canGrantReward({ grantedLast12Months: granted?.count || 0 })) {
+    await env.DB.prepare("UPDATE referrals SET reward_status = 'capped' WHERE id = ?").bind(referral.id).run()
+    return
+  }
+
+  await env.DB.prepare(
+    "UPDATE referrals SET reward_status = 'granted', reward_granted_at = datetime('now') WHERE id = ?"
+  ).bind(referral.id).run()
+  await env.DB.prepare(
+    'UPDATE users SET referral_balance_pesewas = COALESCE(referral_balance_pesewas, 0) + ? WHERE id = ?'
+  ).bind(FAMILY_REWARD_PESEWAS, referral.partner_id).run()
+
+  notifyAdmin(env, 'referral_reward', 'Family referral reward granted: GHS 20', { referrerId: referral.partner_id })
+}
+
 async function handleUnlockDesign(request, env, userId) {
   const { designId, productType } = await request.json()
   if (!designId || !productType) return error('Missing designId or productType', 400, request)
@@ -1457,6 +1545,13 @@ async function handleUnlockDesign(request, env, userId) {
   await env.DB.prepare(
     "INSERT INTO unlocked_designs (id, user_id, design_id, product_type) VALUES (?, ?, ?, ?)"
   ).bind(generateId(), userId, designId, productType).run()
+
+  // Family referral reward — never block the unlock on reward bookkeeping
+  try {
+    await grantFamilyReferralReward(env, userId)
+  } catch (e) {
+    console.error('[referral] reward grant failed', e)
+  }
 
   const purchaseData = await getUserPurchaseData(env, userId)
   return json(purchaseData, 200, request)
@@ -3420,6 +3515,7 @@ const handler = {
       if (method === 'GET' && path === '/user/me') return await handleGetMe(request, env, userId)
       if (method === 'POST' && path === '/users/me/onboarded') return await handleMarkOnboarded(request, env, userId)
       if (method === 'POST' && path === '/referrals/track') return await handleTrackReferral(request, env, userId)
+      if (method === 'GET' && path === '/referrals/my-code') return await handleGetMyReferralCode(request, env, userId)
       if (method === 'GET' && path === '/partner/me') return await handleGetPartnerProfile(request, env, userId)
       if (method === 'GET' && path === '/partner/referrals') return await handleGetPartnerReferrals(request, env, userId)
       if (method === 'POST' && path === '/partner/update-profile') return await handleUpdatePartnerProfile(request, env, userId)
