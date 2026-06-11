@@ -20,7 +20,7 @@ import {
   canGrantReward,
   applyReferralDiscount,
 } from './familyReferral.js'
-import { currencyForCountry } from './priceBook.js'
+import { PRODUCTS, priceFor, currencyForCountry } from './priceBook.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -270,9 +270,9 @@ async function requireSuperAdmin(request, env) {
 // ─── Payment constants ───────────────────────────────────────────────────────
 
 const PLANS = {
-  single: { amount: 3500, credits: 1 },
-  bundle: { amount: 7500, credits: 3 },
-  suite:  { amount: 12000, credits: -1 }, // -1 = unlimited
+  single: { amount: priceFor('single', 'GHS'), credits: PRODUCTS.single.credits },
+  bundle: { amount: priceFor('bundle', 'GHS'), credits: PRODUCTS.bundle.credits },
+  suite:  { amount: priceFor('suite', 'GHS'),  credits: PRODUCTS.suite.credits }, // -1 = unlimited
   bulk10: { amount: 25000, credits: 10, institutional: true },
   bulk25: { amount: 50000, credits: 25, institutional: true },
   bulk50: { amount: 80000, credits: 50, institutional: true },
@@ -893,8 +893,8 @@ async function handlePaymentInitialize(request, env, userId) {
   const orderId = generateId()
 
   await env.DB.prepare(
-    `INSERT INTO orders (id, user_id, plan, amount_pesewas, paystack_reference, partner_id, commission_rate, commission_amount, referral_discount_pesewas)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO orders (id, user_id, plan, amount_pesewas, paystack_reference, partner_id, commission_rate, commission_amount, referral_discount_pesewas, currency)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'GHS')`
   ).bind(orderId, userId, plan, chargeAmount, reference, partnerId, commissionRate, commissionAmount, referralDiscount).run()
 
   return json({
