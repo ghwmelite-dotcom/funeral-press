@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { Heart, Calendar, MapPin, Clock, BookOpen, Loader2, Download, Lock } from 'lucide-react'
+import { Heart, Calendar, MapPin, Clock, BookOpen, Loader2, Download, Lock, X } from 'lucide-react'
 import { getMemorial, getMemorialEntitlement } from '../utils/memorialApi'
 import { themes } from '../utils/themes'
 import { resolveMemorialTheme } from '../utils/memorialTheme'
@@ -39,6 +39,9 @@ export default function MemorialPage() {
   const [downloading, setDownloading] = useState(false)
   const [entitlement, setEntitlement] = useState({ premium: false, tier: null, features: {} })
   const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const [searchParams] = useSearchParams()
+  const [showQrRibbon, setShowQrRibbon] = useState(false)
+  const qrRibbonKey = `fp-qr-ribbon-${id}`
 
   // Convenience derived values
   const premium = !!entitlement.premium
@@ -69,6 +72,23 @@ export default function MemorialPage() {
     if (data) recordLoopEvent('loop_impression', 'memorial_footer', { memorialId: id })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
+
+  useEffect(() => {
+    // First-visit ribbon for print-QR scanners (spec §2.4): tribute first,
+    // pathway second; dismiss is permanent per visitor per memorial.
+    let seen = false
+    try { seen = !!localStorage.getItem(qrRibbonKey) } catch { /* ignore */ }
+    if (searchParams.get('src') === 'qr' && !seen) {
+      setShowQrRibbon(true)
+      recordLoopEvent('loop_impression', 'qr_ribbon', { memorialId: id })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  const dismissQrRibbon = () => {
+    try { localStorage.setItem(qrRibbonKey, '1') } catch { /* ignore */ }
+    setShowQrRibbon(false)
+  }
 
   if (loading) {
     return (
@@ -124,6 +144,35 @@ export default function MemorialPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: theme.pageBg }}>
+      {showQrRibbon && (
+        <div
+          className="sticky top-0 z-40 flex items-center justify-center gap-3 px-4 py-2 text-xs"
+          style={{ backgroundColor: theme.secondaryBg, color: theme.bodyText }}
+        >
+          <span>
+            You're viewing a tribute to {data.fullName} ·{' '}
+            <Link
+              to="/honour?from=qr_ribbon"
+              onClick={() => {
+                captureLoopSurface('qr_ribbon')
+                recordLoopEvent('loop_click', 'qr_ribbon', { memorialId: id })
+              }}
+              className="hover:underline"
+              style={{ color: theme.heading }}
+            >
+              Created with FuneralPress
+            </Link>
+          </span>
+          <button
+            type="button"
+            onClick={dismissQrRibbon}
+            aria-label="Dismiss"
+            className="p-1 opacity-60 hover:opacity-100 transition-opacity"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
       <Helmet>
         <title>{ogTitle} | FuneralPress</title>
         <meta property="og:title" content={ogTitle} />

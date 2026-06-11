@@ -41,7 +41,8 @@ export default function QRCodePrintPage() {
   const memorialRef = useRef(null)
   const serviceRef = useRef(null)
 
-  const memorialUrl = memorialId ? `https://funeralpress.org/memorial/${memorialId}` : null
+  // ?src=qr lets the memorial page greet print-QR scanners (spec §2.4)
+  const memorialUrl = memorialId ? `https://funeralpress.org/memorial/${memorialId}?src=qr` : null
   const liveServiceUrl = liveServiceId ? `https://funeralpress.org/live-service/${liveServiceId}` : null
 
   // Generate QR codes on mount if URLs exist but QR data doesn't
