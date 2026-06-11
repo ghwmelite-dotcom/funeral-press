@@ -27,8 +27,12 @@ export default function FamilyReferralCard({ surface = 'referral_dashboard', com
   if (!user || !code) return null
   const link = `https://funeralpress.org/?ref=${code}`
 
-  const copy = () => {
-    navigator.clipboard.writeText(link)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link)
+    } catch {
+      return // clipboard unavailable (insecure context / permission denied)
+    }
     setCopied(true)
     events.referralLinkShared('copy')
     recordLoopEvent('loop_click', surface)
@@ -64,6 +68,9 @@ export default function FamilyReferralCard({ surface = 'referral_dashboard', com
               {copied ? 'Copied' : 'Copy link'}
             </button>
           </div>
+          <span className="sr-only" aria-live="polite">
+            {copied ? 'Referral link copied to clipboard' : ''}
+          </span>
         </div>
       </div>
     </div>
