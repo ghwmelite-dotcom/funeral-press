@@ -5,7 +5,7 @@ import { useCurrencyStore } from '../currencyStore'
 describe('currencyStore', () => {
   beforeEach(() => {
     sessionStorage.clear()
-    useCurrencyStore.setState({ currency: 'GHS', country: null, hydrated: false })
+    useCurrencyStore.setState({ currency: 'GHS', country: null, hydrated: false, _hydrating: null })
   })
 
   it('defaults to GHS', () => {
@@ -47,6 +47,20 @@ describe('currencyStore', () => {
     await useCurrencyStore.getState().hydrate()
     expect(useCurrencyStore.getState().currency).toBe('GHS')
     expect(useCurrencyStore.getState().hydrated).toBe(true)
+    vi.unstubAllGlobals()
+  })
+
+  it('concurrent hydrate calls share one /geo request', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ country: 'US', currency: 'USD' }),
+    })))
+    await Promise.all([
+      useCurrencyStore.getState().hydrate(),
+      useCurrencyStore.getState().hydrate(),
+    ])
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(useCurrencyStore.getState().currency).toBe('USD')
     vi.unstubAllGlobals()
   })
 })

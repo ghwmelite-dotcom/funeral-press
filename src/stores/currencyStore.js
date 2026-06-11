@@ -19,21 +19,29 @@ export const useCurrencyStore = create((set, get) => ({
   currency: 'GHS',
   country: null,
   hydrated: false,
+  _hydrating: null,
 
   hydrate: async () => {
     if (get().hydrated) return
-    const override = readOverride()
-    try {
-      const res = await fetch(`${API_BASE}/geo`)
-      const data = await res.json()
-      set({
-        country: data.country || null,
-        currency: override || (CURRENCIES[data.currency]?.enabled ? data.currency : 'GHS'),
-        hydrated: true,
-      })
-    } catch {
-      set({ currency: override || 'GHS', hydrated: true })
-    }
+    if (get()._hydrating) return get()._hydrating
+    const promise = (async () => {
+      const override = readOverride()
+      try {
+        const res = await fetch(`${API_BASE}/geo`)
+        const data = await res.json()
+        set({
+          country: data.country || null,
+          currency: override || (CURRENCIES[data.currency]?.enabled ? data.currency : 'GHS'),
+          hydrated: true,
+        })
+      } catch {
+        set({ currency: override || 'GHS', hydrated: true })
+      } finally {
+        set({ _hydrating: null })
+      }
+    })()
+    set({ _hydrating: promise })
+    return promise
   },
 
   setCurrency: (currency) => {

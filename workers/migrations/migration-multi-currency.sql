@@ -2,7 +2,7 @@
 -- orders.amount_pesewas is reinterpreted as "amount in minor units of `currency`";
 -- the column is not renamed to avoid touching every existing query.
 
-ALTER TABLE orders ADD COLUMN currency TEXT DEFAULT 'GHS';
+-- orders.currency already exists (migration-purchases.sql / schema.sql) — do NOT re-add it.
 ALTER TABLE orders ADD COLUMN stripe_session_id TEXT;
 
 ALTER TABLE subscriptions ADD COLUMN currency TEXT DEFAULT 'GHS';

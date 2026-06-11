@@ -10,4 +10,10 @@ describe('priceBook mirror drift', () => {
   it('CURRENCIES are identical between src/config and workers', () => {
     expect(frontend.CURRENCIES).toEqual(worker.CURRENCIES)
   })
+
+  it('country mapping behaves identically in both modules', () => {
+    for (const c of ['GH', 'NG', 'GB', 'DE', 'US', 'XX', null]) {
+      expect(frontend.currencyForCountry(c)).toBe(worker.currencyForCountry(c))
+    }
+  })
 })
