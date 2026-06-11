@@ -44,6 +44,8 @@ id = "3cf6b47818c04ca8828461650478a6c1"
 # ADMIN_SECRET              — header for legacy admin endpoints (X-Admin-Secret)
 # GOOGLE_CLIENT_ID          — set via [vars] above; not a secret
 # SHOTSTACK_API_KEY         — Shotstack render API key; use the sandbox key while SHOTSTACK_ENV='stage', the prod key for 'v1'
+# STRIPE_SECRET_KEY         — Stripe secret key (sk_live_/sk_test_) for GBP/USD checkout
+# STRIPE_WEBHOOK_SECRET     — Stripe webhook signing secret (whsec_) for /stripe/webhook
 
 [[routes]]
 pattern = "auth-api.funeralpress.org/*"

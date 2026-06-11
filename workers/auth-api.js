@@ -20,7 +20,8 @@ import {
   canGrantReward,
   applyReferralDiscount,
 } from './familyReferral.js'
-import { PRODUCTS, priceFor, currencyForCountry } from './priceBook.js'
+import { PRODUCTS, priceFor, currencyForCountry, providerFor, isSubscription } from './priceBook.js'
+import { stripeRequest, verifyStripeSignature, checkoutSessionParams } from './stripeClient.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -932,6 +933,59 @@ async function markOrderPaid(env, order) {
       'UPDATE users SET referral_balance_pesewas = MAX(0, COALESCE(referral_balance_pesewas, 0) - ?) WHERE id = ?'
     ).bind(order.referral_discount_pesewas, order.user_id).run()
   }
+}
+
+async function handleStripeCheckout(request, env, userId) {
+  if (!env.STRIPE_SECRET_KEY) return error('Stripe is not configured', 503, request)
+  const { productKey, currency, memorialId } = await request.json()
+
+  const product = PRODUCTS[productKey]
+  if (!product) return error('Unknown product', 400, request)
+  if (providerFor(currency) !== 'stripe') return error('Use Paystack for this currency', 400, request)
+  if (product.memorial && !memorialId) return error('Missing memorialId', 400, request)
+
+  const user = await env.DB.prepare('SELECT id, email FROM users WHERE id = ? AND deleted_at IS NULL').bind(userId).first()
+  if (!user) return error('User not found', 404, request)
+
+  if (isSubscription(productKey) && !product.memorial) {
+    const existing = await getUserSubscription(env, userId)
+    if (existing && existing.status === 'active') return error('Already have an active subscription', 400, request)
+  }
+
+  const amount = priceFor(productKey, currency)
+  const metadata = {
+    userId,
+    productKey,
+    currency,
+    ...(product.memorial ? { memorialId, tier: product.tier } : {}),
+  }
+
+  const successUrl = product.memorial
+    ? `${env.CORS_ORIGIN}/memorial/${encodeURIComponent(memorialId)}?stripe_session={CHECKOUT_SESSION_ID}`
+    : `${env.CORS_ORIGIN}/my-designs?stripe_session={CHECKOUT_SESSION_ID}`
+
+  const session = await stripeRequest(env, '/checkout/sessions', checkoutSessionParams({
+    productKey,
+    currency,
+    amount,
+    label: product.label,
+    interval: product.interval || null,
+    email: user.email,
+    successUrl,
+    cancelUrl: `${env.CORS_ORIGIN}/`,
+    metadata,
+  }))
+
+  // One-time credit purchases get a pending orders row so markOrderPaid can
+  // grant credits idempotently from either the webhook or the verify endpoint.
+  if (product.kind === 'one_time' && !product.memorial) {
+    await env.DB.prepare(
+      `INSERT INTO orders (id, user_id, plan, amount_pesewas, paystack_reference, currency, stripe_session_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(generateId(), userId, productKey, amount, `stripe-${session.id}`, currency, session.id).run()
+  }
+
+  return json({ url: session.url }, 200, request)
 }
 
 async function handlePaymentVerify(request, env, userId) {
@@ -3547,6 +3601,7 @@ const handler = {
       if (method === 'POST' && path === '/partner/upload-logo') return await handlePartnerLogoUpload(request, env, userId)
       if (method === 'POST' && path === '/payments/initialize') return await handlePaymentInitialize(request, env, userId)
       if (method === 'POST' && path === '/payments/verify') return await handlePaymentVerify(request, env, userId)
+      if (method === 'POST' && path === '/stripe/checkout') return await handleStripeCheckout(request, env, userId)
       if (method === 'POST' && path === '/memorial-premium/initialize') return await handlePremiumInitialize(request, env, userId)
       if (method === 'POST' && path === '/memorial-premium/verify') return await handlePremiumVerify(request, env, userId)
       // Annual memorial subscription — POST /memorial-premium/:id/subscribe
