@@ -11,6 +11,7 @@ import UpgradeDialog from '../components/memorial/UpgradeDialog.jsx'
 import TributeVideoStudio from '../components/memorial/TributeVideoStudio.jsx'
 import TributeWall from '../components/memorial/TributeWall.jsx'
 import FollowMemorial from '../components/memorial/FollowMemorial.jsx'
+import { recordLoopEvent, captureLoopSurface } from '../utils/loopAnalytics'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -62,6 +63,12 @@ export default function MemorialPage() {
     refreshEntitlement()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
+
+  // Loop impression (spec §2.6): every public memorial view is a footer impression
+  useEffect(() => {
+    if (data) recordLoopEvent('loop_impression', 'memorial_footer', { memorialId: id })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
 
   if (loading) {
     return (
@@ -317,17 +324,23 @@ export default function MemorialPage() {
           </div>
         )}
 
-        {/* Footer */}
+        {/* Footer — loop pathway (spec §2.2): dignified attribution on all tiers */}
         <div className="text-center py-8 border-t" style={{ borderColor: theme.border + '30' }}>
           <div className="text-lg mb-2" style={{ color: theme.heading }}>&#10013;</div>
-          {!features.removeBranding && (
-            <p className="text-xs" style={{ color: theme.subtleText }}>
-              Created with{' '}
-              <Link to="/" className="hover:underline" style={{ color: theme.heading }}>
-                FuneralPress
-              </Link>
-            </p>
-          )}
+          <p className="text-xs" style={{ color: theme.subtleText }}>
+            This tribute was lovingly created with{' '}
+            <Link
+              to="/honour?from=memorial_footer"
+              onClick={() => {
+                captureLoopSurface('memorial_footer')
+                recordLoopEvent('loop_click', 'memorial_footer', { memorialId: id })
+              }}
+              className="hover:underline"
+              style={{ color: theme.heading }}
+            >
+              FuneralPress
+            </Link>
+          </p>
         </div>
 
         {/* Premium upgrade / status — opens tier dialog when not yet premium */}
