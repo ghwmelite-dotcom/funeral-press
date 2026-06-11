@@ -36,7 +36,7 @@ export default function CondolencePrompt({ slug, deceasedFirstName, onDismiss })
         type="button"
         onClick={onDismiss}
         aria-label="Dismiss"
-        className="text-[#555] hover:text-[#999] shrink-0 p-1"
+        className="text-[#555] hover:text-[#999] shrink-0 min-w-[44px] min-h-[44px] -m-3 flex items-center justify-center"
       >
         <X size={14} />
       </button>

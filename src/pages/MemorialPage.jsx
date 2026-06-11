@@ -36,6 +36,7 @@ export default function MemorialPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const contentRef = useRef(null)
+  const footerImpressionFired = useRef(false)
   const [downloading, setDownloading] = useState(false)
   const [entitlement, setEntitlement] = useState({ premium: false, tier: null, features: {} })
   const [upgradeOpen, setUpgradeOpen] = useState(false)
@@ -67,9 +68,14 @@ export default function MemorialPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  // Loop impression (spec §2.6): every public memorial view is a footer impression
+  // Loop impression (spec §2.6): every public memorial view is a footer
+  // impression. Ref guard: at most once per mount (StrictMode double-invokes
+  // effects in dev, and `data` identity can change without a new view).
   useEffect(() => {
-    if (data) recordLoopEvent('loop_impression', 'memorial_footer', { memorialId: id })
+    if (data && !footerImpressionFired.current) {
+      footerImpressionFired.current = true
+      recordLoopEvent('loop_impression', 'memorial_footer', { memorialId: id })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
@@ -167,7 +173,7 @@ export default function MemorialPage() {
             type="button"
             onClick={dismissQrRibbon}
             aria-label="Dismiss"
-            className="p-1 opacity-60 hover:opacity-100 transition-opacity"
+            className="min-w-[44px] min-h-[44px] -my-2 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity"
           >
             <X size={12} />
           </button>
