@@ -59,6 +59,7 @@ const GuestBookPage = lazy(() => import('./pages/GuestBookPage'))
 const ObituaryCreatorPage = lazy(() => import('./pages/ObituaryCreatorPage'))
 const ObituaryPage = lazy(() => import('./pages/ObituaryPage'))
 const HymnLibraryPage = lazy(() => import('./pages/HymnLibraryPage'))
+const HymnPage = lazy(() => import('./pages/HymnPage'))
 const VenueDirectoryPage = lazy(() => import('./pages/VenueDirectoryPage'))
 const OneWeekEditorPage = lazy(() => import('./pages/OneWeekEditorPage'))
 const RegionPage = lazy(() => import('./pages/RegionPage'))
@@ -182,6 +183,7 @@ export default function App() {
               <Route path="/obituary-creator" element={<ObituaryCreatorPage />} />
               <Route path="/obituary/:slug" element={<ObituaryPage />} />
               <Route path="/hymns" element={<HymnLibraryPage />} />
+              <Route path="/hymns/:slug" element={<HymnPage />} />
               <Route path="/venues" element={<VenueDirectoryPage />} />
               <Route path="/blog" element={<BlogIndexPage />} />
               <Route path="/blog/:slug" element={<BlogPostPage />} />
