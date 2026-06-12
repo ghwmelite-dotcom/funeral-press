@@ -21,7 +21,7 @@ import {
   canGrantReward,
   applyReferralDiscount,
 } from './familyReferral.js'
-import { PRODUCTS, priceFor, currencyForCountry, providerFor, isSubscription } from './priceBook.js'
+import { PRODUCTS, CURRENCIES, priceFor, currencyForCountry, providerFor, isSubscription } from './priceBook.js'
 import { stripeRequest, verifyStripeSignature, checkoutSessionParams } from './stripeClient.js'
 import { draftPrompt, parseDraft, draftSlug } from './blogDraft.js'
 import { reportHtml } from './utils/growthReport.js'
@@ -872,44 +872,62 @@ function resolveCredit(user, subscription) {
 }
 
 async function handlePaymentInitialize(request, env, userId) {
-  const { plan } = await request.json()
+  const { plan, currency: rawCurrency } = await request.json()
   if (!plan || !PLANS[plan]) return error('Invalid plan', 400, request)
+
+  const currency = rawCurrency || 'GHS'
+  if (currency !== 'GHS') {
+    if (!CURRENCIES[currency]?.enabled || providerFor(currency) !== 'paystack') {
+      return error('Unsupported currency', 400, request)
+    }
+    if (PLANS[plan].institutional) return error('Institutional plans are GHS-only', 400, request)
+  }
 
   const planInfo = PLANS[plan]
   const user = await env.DB.prepare('SELECT id, email, referral_balance_pesewas FROM users WHERE id = ?').bind(userId).first()
   if (!user) return error('User not found', 404, request)
 
-  // Check for referral partner (for commission tracking)
+  // Base amount in the charge currency. GHS amounts come from PLANS (which
+  // derives from the price book); other currencies resolve directly.
+  const baseAmount = currency === 'GHS' ? planInfo.amount : priceFor(plan, currency)
+
+  // Partner commission: GHS-only (commission sums assume one currency —
+  // plan decision #1). Attribution (partner_id) is still recorded.
   const referral = await env.DB.prepare("SELECT partner_id FROM referrals WHERE referred_user_id = ? AND type = 'partner'").bind(userId).first()
   const partnerId = referral?.partner_id || null
   let commissionRate = null
   let commissionAmount = null
-  if (partnerId) {
+  if (partnerId && currency === 'GHS') {
     const partner = await env.DB.prepare('SELECT partner_commission_override FROM users WHERE id = ?').bind(partnerId).first()
     commissionRate = partner?.partner_commission_override || 0.10
-    commissionAmount = Math.round(planInfo.amount * commissionRate)
+    commissionAmount = Math.round(baseAmount * commissionRate)
   }
 
-  // Referral balance auto-applies as a discount (spec §2.5). Commission (above)
-  // stays computed on the full plan price.
-  const { discount: referralDiscount, amount: chargeAmount } = applyReferralDiscount({
-    balancePesewas: user.referral_balance_pesewas || 0,
-    amountPesewas: planInfo.amount,
-  })
+  // Referral balance discount: GHS-only (balance is denominated in pesewas).
+  let referralDiscount = 0
+  let chargeAmount = baseAmount
+  if (currency === 'GHS') {
+    const applied = applyReferralDiscount({
+      balancePesewas: user.referral_balance_pesewas || 0,
+      amountPesewas: baseAmount,
+    })
+    referralDiscount = applied.discount
+    chargeAmount = applied.amount
+  }
 
   const reference = `fp-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
   const orderId = generateId()
 
   await env.DB.prepare(
     `INSERT INTO orders (id, user_id, plan, amount_pesewas, paystack_reference, partner_id, commission_rate, commission_amount, referral_discount_pesewas, currency)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'GHS')`
-  ).bind(orderId, userId, plan, chargeAmount, reference, partnerId, commissionRate, commissionAmount, referralDiscount).run()
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(orderId, userId, plan, chargeAmount, reference, partnerId, commissionRate, commissionAmount, referralDiscount, currency).run()
 
   return json({
     reference,
     amount: chargeAmount,
     email: user.email,
-    currency: 'GHS',
+    currency,
   }, 200, request)
 }
 
