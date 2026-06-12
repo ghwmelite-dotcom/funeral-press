@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { Heart, Calendar, MapPin, Clock, BookOpen, Loader2, Download, Lock } from 'lucide-react'
+import { Heart, Calendar, MapPin, Clock, BookOpen, Loader2, Download, Lock, X } from 'lucide-react'
 import { getMemorial, getMemorialEntitlement } from '../utils/memorialApi'
 import { themes } from '../utils/themes'
 import { resolveMemorialTheme } from '../utils/memorialTheme'
@@ -11,6 +11,7 @@ import UpgradeDialog from '../components/memorial/UpgradeDialog.jsx'
 import TributeVideoStudio from '../components/memorial/TributeVideoStudio.jsx'
 import TributeWall from '../components/memorial/TributeWall.jsx'
 import FollowMemorial from '../components/memorial/FollowMemorial.jsx'
+import { recordLoopEvent, captureLoopSurface } from '../utils/loopAnalytics'
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -35,9 +36,13 @@ export default function MemorialPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const contentRef = useRef(null)
+  const footerImpressionFired = useRef(false)
   const [downloading, setDownloading] = useState(false)
   const [entitlement, setEntitlement] = useState({ premium: false, tier: null, features: {} })
   const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const [searchParams] = useSearchParams()
+  const [showQrRibbon, setShowQrRibbon] = useState(false)
+  const qrRibbonKey = `fp-qr-ribbon-${id}`
 
   // Convenience derived values
   const premium = !!entitlement.premium
@@ -62,6 +67,34 @@ export default function MemorialPage() {
     refreshEntitlement()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
+
+  // Loop impression (spec §2.6): every public memorial view is a footer
+  // impression. Ref guard: at most once per mount (StrictMode double-invokes
+  // effects in dev, and `data` identity can change without a new view).
+  useEffect(() => {
+    if (data && !footerImpressionFired.current) {
+      footerImpressionFired.current = true
+      recordLoopEvent('loop_impression', 'memorial_footer', { memorialId: id })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+
+  useEffect(() => {
+    // First-visit ribbon for print-QR scanners (spec §2.4): tribute first,
+    // pathway second; dismiss is permanent per visitor per memorial.
+    let seen = false
+    try { seen = !!localStorage.getItem(qrRibbonKey) } catch { /* ignore */ }
+    if (searchParams.get('src') === 'qr' && !seen) {
+      setShowQrRibbon(true)
+      recordLoopEvent('loop_impression', 'qr_ribbon', { memorialId: id })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  const dismissQrRibbon = () => {
+    try { localStorage.setItem(qrRibbonKey, '1') } catch { /* ignore */ }
+    setShowQrRibbon(false)
+  }
 
   if (loading) {
     return (
@@ -117,6 +150,35 @@ export default function MemorialPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: theme.pageBg }}>
+      {showQrRibbon && (
+        <div
+          className="sticky top-0 z-40 flex items-center justify-center gap-3 px-4 py-2 text-xs"
+          style={{ backgroundColor: theme.secondaryBg, color: theme.bodyText }}
+        >
+          <span>
+            You're viewing a tribute to {data.fullName} ·{' '}
+            <Link
+              to="/honour?from=qr_ribbon"
+              onClick={() => {
+                captureLoopSurface('qr_ribbon')
+                recordLoopEvent('loop_click', 'qr_ribbon', { memorialId: id })
+              }}
+              className="hover:underline"
+              style={{ color: theme.heading }}
+            >
+              Created with FuneralPress
+            </Link>
+          </span>
+          <button
+            type="button"
+            onClick={dismissQrRibbon}
+            aria-label="Dismiss"
+            className="min-w-[44px] min-h-[44px] -my-2 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
       <Helmet>
         <title>{ogTitle} | FuneralPress</title>
         <meta property="og:title" content={ogTitle} />
@@ -317,17 +379,23 @@ export default function MemorialPage() {
           </div>
         )}
 
-        {/* Footer */}
+        {/* Footer — loop pathway (spec §2.2): dignified attribution on all tiers */}
         <div className="text-center py-8 border-t" style={{ borderColor: theme.border + '30' }}>
           <div className="text-lg mb-2" style={{ color: theme.heading }}>&#10013;</div>
-          {!features.removeBranding && (
-            <p className="text-xs" style={{ color: theme.subtleText }}>
-              Created with{' '}
-              <Link to="/" className="hover:underline" style={{ color: theme.heading }}>
-                FuneralPress
-              </Link>
-            </p>
-          )}
+          <p className="text-xs" style={{ color: theme.subtleText }}>
+            This tribute was lovingly created with{' '}
+            <Link
+              to="/honour?from=memorial_footer"
+              onClick={() => {
+                captureLoopSurface('memorial_footer')
+                recordLoopEvent('loop_click', 'memorial_footer', { memorialId: id })
+              }}
+              className="hover:underline"
+              style={{ color: theme.heading }}
+            >
+              FuneralPress
+            </Link>
+          </p>
         </div>
 
         {/* Premium upgrade / status — opens tier dialog when not yet premium */}

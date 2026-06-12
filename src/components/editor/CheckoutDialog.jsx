@@ -12,6 +12,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { apiFetch } from '../../utils/apiClient'
 import { loadPaystackInline, PAYSTACK_PUBLIC_KEY } from '../../utils/paystack'
 import { haptic } from '../../hooks/useHaptic'
+import FamilyReferralCard from '../referral/FamilyReferralCard'
 
 const PLANS = [
   { key: 'single', name: 'Single', price: 35, credits: '1 design', desc: 'Perfect for one project' },
@@ -74,7 +75,7 @@ export default function CheckoutDialog() {
       setStage('success')
       setTimeout(() => {
         closeCheckout()
-      }, 1500)
+      }, 6000)
     } catch (err) {
       setErrorMsg(err.message || 'Failed to unlock design')
       setStage('error')
@@ -111,7 +112,7 @@ export default function CheckoutDialog() {
             setStage('success')
             setTimeout(() => {
               closeCheckout()
-            }, 1500)
+            }, 6000)
           } catch (err) {
             setErrorMsg(err.message || 'Verification failed')
             setStage('error')
@@ -170,11 +171,12 @@ export default function CheckoutDialog() {
         <div className="px-6 pb-6">
           {/* Success state */}
           {stage === 'success' && (
-            <div className="flex flex-col items-center py-8 gap-3">
+            <div className="flex flex-col items-center py-6 gap-4">
               <div className="w-12 h-12 rounded-full bg-emerald-600/20 text-emerald-400 flex items-center justify-center">
                 <Check size={24} />
               </div>
               <p className="text-sm text-card-foreground">Download starting...</p>
+              <FamilyReferralCard surface="referral_post_export" compact />
             </div>
           )}
 

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { getStoredReferralCode, clearStoredReferralCode } from '../utils/referralTracker'
+import { getStoredLoopSurface, clearStoredLoopSurface, recordLoopEvent } from '../utils/loopAnalytics'
 import { trackEvent } from '../utils/trackEvent'
 import { usePurchaseStore } from './purchaseStore'
 
@@ -19,6 +20,18 @@ function saveAuth(data) {
     if (data) localStorage.setItem(AUTH_KEY, JSON.stringify(data))
     else localStorage.removeItem(AUTH_KEY)
   } catch { /* ignore */ }
+}
+
+// Loop attribution (spec §2.6): report which growth surface brought this
+// signup, with the token so /analytics/event stores user_id (enables the
+// signup → first_design → purchase funnel joins in D1). Always clears the
+// stored surface on successful auth so it can't leak across users.
+function attributeLoopSignup(accessToken) {
+  const loopSurface = getStoredLoopSurface()
+  if (loopSurface) {
+    recordLoopEvent('loop_signup', loopSurface, {}, { token: accessToken })
+  }
+  clearStoredLoopSurface()
 }
 
 function normalizeUser(user) {
@@ -87,6 +100,8 @@ export const useAuthStore = create((set, get) => ({
       saveAuth({ ...state, hasMigrated: get().hasMigrated })
 
       trackEvent('signup_completed', { method: 'google' })
+
+      attributeLoopSignup(data.accessToken)
 
       // Hydrate purchase data from login response
       usePurchaseStore.getState().hydrateFromUser(data.user)
@@ -194,6 +209,12 @@ export const useAuthStore = create((set, get) => ({
 
     // Hydrate purchase state from the user payload (best-effort, same as Google flow)
     usePurchaseStore.getState().hydrateFromUser(data.user)
+
+    // Loop attribution: fire-and-forget for phone+PIN path. No reliable new-user
+    // signal exists on this data object, so we call unconditionally — attributing
+    // a loop-sourced return visit is acceptable; the unconditional
+    // clearStoredLoopSurface() is the critical hygiene property.
+    attributeLoopSignup(data.accessToken)
   },
 
   // Mark the welcome tour as completed/dismissed.

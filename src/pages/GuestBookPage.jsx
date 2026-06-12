@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import PageMeta from '../components/seo/PageMeta'
 import { BookOpen, Send, Loader2, User, MessageSquare, Clock } from 'lucide-react'
+import { useAuthStore } from '../stores/authStore'
+import { recordLoopEvent } from '../utils/loopAnalytics'
+import CondolencePrompt from '../components/memorial/CondolencePrompt'
+import { hasSeenCondolencePrompt, markCondolencePromptSeen } from '../utils/condolencePrompt'
 
 const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
 
@@ -17,6 +21,7 @@ export default function GuestBookPage() {
   const [message, setMessage] = useState('')
   const [signing, setSigning] = useState(false)
   const [signed, setSigned] = useState(false)
+  const [showPrompt, setShowPrompt] = useState(false)
 
   useEffect(() => {
     fetchBook()
@@ -56,6 +61,13 @@ export default function GuestBookPage() {
       setName('')
       setMessage('')
       setSigned(true)
+      // Post-condolence pathway (spec §2.3): once per visitor per guest book,
+      // suppressed for existing logged-in users.
+      if (!useAuthStore.getState().isLoggedIn() && !hasSeenCondolencePrompt(slug)) {
+        markCondolencePromptSeen(slug)
+        setShowPrompt(true)
+        recordLoopEvent('loop_impression', 'post_condolence', { slug })
+      }
       setTimeout(() => setSigned(false), 4000)
     } catch {
       // silent
@@ -180,6 +192,13 @@ export default function GuestBookPage() {
             <div className="mb-4 bg-[#C9A84C]/10 border border-[#C9A84C]/30 rounded-lg px-4 py-3 text-sm text-[#C9A84C]">
               Thank you for signing the guest book.
             </div>
+          )}
+          {showPrompt && (
+            <CondolencePrompt
+              slug={slug}
+              deceasedFirstName={(book.deceasedName || '').split(' ')[0] || 'your loved one'}
+              onDismiss={() => setShowPrompt(false)}
+            />
           )}
 
           <form onSubmit={handleSign} className="space-y-4">
