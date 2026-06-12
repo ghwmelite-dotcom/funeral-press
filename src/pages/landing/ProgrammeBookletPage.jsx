@@ -4,6 +4,7 @@ import FAQSection from '../../components/seo/FAQSection'
 import { useCurrencyStore } from '../../stores/currencyStore'
 import { priceFor, formatMoney } from '../../config/priceBook'
 import CurrencySwitcher from '../../components/pricing/CurrencySwitcher'
+import { KenteBand, CeremonialDivider } from '../../components/ceremonial'
 import {
   ArrowRight,
   BookOpen,
@@ -124,6 +125,7 @@ export default function ProgrammeBookletPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <KenteBand size="page" />
       <PageMeta
         title="Funeral Programme Booklet Designer — Order of Service | FuneralPress"
         description="Design a professional funeral programme booklet with order of service, hymn lyrics, tributes, and biographical sketch. Print-ready PDF. Starts at GHS 35."
@@ -275,6 +277,8 @@ export default function ProgrammeBookletPage() {
         </div>
       </section>
 
+      <CeremonialDivider />
+
       {/* Pricing */}
       <section className="max-w-4xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">Simple, Transparent Pricing</h2>
@@ -309,6 +313,8 @@ export default function ProgrammeBookletPage() {
           ))}
         </div>
       </section>
+
+      <CeremonialDivider />
 
       {/* FAQ */}
       <section className="max-w-3xl mx-auto px-4 pb-16">

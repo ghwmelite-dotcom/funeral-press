@@ -4,6 +4,7 @@ import FAQSection from '../../components/seo/FAQSection'
 import { useCurrencyStore } from '../../stores/currencyStore'
 import { priceFor, formatMoney } from '../../config/priceBook'
 import CurrencySwitcher from '../../components/pricing/CurrencySwitcher'
+import { KenteBand, CeremonialDivider } from '../../components/ceremonial'
 import {
   ArrowRight,
   Globe,
@@ -109,6 +110,7 @@ export default function MemorialCreatorPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <KenteBand size="page" />
       <PageMeta
         title="Memorial Page Creator — Online Tribute & Guest Book | FuneralPress"
         description="Create a beautiful online memorial page with a virtual guest book, photo gallery, and life story timeline. Permanent hosting. Share with family worldwide. Starts at GHS 35."
@@ -241,6 +243,8 @@ export default function MemorialCreatorPage() {
         </div>
       </section>
 
+      <CeremonialDivider symbol="gyenyame" />
+
       {/* Pricing */}
       <section className="max-w-4xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">Simple, Transparent Pricing</h2>
@@ -275,6 +279,8 @@ export default function MemorialCreatorPage() {
           ))}
         </div>
       </section>
+
+      <CeremonialDivider symbol="gyenyame" />
 
       {/* FAQ */}
       <section className="max-w-3xl mx-auto px-4 pb-16">

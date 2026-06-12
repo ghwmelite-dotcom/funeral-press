@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import PageMeta from '../components/seo/PageMeta'
 import { Search, Music, Copy, Check, BookOpen, ChevronDown, ChevronUp, X } from 'lucide-react'
 import hymns from '../data/hymns'
+import { KenteBand, CeremonialDivider } from '../components/ceremonial'
 
 const LANGUAGES = ['All', 'English', 'Twi']
 const CATEGORIES = ['All', 'Processional', 'Worship', 'Comfort', 'Committal', 'Recessional']
@@ -101,6 +102,7 @@ export default function HymnLibraryPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <KenteBand size="page" />
       <PageMeta
         title="11,000+ Funeral Hymns — Lyrics & Song Library | FuneralPress"
         description="Find the perfect funeral hymns. Browse 11,000+ hymn lyrics including popular Ghanaian, Akan, Twi, and English funeral songs. Search by title or first line."
@@ -204,6 +206,7 @@ export default function HymnLibraryPage() {
                 key={hymn.id}
                 className="bg-card border border-border rounded-lg overflow-hidden transition-all"
               >
+                <KenteBand size="card" />
                 {/* Card Header */}
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : hymn.id)}
@@ -314,6 +317,8 @@ export default function HymnLibraryPage() {
             </button>
           </div>
         )}
+
+        <CeremonialDivider symbol="sankofa" />
 
         {/* Bottom CTA */}
         <div className="mt-12 bg-card border border-border rounded-lg p-6 text-center">

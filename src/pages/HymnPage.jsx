@@ -7,6 +7,7 @@ import { Music, ArrowRight, BookOpen } from 'lucide-react'
 import PageMeta from '../components/seo/PageMeta'
 import { hymns } from '../data/hymns'
 import { CATEGORY_NOTES, relatedHymns } from '../data/hymnMeta'
+import { KenteBand, CeremonialDivider } from '../components/ceremonial'
 
 const CATEGORY_LABELS = {
   processional: 'Processional', worship: 'Worship & Praise', comfort: 'Comfort',
@@ -75,6 +76,8 @@ export default function HymnPage() {
           {hymn.author && <p className="text-sm text-muted-foreground">{hymn.author}</p>}
         </div>
 
+        <CeremonialDivider symbol="sankofa" />
+
         {/* Occasion context (speakable) */}
         <p className="hymn-context text-sm text-muted-foreground leading-relaxed mb-8">
           {CATEGORY_NOTES[hymn.category]}
@@ -121,12 +124,15 @@ export default function HymnPage() {
             <Link
               key={r.slug}
               to={`/hymns/${r.slug}`}
-              className="flex items-center gap-3 bg-card border border-border rounded-lg px-4 py-3 hover:border-primary/40 transition-colors"
+              className="overflow-hidden flex flex-col bg-card border border-border rounded-lg hover:border-primary/40 transition-colors"
             >
-              <BookOpen size={15} className="text-primary shrink-0" />
-              <div className="min-w-0">
-                <p className="text-sm text-card-foreground truncate">{r.title}</p>
-                <p className="text-xs text-muted-foreground">{CATEGORY_LABELS[r.category] || r.category}{r.author ? ` · ${r.author}` : ''}</p>
+              <KenteBand size="card" />
+              <div className="flex items-center gap-3 px-4 py-3">
+                <BookOpen size={15} className="text-primary shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm text-card-foreground truncate">{r.title}</p>
+                  <p className="text-xs text-muted-foreground">{CATEGORY_LABELS[r.category] || r.category}{r.author ? ` · ${r.author}` : ''}</p>
+                </div>
               </div>
             </Link>
           ))}

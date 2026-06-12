@@ -1,0 +1,82 @@
+/* =============================================================================
+   Ceremonial layer — "Adinkra Radiance, Ceremonially Framed"
+   Spec: docs/superpowers/specs/2026-06-12-ghanaian-identity-design.md
+   Fixed hex values locked via owner-approved mockups. Components read these
+   tokens only — never raw hex. Dark is the default theme (house convention).
+   ============================================================================= */
+:root,
+[data-theme="dark"] {
+  --ceremonial-canvas: #08080C;
+  --ceremonial-surface: #0e0e13;
+  --ceremonial-ink: #f0e6d2;
+  --ceremonial-ink-strong: #f5edda;
+  --ceremonial-ink-muted: #9b8e74;
+  --ceremonial-gold: #E8C766;
+  --ceremonial-gold-soft: #C9A24B;
+  --ceremonial-border: #26211a;
+  --kente-gold: #E8C766;
+  --kente-burgundy: #a13a45;
+  --kente-green: #2d7a47;
+  --kente-void: #000000;
+  --ceremonial-cta-bg: linear-gradient(135deg, #F6E2A0, #C9A24B);
+  --ceremonial-cta-text: #1a1408;
+  --ceremonial-aurora-gold: rgba(232, 199, 102, 0.20);
+  --ceremonial-aurora-accent: rgba(161, 58, 69, 0.13);
+  --ceremonial-watermark-opacity: 0.09;
+  --ceremonial-glass-bg: rgba(20, 20, 28, 0.72);
+  --ceremonial-glass-border: rgba(232, 199, 102, 0.34);
+  --ceremonial-outline-bg: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="light"] {
+  --ceremonial-canvas: #faf6ee;
+  --ceremonial-surface: #fffdf8;
+  --ceremonial-ink: #241f17;
+  --ceremonial-ink-strong: #241f17;
+  --ceremonial-ink-muted: #6e6354;
+  --ceremonial-gold: #9a7b1c;
+  --ceremonial-gold-soft: #c8b572;
+  --ceremonial-border: #eee3cc;
+  --kente-gold: #b8860b;
+  --kente-burgundy: #7a2c35;
+  --kente-green: #1e5631;
+  --kente-void: #241f17;
+  --ceremonial-cta-bg: #241f17;
+  --ceremonial-cta-text: #f3e9c9;
+  /* Light mode aurora = "gold mist": lower opacity, no accent blob */
+  --ceremonial-aurora-gold: rgba(154, 123, 28, 0.10);
+  --ceremonial-aurora-accent: rgba(154, 123, 28, 0.05);
+  --ceremonial-watermark-opacity: 0.07;
+  --ceremonial-glass-bg: rgba(255, 253, 248, 0.85);
+  --ceremonial-glass-border: rgba(154, 123, 28, 0.40);
+  --ceremonial-outline-bg: rgba(36, 31, 23, 0.04);
+}
+
+/* Kente weave — one gradient definition, both sizes consume it */
+:root {
+  --kente-weave: repeating-linear-gradient(
+    90deg,
+    var(--kente-gold) 0 26px, var(--kente-void) 26px 32px,
+    var(--kente-burgundy) 32px 58px, var(--kente-void) 58px 64px,
+    var(--kente-green) 64px 90px, var(--kente-void) 90px 96px
+  );
+}
+
+/* Shimmer headline treatment (dark theme; light renders plain ink) */
+.shimmer-text {
+  background: linear-gradient(110deg, #C9A24B 0%, #E8C766 28%, #FFF4D6 50%, #E8C766 72%, #C9A24B 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 6s linear infinite;
+}
+[data-theme="light"] .shimmer-text {
+  background: none;
+  color: var(--ceremonial-ink);
+  animation: none;
+}
+
+/* Ceremonial page wrapper conveniences */
+.ceremonial-canvas { background-color: var(--ceremonial-canvas); color: var(--ceremonial-ink); }
+.ceremonial-surface { background-color: var(--ceremonial-surface); border-color: var(--ceremonial-border); }

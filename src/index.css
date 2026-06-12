@@ -1,4 +1,5 @@
 @import './styles/tokens.css';
+@import './styles/ceremonial.css';
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
 
 @tailwind base;
@@ -242,7 +243,7 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-shimmer, .animate-shimmer-sweep, .animate-glow-breathe, .animate-border-glow,
   .animate-float-up, .animate-float-bob, .animate-twinkle, .animate-aurora-drift,
-  .animate-ken-burns { animation: none !important; }
+  .animate-ken-burns, .shimmer-text { animation: none !important; }
 }
 
 /* Hide scrollbar utility */

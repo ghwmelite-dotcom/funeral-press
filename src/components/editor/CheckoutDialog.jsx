@@ -7,6 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../ui/dialog'
+import { KenteBand } from '../ceremonial'
 import { usePurchaseStore } from '../../stores/purchaseStore'
 import { useAuthStore } from '../../stores/authStore'
 import { apiFetch } from '../../utils/apiClient'
@@ -185,6 +186,7 @@ export default function CheckoutDialog() {
   return (
     <Dialog open={checkoutOpen} onOpenChange={(open) => !open && closeCheckout()}>
       <DialogContent className="max-w-md w-full p-0 gap-0 max-h-[90vh] overflow-y-auto">
+        <KenteBand size="card" />
         <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="text-lg">
             {stage === 'success' ? 'Download Ready' :
@@ -235,7 +237,8 @@ export default function CheckoutDialog() {
               </p>
               <button
                 onClick={handleUseCredit}
-                className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors"
+                className="px-6 py-2.5 text-sm font-medium rounded-lg transition-colors"
+                style={{ background: 'var(--ceremonial-cta-bg)', color: 'var(--ceremonial-cta-text)' }}
               >
                 Unlock & Download
               </button>

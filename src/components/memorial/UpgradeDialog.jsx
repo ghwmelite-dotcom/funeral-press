@@ -7,6 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '../ui/dialog.jsx'
+import { KenteBand } from '../ceremonial'
 import { TIERS, FEATURE_MIN_RANK } from '../../config/memorialTiers.js'
 import { loadPaystackInline, PAYSTACK_PUBLIC_KEY } from '../../utils/paystack'
 import {
@@ -244,7 +245,8 @@ export default function UpgradeDialog({ memorialId, open, onOpenChange, onSucces
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg" aria-describedby="upgrade-dialog-desc">
+      <DialogContent className="max-w-lg overflow-hidden" aria-describedby="upgrade-dialog-desc">
+        <KenteBand size="card" />
         {done ? (
           <div
             className="flex flex-col items-center gap-4 py-6 text-center"
@@ -320,7 +322,8 @@ export default function UpgradeDialog({ memorialId, open, onOpenChange, onSucces
                 onClick={handleConfirm}
                 disabled={busy}
                 data-testid="upgrade-confirm-btn"
-                className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-60"
+                className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl px-5 font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-60"
+                style={{ background: 'var(--ceremonial-cta-bg)', color: 'var(--ceremonial-cta-text)' }}
               >
                 {busy && (
                   <Loader2
