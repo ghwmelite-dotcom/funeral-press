@@ -117,6 +117,15 @@ export default function BrochureDesignerPage() {
           { name: 'Funeral Brochure Designer', path: '/funeral-brochure-designer' },
         ]}
         faqs={faqs}
+        howTo={{
+          name: 'How to create a funeral brochure online',
+          steps: [
+            { name: 'Choose a theme', text: 'Pick a Ghanaian funeral theme — Black & Gold, Kente Gold, Burgundy, or Ivory.' },
+            { name: 'Add photos and their story', text: 'Upload photographs and write the biography and tributes; the AI tribute writer helps when words are hard.' },
+            { name: 'Add hymns and the order of service', text: 'Search the hymn library and add full lyrics, then set out the order of both services.' },
+            { name: 'Download or print in Ghana', text: 'Export a print-ready PDF, or order printing delivered anywhere in Ghana.' },
+          ],
+        }}
       />
 
       {/* Breadcrumb */}

@@ -1,6 +1,11 @@
 import { useMemo } from 'react'
 import { Helmet } from 'react-helmet-async'
 
+// JSON-LD is injected via innerHTML; escaping `<` prevents a literal
+// `</script>` inside any field (user or AI supplied) from breaking out of
+// the script tag, while keeping the JSON valid.
+const jsonLdString = (obj) => JSON.stringify(obj).replace(/</g, '\\u003c')
+
 /**
  * Enhanced SEO meta component with structured data support.
  *
@@ -22,6 +27,9 @@ export default function PageMeta({
   article,
   breadcrumbs,
   faqs,
+  speakable,
+  howTo,
+  jsonLd,
 }) {
   const url = `https://funeralpress.org${path}`
   const ogImage = image || 'https://funeralpress.org/og-image.png'
@@ -29,7 +37,7 @@ export default function PageMeta({
   const breadcrumbSchema = useMemo(
     () =>
       breadcrumbs?.length
-        ? JSON.stringify({
+        ? jsonLdString({
             '@context': 'https://schema.org',
             '@type': 'BreadcrumbList',
             itemListElement: breadcrumbs.map((crumb, i) => ({
@@ -46,7 +54,7 @@ export default function PageMeta({
   const faqSchema = useMemo(
     () =>
       faqs?.length
-        ? JSON.stringify({
+        ? jsonLdString({
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
             mainEntity: faqs.map((faq) => ({
@@ -65,7 +73,7 @@ export default function PageMeta({
   const articleSchema = useMemo(
     () =>
       type === 'article' && article
-        ? JSON.stringify({
+        ? jsonLdString({
             '@context': 'https://schema.org',
             '@type': 'Article',
             headline: title,
@@ -97,6 +105,45 @@ export default function PageMeta({
           })
         : null,
     [type, article, title, description, ogImage, url],
+  )
+
+  const speakableSchema = useMemo(
+    () =>
+      speakable?.length
+        ? jsonLdString({
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            '@id': url,
+            speakable: {
+              '@type': 'SpeakableSpecification',
+              cssSelector: speakable,
+            },
+          })
+        : null,
+    [speakable, url],
+  )
+
+  const howToSchema = useMemo(
+    () =>
+      howTo?.steps?.length
+        ? jsonLdString({
+            '@context': 'https://schema.org',
+            '@type': 'HowTo',
+            name: howTo.name,
+            step: howTo.steps.map((s, i) => ({
+              '@type': 'HowToStep',
+              position: i + 1,
+              name: s.name,
+              text: s.text,
+            })),
+          })
+        : null,
+    [howTo],
+  )
+
+  const extraJsonLd = useMemo(
+    () => (jsonLd ? jsonLdString(jsonLd) : null),
+    [jsonLd],
   )
 
   return (
@@ -142,6 +189,15 @@ export default function PageMeta({
       {articleSchema && (
         <script type="application/ld+json">{articleSchema}</script>
       )}
+
+      {/* Structured Data: SpeakableSpecification */}
+      {speakableSchema && <script type="application/ld+json">{speakableSchema}</script>}
+
+      {/* Structured Data: HowTo */}
+      {howToSchema && <script type="application/ld+json">{howToSchema}</script>}
+
+      {/* Structured Data: arbitrary JSON-LD */}
+      {extraJsonLd && <script type="application/ld+json">{extraJsonLd}</script>}
     </Helmet>
   )
 }

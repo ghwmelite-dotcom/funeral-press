@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import PageMeta from '../components/seo/PageMeta'
 import { Scroll, Calendar, Clock, MapPin, Users, Loader2 } from 'lucide-react'
 
@@ -84,21 +85,31 @@ export default function ObituaryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
-        <Loader2 size={32} className="animate-spin text-[#C9A84C]" />
-      </div>
+      <>
+        <Helmet>
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
+        <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
+          <Loader2 size={32} className="animate-spin text-[#C9A84C]" />
+        </div>
+      </>
     )
   }
 
   if (error || !obituary) {
     return (
-      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center text-center px-4">
-        <div>
-          <Scroll size={48} className="text-[#C9A84C]/40 mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-white mb-2">Obituary Not Found</h1>
-          <p className="text-[#999] text-sm">This obituary may have been removed or the link is incorrect.</p>
+      <>
+        <Helmet>
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
+        <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center text-center px-4">
+          <div>
+            <Scroll size={48} className="text-[#C9A84C]/40 mx-auto mb-4" />
+            <h1 className="text-xl font-semibold text-white mb-2">Obituary Not Found</h1>
+            <p className="text-[#999] text-sm">This obituary may have been removed or the link is incorrect.</p>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
@@ -111,7 +122,27 @@ export default function ObituaryPage() {
         description={obituary.biography ? obituary.biography.slice(0, 160) : `Obituary announcement for ${obituary.deceasedName}. View funeral details and pay your respects.`}
         path={`/obituary/${slug}`}
         image={obituary.deceasedPhoto}
+        jsonLd={obituary.searchIndexable ? {
+          '@context': 'https://schema.org',
+          '@type': 'Person',
+          name: obituary.deceasedName,
+          ...(obituary.birthDate ? { birthDate: obituary.birthDate } : {}),
+          ...(obituary.deathDate ? { deathDate: obituary.deathDate } : {}),
+          ...(obituary.funeralDate ? {
+            subjectOf: {
+              '@type': 'Event',
+              name: `Funeral service for ${obituary.deceasedName}`,
+              startDate: obituary.funeralDate,
+              ...(obituary.funeralVenue ? { location: { '@type': 'Place', name: obituary.funeralVenue, ...(obituary.venueAddress ? { address: obituary.venueAddress } : {}) } } : {}),
+            },
+          } : {}),
+        } : undefined}
       />
+      {obituary?.searchIndexable !== true && (
+        <Helmet>
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
+      )}
 
       {/* Hero Section */}
       <div className="relative pt-16 pb-12 px-4 text-center">

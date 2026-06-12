@@ -1,8 +1,24 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import PageMeta from '../../components/seo/PageMeta'
 import blogPosts from '../../data/blogPosts'
 
+const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
+
 export default function BlogIndexPage() {
+  const [dynamicPosts, setDynamicPosts] = useState([])
+
+  useEffect(() => {
+    fetch(`${API_BASE}/blog/published`)
+      .then((r) => r.json())
+      .then((d) => setDynamicPosts(d.posts || []))
+      .catch(() => {})
+  }, [])
+
+  const staticSlugs = new Set(blogPosts.map((p) => p.slug))
+  const allPosts = [...blogPosts, ...dynamicPosts.filter((p) => !staticSlugs.has(p.slug))]
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <PageMeta
@@ -30,7 +46,7 @@ export default function BlogIndexPage() {
         </p>
 
         <div className="grid gap-6 sm:grid-cols-2">
-          {blogPosts.map((post) => (
+          {allPosts.map((post) => (
             <Link
               key={post.slug}
               to={`/blog/${post.slug}`}

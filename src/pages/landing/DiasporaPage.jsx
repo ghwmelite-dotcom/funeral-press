@@ -39,6 +39,7 @@ export default function DiasporaPage() {
         path={`/diaspora/${slug}`}
         breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Diaspora', path: `/diaspora/${slug}` }, { name: page.breadcrumb, path: `/diaspora/${slug}` }]}
         faqs={page.faqs}
+        speakable={['.diaspora-intro', 'h1']}
       />
 
       {/* Hero */}
@@ -46,7 +47,7 @@ export default function DiasporaPage() {
         <h1 className="text-3xl sm:text-4xl font-bold text-card-foreground mb-4" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
           {page.h1}
         </h1>
-        <p className="text-muted-foreground text-base leading-relaxed max-w-2xl mx-auto mb-8">{page.intro}</p>
+        <p className="text-muted-foreground text-base leading-relaxed max-w-2xl mx-auto mb-8 diaspora-intro">{page.intro}</p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link to={page.cta.to} className="px-6 py-3 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors">
             {page.cta.label}

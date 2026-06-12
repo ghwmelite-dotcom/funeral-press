@@ -1,5 +1,6 @@
 import { writeFileSync } from 'fs'
 import { resolve } from 'path'
+import { hymns } from '../src/data/hymns.js'
 
 const BASE = 'https://funeralpress.org'
 
@@ -120,6 +121,11 @@ export function buildSitemap({ blogPosts = [], regions = GHANA_REGIONS } = {}) {
     }))
   }
 
+  // Hymn detail pages
+  for (const hymn of hymns) {
+    entries.push(urlEntry({ path: `/hymns/${hymn.slug}`, changefreq: 'yearly', priority: hymn.publicDomain ? 0.7 : 0.4 }))
+  }
+
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
@@ -127,6 +133,21 @@ export function buildSitemap({ blogPosts = [], regions = GHANA_REGIONS } = {}) {
     '</urlset>',
     '',
   ].join('\n')
+}
+
+async function fetchPublishedPosts() {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 5000)
+    const res = await fetch('https://funeralpress-auth-api.ghwmelite.workers.dev/blog/published', { signal: controller.signal })
+    clearTimeout(timer)
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.posts || []
+  } catch {
+    console.warn('[sitemap] could not fetch published D1 posts — building with static posts only')
+    return []
+  }
 }
 
 /**
@@ -143,8 +164,11 @@ export default function sitemapPlugin(opts = {}) {
   return {
     name: 'funeralpress-sitemap',
     apply: 'build',
-    closeBundle() {
-      const xml = buildSitemap(opts)
+    async closeBundle() {
+      const dynamicPosts = await fetchPublishedPosts()
+      const staticSlugs = new Set((opts.blogPosts || []).map((p) => p.slug))
+      const mergedPosts = [...(opts.blogPosts || []), ...dynamicPosts.filter((p) => !staticSlugs.has(p.slug))]
+      const xml = buildSitemap({ ...opts, blogPosts: mergedPosts })
       const outPath = resolve(opts.outDir || 'dist', 'sitemap.xml')
       writeFileSync(outPath, xml, 'utf8')
       console.log(`[sitemap] wrote ${outPath} (${xml.split('\n').length} lines)`)

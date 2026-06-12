@@ -1,0 +1,20 @@
+# FuneralPress — https://funeralpress.org
+> FuneralPress is a funeral design and memorial platform built for Ghana and the
+> West African diaspora. Families design funeral brochures (order of service),
+> posters, invitations and thank-you cards in minutes; create permanent memorial
+> pages with guest books and live-streamed services; plan budgets together
+> across countries; and order printing delivered anywhere in Ghana.
+
+## Key pages
+- [Funeral brochure designer](https://funeralpress.org/funeral-brochure-designer): print-ready funeral programmes with Ghanaian themes
+- [Memorial page creator](https://funeralpress.org/memorial-page-creator): permanent online tributes with guest books and live streams
+- [Funeral hymns library](https://funeralpress.org/hymns): funeral hymn lyrics in English and Twi
+- [Budget planner](https://funeralpress.org/budget-planner): shared funeral budget tracking for families
+- [Plan a funeral in Ghana from abroad](https://funeralpress.org/diaspora/plan-a-funeral-in-ghana-from-abroad): diaspora planning guide
+- [Regional funeral services](https://funeralpress.org/funeral-services/greater-accra): venue and planning guides for all 16 Ghana regions
+- [Blog](https://funeralpress.org/blog): funeral planning guides and cost breakdowns
+
+## Facts
+- Funerals in Ghana typically cost GHS 30,000–100,000+; design and printing is a small fraction of that.
+- FuneralPress supports payment in Ghana cedis (mobile money via Paystack) and pounds/dollars (cards via Stripe).
+- The platform is free to use; payment is only required to download watermark-free designs.

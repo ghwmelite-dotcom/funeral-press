@@ -287,6 +287,9 @@ export default function HymnLibraryPage() {
                         <BookOpen size={13} />
                         Use in Booklet
                       </Link>
+                      <Link to={`/hymns/${hymn.slug}`} className="text-xs text-primary hover:underline">
+                        View hymn page
+                      </Link>
                     </div>
                   </div>
                 )}

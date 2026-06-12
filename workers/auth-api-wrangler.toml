@@ -15,6 +15,10 @@ PAYSTACK_PLAN_ANNUAL = "PLN_2ijmz43rukw84ql"
 PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL = "PLN_cjvqwyiazu993a2"
 PAYSTACK_PLAN_MEMORIAL_HERITAGE_ANNUAL = "PLN_359u3n0v2uliz3y"
 SHOTSTACK_ENV = "stage"   # 'stage' = free sandbox (watermarked) · 'v1' = production
+ADMIN_EMAIL = "ohwpstudios@gmail.com"
+# Telegram admin alerts (blog drafts + payments) — bot: @funeralpress_alerts_bot.
+# Requires the TELEGRAM_BOT_TOKEN secret; alerts no-op if either is missing.
+TELEGRAM_CHAT_ID = "1978649984"
 
 [[d1_databases]]
 binding = "DB"
@@ -46,17 +50,20 @@ id = "3cf6b47818c04ca8828461650478a6c1"
 # SHOTSTACK_API_KEY         — Shotstack render API key; use the sandbox key while SHOTSTACK_ENV='stage', the prod key for 'v1'
 # STRIPE_SECRET_KEY         — Stripe secret key (sk_live_/sk_test_) for GBP/USD checkout
 # STRIPE_WEBHOOK_SECRET     — Stripe webhook signing secret (whsec_) for /stripe/webhook
+# TELEGRAM_BOT_TOKEN        — from @BotFather (/newbot); Telegram admin alerts for blog drafts + payments
 
 [[routes]]
 pattern = "auth-api.funeralpress.org/*"
 zone_name = "funeralpress.org"
 
 [triggers]
-# Three daily crons — dispatch lives in auth-api.js scheduled() by cron string.
-#   03:00 UTC  D1 cleanup (analytics_events 90d, phone_otps 48h,
-#              processed_webhooks 30d). Runs an hour before donation-api's
-#              04:00 UTC reconciliation to avoid DELETE/SELECT contention.
-#   07:00 UTC  Anniversary reminder sweep (birthday / death anniversary / holidays).
-#              Africa/Accra is UTC+0 year-round so 07:00 UTC == 07:00 local.
-#   08:00 UTC  Subscription dunning sweep (Day 1 / Day 3 / Day 7-downgrade).
-crons = ["0 3 * * *", "0 7 * * *", "0 8 * * *"]
+# Five crons — dispatch lives in auth-api.js scheduled() by cron string.
+#   03:00 UTC daily    D1 cleanup (analytics_events 90d, phone_otps 48h,
+#                      processed_webhooks 30d). Runs an hour before donation-api's
+#                      04:00 UTC reconciliation to avoid DELETE/SELECT contention.
+#   07:00 UTC daily    Anniversary reminder sweep (birthday / death anniversary / holidays).
+#                      Africa/Accra is UTC+0 year-round so 07:00 UTC == 07:00 local.
+#   08:00 UTC daily    Subscription dunning sweep (Day 1 / Day 3 / Day 7-downgrade).
+#   06:00 UTC Wed      AI blog draft generation (§4.6).
+#   09:00 UTC Mon      Weekly growth report email (§5.3).
+crons = ["0 3 * * *", "0 7 * * *", "0 8 * * *", "0 6 * * 3", "0 9 * * 1"]

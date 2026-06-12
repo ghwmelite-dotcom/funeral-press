@@ -133,6 +133,14 @@ export default function ProgrammeBookletPage() {
           { name: 'Funeral Programme Booklet', path: '/funeral-programme-booklet' },
         ]}
         faqs={faqs}
+        howTo={{
+          name: 'How to create a funeral programme booklet',
+          steps: [
+            { name: 'Pick a booklet format', text: 'Choose a multi-page programme layout for the full order of service.' },
+            { name: 'Build the programme', text: 'Add the biography, tributes, hymns with lyrics, family tree, and acknowledgements.' },
+            { name: 'Export print-ready pages', text: 'Download the booklet as a print-ready PDF with correct page imposition.' },
+          ],
+        }}
       />
 
       {/* Breadcrumb */}

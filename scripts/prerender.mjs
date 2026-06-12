@@ -64,26 +64,16 @@ async function renderRoute(page, route) {
   return page.content()
 }
 
-async function main() {
-  const routes = collectPrerenderRoutes({ blogPosts, regions: REGIONS })
-  log(`prerendering ${routes.length} routes`)
+const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY || '4', 10)
 
-  const preview = spawn(
-    'npx',
-    ['vite', 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'],
-    { cwd: ROOT, shell: process.platform === 'win32', stdio: 'ignore' },
-  )
-
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  })
-
+async function renderAll(browser, routes) {
+  const queue = [...routes]
   const failures = []
-  try {
-    await waitForServer(BASE + '/')
+  async function workerLoop() {
     const page = await browser.newPage()
-    for (const route of routes) {
+    for (;;) {
+      const route = queue.shift()
+      if (!route) break
       let html
       try {
         html = await renderRoute(page, route)
@@ -100,6 +90,31 @@ async function main() {
       writeFileSync(out, html, 'utf8')
       log(`done ${route} -> ${out.replace(ROOT, '.')}`)
     }
+    await page.close()
+  }
+  await Promise.all(Array.from({ length: CONCURRENCY }, workerLoop))
+  return failures
+}
+
+async function main() {
+  const routes = collectPrerenderRoutes({ blogPosts, regions: REGIONS })
+  log(`prerendering ${routes.length} routes`)
+
+  const preview = spawn(
+    'npx',
+    ['vite', 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'],
+    { cwd: ROOT, shell: process.platform === 'win32', stdio: 'ignore' },
+  )
+
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  })
+
+  let failures = []
+  try {
+    await waitForServer(BASE + '/')
+    failures = await renderAll(browser, routes)
   } finally {
     await browser.close()
     killPreview(preview)

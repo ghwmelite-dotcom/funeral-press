@@ -26,6 +26,7 @@ export default function ObituaryCreatorPage() {
   const fileInputRef = useRef(null)
   const draftTimerRef = useRef(null)
 
+  const [searchIndexable, setSearchIndexable] = useState(false)
   const [creating, setCreating] = useState(false)
   const [createdSlug, setCreatedSlug] = useState(null)
   const [obituaries, setObituaries] = useState([])
@@ -138,6 +139,7 @@ export default function ObituaryCreatorPage() {
           funeralVenue,
           venueAddress,
           familyMembers,
+          searchIndexable,
         }),
       })
       setCreatedSlug(data.slug)
@@ -166,6 +168,19 @@ export default function ObituaryCreatorPage() {
     const url = `${window.location.origin}/obituary/${slug}`
     navigator.clipboard.writeText(url)
     notify('Link copied to clipboard!', 'success')
+  }
+
+  async function toggleIndexing(slug, currentValue) {
+    try {
+      await apiFetch(`/obituaries/${slug}/indexing`, {
+        method: 'POST',
+        body: JSON.stringify({ indexable: !currentValue }),
+      })
+      setObituaries((prev) => prev.map((o) => o.slug === slug ? { ...o, searchIndexable: !currentValue } : o))
+      notify(!currentValue ? 'Search indexing enabled' : 'Search indexing disabled', 'success')
+    } catch {
+      notify('Failed to update search indexing', 'error')
+    }
   }
 
   const inputClass = 'w-full bg-card border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/50 placeholder:text-muted-foreground/60 transition-all'
@@ -450,6 +465,24 @@ export default function ObituaryCreatorPage() {
             />
           </div>
 
+          {/* Search indexing opt-in */}
+          <div className="mb-6">
+            <label className="flex items-start gap-3 text-sm text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={searchIndexable}
+                onChange={(e) => setSearchIndexable(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-primary"
+              />
+              <span>
+                Allow this announcement to be found on search engines (Google).
+                <span className="block text-xs opacity-75 mt-0.5">
+                  Funeral announcements are traditionally public — this helps friends and distant family find the details. You can turn this off at any time.
+                </span>
+              </span>
+            </label>
+          </div>
+
           <button
             type="submit"
             disabled={creating}
@@ -495,6 +528,13 @@ export default function ObituaryCreatorPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => toggleIndexing(obit.slug, obit.searchIndexable)}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${obit.searchIndexable ? 'bg-emerald-600/10 text-emerald-600 hover:bg-emerald-600/20' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                      title={obit.searchIndexable ? 'Indexed by search engines — click to disable' : 'Not indexed — click to enable search indexing'}
+                    >
+                      {obit.searchIndexable ? 'Indexed' : 'Noindex'}
+                    </button>
                     <button
                       onClick={() => copyLink(obit.slug)}
                       className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"

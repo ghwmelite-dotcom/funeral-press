@@ -3,6 +3,7 @@ import { checkRateLimit, getRouteGroup } from './utils/rateLimiter.js'
 import { sanitizeInput, escapeHtml } from './utils/sanitize.js'
 import { withSecurityHeaders } from './utils/securityHeaders.js'
 import { logAudit, getClientIP } from './utils/auditLog.js'
+import { obituarySitemapXml } from './obituarySitemap.js'
 import { signJWT, verifyJWT } from './utils/jwt.js'
 import { runDunningCron } from './utils/dunning.js'
 import { runAnniversarySweep } from './utils/anniversaryEmail.js'
@@ -22,6 +23,9 @@ import {
 } from './familyReferral.js'
 import { PRODUCTS, priceFor, currencyForCountry, providerFor, isSubscription } from './priceBook.js'
 import { stripeRequest, verifyStripeSignature, checkoutSessionParams } from './stripeClient.js'
+import { draftPrompt, parseDraft, draftSlug } from './blogDraft.js'
+import { reportHtml } from './utils/growthReport.js'
+import { TELEGRAM_EVENTS, sendTelegram } from './telegramNotify.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -218,6 +222,9 @@ async function notifyAdmin(env, type, title, detail = {}) {
     ).bind(type, title, detailJson).run()
   } catch (e) {
     console.error('Notification insert failed:', e.message)
+  }
+  if (TELEGRAM_EVENTS.has(type)) {
+    await sendTelegram(env, title, detail) // no-ops until token/chat id configured
   }
   if (EMAIL_EVENTS.has(type) && env.RESEND_API_KEY) {
     try {
@@ -2425,7 +2432,7 @@ async function handleListUserGuestBooks(request, env, userId) {
 // ─── Obituary Page handlers ─────────────────────────────────────────────────
 
 async function handleCreateObituary(request, env, userId) {
-  const { deceasedName, deceasedPhoto, birthDate, deathDate, biography, funeralDate, funeralTime, funeralVenue, venueAddress, familyMembers } = await request.json()
+  const { deceasedName, deceasedPhoto, birthDate, deathDate, biography, funeralDate, funeralTime, funeralVenue, venueAddress, familyMembers, searchIndexable: searchIndexableInput } = await request.json()
   if (!deceasedName) return error('Missing deceasedName', 400, request)
 
   const user = await env.DB.prepare('SELECT email, credits_remaining FROM users WHERE id = ?').bind(userId).first()
@@ -2434,6 +2441,7 @@ async function handleCreateObituary(request, env, userId) {
 
   const id = generateId()
   const slug = deceasedName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + id.slice(0, 6)
+  const searchIndexable = searchIndexableInput ? 1 : 0
 
   if (credits > 0) {
     const result = await env.DB.prepare('UPDATE users SET credits_remaining = credits_remaining - 1 WHERE id = ? AND credits_remaining > 0').bind(userId).run()
@@ -2441,18 +2449,56 @@ async function handleCreateObituary(request, env, userId) {
   }
 
   await env.DB.prepare(
-    'INSERT INTO obituary_pages (id, user_id, slug, deceased_name, deceased_photo, birth_date, death_date, biography, funeral_date, funeral_time, funeral_venue, venue_address, family_members) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(id, userId, slug, deceasedName, deceasedPhoto || null, birthDate || null, deathDate || null, biography || null, funeralDate || null, funeralTime || null, funeralVenue || null, venueAddress || null, familyMembers || null).run()
+    'INSERT INTO obituary_pages (id, user_id, slug, deceased_name, deceased_photo, birth_date, death_date, biography, funeral_date, funeral_time, funeral_venue, venue_address, family_members, search_indexable) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(id, userId, slug, deceasedName, deceasedPhoto || null, birthDate || null, deathDate || null, biography || null, funeralDate || null, funeralTime || null, funeralVenue || null, venueAddress || null, familyMembers || null, searchIndexable).run()
 
   notifyAdmin(env, 'obituary_created', `Obituary created: ${deceasedName || 'Untitled'}`, { email: user?.email || '', name: deceasedName || '' })
 
   return json({ id, slug }, 201, request)
 }
 
+async function handleObituarySitemap(request, env) {
+  const rows = await env.DB.prepare(
+    "SELECT slug, updated_at FROM obituary_pages WHERE is_active = 1 AND search_indexable = 1 ORDER BY updated_at DESC LIMIT 5000"
+  ).all()
+  const xml = obituarySitemapXml(rows.results)
+  return new Response(xml, {
+    status: 200,
+    headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
+  })
+}
+
 async function handleGetObituary(request, env, slug) {
-  const page = await env.DB.prepare('SELECT * FROM obituary_pages WHERE slug = ? AND is_active = 1').bind(slug).first()
+  const page = await env.DB.prepare('SELECT id, slug, deceased_name, deceased_photo, birth_date, death_date, biography, funeral_date, funeral_time, funeral_venue, venue_address, family_members, search_indexable, created_at, updated_at FROM obituary_pages WHERE slug = ? AND is_active = 1').bind(slug).first()
   if (!page) return error('Obituary not found', 404, request)
-  return json({ obituary: page }, 200, request)
+  return json({
+    obituary: {
+      id: page.id,
+      slug: page.slug,
+      deceasedName: page.deceased_name,
+      deceasedPhoto: page.deceased_photo,
+      birthDate: page.birth_date,
+      deathDate: page.death_date,
+      biography: page.biography,
+      funeralDate: page.funeral_date,
+      funeralTime: page.funeral_time,
+      funeralVenue: page.funeral_venue,
+      venueAddress: page.venue_address,
+      familyMembers: page.family_members,
+      searchIndexable: !!page.search_indexable,
+      createdAt: page.created_at,
+      updatedAt: page.updated_at,
+    }
+  }, 200, request)
+}
+
+async function handleObituaryIndexingToggle(request, env, userId, slug) {
+  const { indexable } = await request.json()
+  const result = await env.DB.prepare(
+    "UPDATE obituary_pages SET search_indexable = ?, updated_at = datetime('now') WHERE slug = ? AND user_id = ? AND is_active = 1"
+  ).bind(indexable ? 1 : 0, slug, userId).run()
+  if (!result.meta.changes) return error('Obituary not found', 404, request)
+  return json({ ok: true, searchIndexable: !!indexable }, 200, request)
 }
 
 async function handleUpdateObituary(request, env, userId, id) {
@@ -2469,8 +2515,16 @@ async function handleUpdateObituary(request, env, userId, id) {
 }
 
 async function handleListUserObituaries(request, env, userId) {
-  const rows = await env.DB.prepare('SELECT id, slug, deceased_name, funeral_date, created_at FROM obituary_pages WHERE user_id = ? ORDER BY created_at DESC').bind(userId).all()
-  return json({ obituaries: rows.results }, 200, request)
+  const rows = await env.DB.prepare('SELECT id, slug, deceased_name, funeral_date, search_indexable, created_at FROM obituary_pages WHERE user_id = ? ORDER BY created_at DESC').bind(userId).all()
+  const obituaries = (rows.results || []).map((r) => ({
+    id: r.id,
+    slug: r.slug,
+    deceasedName: r.deceased_name,
+    funeralDate: r.funeral_date,
+    searchIndexable: !!r.search_indexable,
+    createdAt: r.created_at,
+  }))
+  return json({ obituaries }, 200, request)
 }
 
 // ─── Photo Gallery handlers ─────────────────────────────────────────────────
@@ -3532,6 +3586,178 @@ async function handleAdminUpdateVenue(request, env, venueId) {
   return json({ ok: true }, 200, request)
 }
 
+// ─── Blog draft generation (§4.6) ────────────────────────────────────────────
+
+async function generateBlogDraft(env) {
+  const topicRow = await env.DB.prepare(
+    'SELECT id, topic FROM blog_topics WHERE used_at IS NULL ORDER BY id LIMIT 1'
+  ).first()
+  if (!topicRow) {
+    notifyAdmin(env, 'blog_draft', 'Blog topic queue is empty — add topics', {})
+    return
+  }
+
+  const result = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    messages: [
+      { role: 'system', content: 'You are a compassionate funeral-industry content writer for a Ghanaian audience. You MUST respond with valid JSON only — no markdown, no code blocks, no extra text.' },
+      { role: 'user', content: draftPrompt(topicRow.topic) },
+    ],
+    max_tokens: 3500,
+  })
+
+  let draft
+  try {
+    draft = parseDraft(result.response || '')
+  } catch (e) {
+    // One retry on malformed output, then surface to the owner
+    const retry = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        { role: 'system', content: 'Respond with ONLY the corrected, valid JSON object. No other text.' },
+        { role: 'user', content: `This JSON was invalid (${e.message}). Fix it:\n${(result.response || '').slice(0, 6000)}` },
+      ],
+      max_tokens: 3500,
+    })
+    draft = parseDraft(retry.response || '') // throws to scheduled()'s catch if still bad
+  }
+
+  const slug = draftSlug(draft.title)
+  await env.DB.prepare(
+    `INSERT INTO blog_posts (id, slug, title, description, keywords, content, status, source, topic)
+     VALUES (?, ?, ?, ?, ?, ?, 'draft', 'ai', ?)
+     ON CONFLICT(slug) DO NOTHING`
+  ).bind(generateId(), slug, draft.title, draft.description, JSON.stringify(draft.keywords), JSON.stringify(draft.content), topicRow.topic).run()
+  await env.DB.prepare("UPDATE blog_topics SET used_at = datetime('now') WHERE id = ?").bind(topicRow.id).run()
+
+  notifyAdmin(env, 'blog_draft', `Blog draft ready for review: ${draft.title}`, { slug, topic: topicRow.topic })
+}
+
+// ─── Blog admin handlers (§4.6) ──────────────────────────────────────────────
+
+async function handleAdminBlogDrafts(request, env) {
+  const auth = await requireAdmin(request, env)
+  if (auth.error) return auth.error
+  const rows = await env.DB.prepare(
+    "SELECT id, slug, title, description, topic, status, created_at, published_at FROM blog_posts ORDER BY created_at DESC LIMIT 100"
+  ).all()
+  return json({ posts: rows.results || [] }, 200, request)
+}
+
+async function handleAdminBlogGet(request, env, id) {
+  const auth = await requireAdmin(request, env)
+  if (auth.error) return auth.error
+  const row = await env.DB.prepare('SELECT * FROM blog_posts WHERE id = ?').bind(id).first()
+  if (!row) return error('Not found', 404, request)
+  return json({ post: { ...row, keywords: JSON.parse(row.keywords || '[]'), content: JSON.parse(row.content || '[]') } }, 200, request)
+}
+
+async function handleAdminBlogUpdate(request, env, id) {
+  const auth = await requireAdmin(request, env)
+  if (auth.error) return auth.error
+  const { title, description, keywords, content } = await request.json()
+  const existing = await env.DB.prepare('SELECT id FROM blog_posts WHERE id = ?').bind(id).first()
+  if (!existing) return error('Not found', 404, request)
+  await env.DB.prepare(
+    'UPDATE blog_posts SET title = COALESCE(?, title), description = COALESCE(?, description), keywords = COALESCE(?, keywords), content = COALESCE(?, content) WHERE id = ?'
+  ).bind(title || null, description || null, keywords ? JSON.stringify(keywords) : null, content ? JSON.stringify(content) : null, id).run()
+  return json({ ok: true }, 200, request)
+}
+
+async function handleAdminBlogStatus(request, env, id, status) {
+  const auth = await requireAdmin(request, env)
+  if (auth.error) return auth.error
+  if (!['published', 'rejected', 'draft'].includes(status)) return error('Bad status', 400, request)
+  const publishedAt = status === 'published' ? "datetime('now')" : 'NULL'
+  const result = await env.DB.prepare(
+    `UPDATE blog_posts SET status = ?, published_at = ${publishedAt} WHERE id = ?`
+  ).bind(status, id).run()
+  if (!result.meta.changes) return error('Not found', 404, request)
+  return json({ ok: true, status }, 200, request)
+}
+
+// ─── Blog public handlers (§4.6) — cached 5 minutes ─────────────────────────
+
+async function handlePublicBlogList(request, env) {
+  const rows = await env.DB.prepare(
+    "SELECT slug, title, description, keywords, published_at FROM blog_posts WHERE status = 'published' ORDER BY published_at DESC LIMIT 100"
+  ).all()
+  const posts = (rows.results || []).map((r) => ({ ...r, keywords: JSON.parse(r.keywords || '[]'), date: (r.published_at || '').slice(0, 10) }))
+  return withSecurityHeaders(new Response(JSON.stringify({ posts }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300', ...corsHeaders(request) },
+  }))
+}
+
+async function handlePublicBlogPost(request, env, slug) {
+  const row = await env.DB.prepare(
+    "SELECT slug, title, description, keywords, content, published_at FROM blog_posts WHERE slug = ? AND status = 'published'"
+  ).bind(slug).first()
+  if (!row) return error('Not found', 404, request)
+  return withSecurityHeaders(new Response(JSON.stringify({ post: { ...row, keywords: JSON.parse(row.keywords || '[]'), content: JSON.parse(row.content || '[]'), date: (row.published_at || '').slice(0, 10) } }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300', ...corsHeaders(request) },
+  }))
+}
+
+// ─── Weekly growth report (§5.3) ─────────────────────────────────────────────
+
+async function weekCounts(env, sql, binds = []) {
+  const current = await env.DB.prepare(sql.replaceAll('{FROM}', "datetime('now','-7 days')").replaceAll('{TO}', "datetime('now')")).bind(...binds).first()
+  const previous = await env.DB.prepare(sql.replaceAll('{FROM}', "datetime('now','-14 days')").replaceAll('{TO}', "datetime('now','-7 days')")).bind(...binds).first()
+  return { current: current?.n || 0, previous: previous?.n || 0 }
+}
+
+async function sendGrowthReport(env) {
+  const signups = await weekCounts(env, 'SELECT COUNT(*) as n FROM users WHERE created_at >= {FROM} AND created_at < {TO}')
+  const loopSignups = await weekCounts(env, "SELECT COUNT(*) as n FROM analytics_events WHERE event_type = 'loop_signup' AND created_at >= {FROM} AND created_at < {TO}")
+  const referralRewards = await weekCounts(env, "SELECT COUNT(*) as n FROM referrals WHERE type = 'family' AND reward_status = 'granted' AND reward_granted_at >= {FROM} AND reward_granted_at < {TO}")
+  const memorialsCreated = await weekCounts(env, "SELECT COUNT(*) as n FROM analytics_events WHERE event_type = 'memorial_page_created' AND created_at >= {FROM} AND created_at < {TO}")
+
+  const surfaceRows = await env.DB.prepare(
+    `SELECT json_extract(metadata, '$.surface') as surface,
+            SUM(CASE WHEN event_type = 'loop_impression' THEN 1 ELSE 0 END) as impressions,
+            SUM(CASE WHEN event_type = 'loop_click' THEN 1 ELSE 0 END) as clicks,
+            SUM(CASE WHEN event_type = 'loop_signup' THEN 1 ELSE 0 END) as signups
+     FROM analytics_events
+     WHERE event_type IN ('loop_impression','loop_click','loop_signup')
+       AND created_at >= datetime('now','-7 days')
+     GROUP BY surface ORDER BY impressions DESC`
+  ).all()
+
+  const revenueRows = await env.DB.prepare(
+    `SELECT COALESCE(currency, 'GHS') as currency, COALESCE(SUM(amount_pesewas), 0) as total
+     FROM orders WHERE status = 'success' AND paid_at >= datetime('now','-7 days')
+     GROUP BY currency`
+  ).all()
+
+  const today = new Date()
+  const weekAgo = new Date(Date.now() - 7 * 86400000)
+  const html = reportHtml({
+    weekLabel: `${weekAgo.toISOString().slice(0, 10)} — ${today.toISOString().slice(0, 10)}`,
+    signups, loopSignups, referralRewards, memorialsCreated,
+    surfaces: (surfaceRows.results || []).filter((s) => s.surface),
+    revenue: revenueRows.results || [],
+  })
+
+  if (!env.RESEND_API_KEY) {
+    console.warn('[growth-report] RESEND_API_KEY missing; skipping email')
+    return
+  }
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'FuneralPress <notifications@funeralpress.org>',
+      to: [env.ADMIN_EMAIL || 'ohwpstudios@gmail.com'],
+      subject: `Weekly growth report — ${today.toISOString().slice(0, 10)}`,
+      html,
+    }),
+  })
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '')
+    console.error('[growth-report] Resend non-2xx:', res.status, errBody.slice(0, 200))
+  }
+}
+
 // ─── Router ─────────────────────────────────────────────────────────────────
 
 const handler = {
@@ -3599,6 +3825,14 @@ const handler = {
       const publicPartnerMatch = method === 'GET' && path.match(/^\/partner\/public\/([^/]+)$/)
       if (publicPartnerMatch) return await handlePublicPartnerPage(request, env, publicPartnerMatch[1])
 
+      // Obituary sitemap (public, cached)
+      if (method === 'GET' && path === '/sitemap-obituaries.xml') return await handleObituarySitemap(request, env)
+
+      // Public blog endpoints (cached 5 minutes)
+      if (method === 'GET' && path === '/blog/published') return await handlePublicBlogList(request, env)
+      const publicBlogMatch = method === 'GET' && path.match(/^\/blog\/published\/([^/]+)$/)
+      if (publicBlogMatch) return await handlePublicBlogPost(request, env, decodeURIComponent(publicBlogMatch[1]))
+
       // Public guest book, obituary, gallery
       const guestBookMatch = method === 'GET' && path.match(/^\/guest-book\/([^/]+)$/)
       if (guestBookMatch) return await handleGetGuestBook(request, env, guestBookMatch[1])
@@ -3650,6 +3884,16 @@ const handler = {
         if (method === 'GET' && path === '/admin/analytics/funnel') return await handleAdminFunnel(request, env)
         const adminPrintMatch = path.match(/^\/admin\/print-orders\/([^/]+)$/)
         if (adminPrintMatch && method === 'PUT') return await handleAdminUpdatePrintOrder(request, env, adminPrintMatch[1])
+
+        // Admin blog draft review routes (§4.6)
+        if (method === 'GET' && path === '/admin/blog') return await handleAdminBlogDrafts(request, env)
+        const adminBlogMatch = path.match(/^\/admin\/blog\/([^/]+)$/)
+        if (method === 'GET' && adminBlogMatch) return await handleAdminBlogGet(request, env, adminBlogMatch[1])
+        if (method === 'PUT' && adminBlogMatch) return await handleAdminBlogUpdate(request, env, adminBlogMatch[1])
+        const adminBlogStatusMatch = path.match(/^\/admin\/blog\/([^/]+)\/(publish|reject)$/)
+        if (method === 'POST' && adminBlogStatusMatch) {
+          return await handleAdminBlogStatus(request, env, adminBlogStatusMatch[1], adminBlogStatusMatch[2] === 'publish' ? 'published' : 'rejected')
+        }
 
         // Admin venue routes
         if (method === 'POST' && path === '/admin/venues') return await handleAdminCreateVenue(request, env)
@@ -3799,6 +4043,8 @@ const handler = {
       // Obituary pages
       if (method === 'POST' && path === '/obituaries/create') return await handleCreateObituary(request, env, userId)
       if (method === 'GET' && path === '/obituaries') return await handleListUserObituaries(request, env, userId)
+      const obituaryIndexMatch = path.match(/^\/obituaries\/([^/]+)\/indexing$/)
+      if (method === 'POST' && obituaryIndexMatch) return await handleObituaryIndexingToggle(request, env, userId, decodeURIComponent(obituaryIndexMatch[1]))
       const obituaryUpdateMatch = path.match(/^\/obituaries\/([^/]+)$/)
       if (obituaryUpdateMatch && method === 'PUT') return await handleUpdateObituary(request, env, userId, obituaryUpdateMatch[1])
 
@@ -3845,6 +4091,16 @@ const handler = {
     } else if (cron === '0 7 * * *') {
       ctx.waitUntil(runAnniversarySweep(env).catch((e) => {
         console.error('[scheduled] runAnniversarySweep failed:', e?.message || e)
+        Sentry.captureException(e)
+      }))
+    } else if (cron === '0 6 * * 3') {
+      ctx.waitUntil(generateBlogDraft(env).catch((e) => {
+        console.error('[scheduled] generateBlogDraft failed:', e?.message || e)
+        Sentry.captureException(e)
+      }))
+    } else if (cron === '0 9 * * 1') {
+      ctx.waitUntil(sendGrowthReport(env).catch((e) => {
+        console.error('[scheduled] sendGrowthReport failed:', e?.message || e)
         Sentry.captureException(e)
       }))
     } else {

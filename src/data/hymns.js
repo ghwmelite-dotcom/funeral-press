@@ -1,6 +1,8 @@
-const hymns = [
+export const hymns = [
   {
     id: 1,
+    slug: 'abide-with-me',
+    publicDomain: true, // Henry Francis Lyte, d. 1847
     title: 'Abide With Me',
     titleTwi: null,
     author: 'Henry Francis Lyte',
@@ -17,6 +19,8 @@ const hymns = [
   },
   {
     id: 2,
+    slug: 'amazing-grace',
+    publicDomain: true, // John Newton, d. 1807
     title: 'Amazing Grace',
     titleTwi: null,
     author: 'John Newton',
@@ -33,6 +37,8 @@ const hymns = [
   },
   {
     id: 3,
+    slug: 'blessed-assurance',
+    publicDomain: true, // Fanny Crosby, d. 1915
     title: 'Blessed Assurance',
     titleTwi: null,
     author: 'Fanny Crosby',
@@ -47,6 +53,8 @@ const hymns = [
   },
   {
     id: 4,
+    slug: 'how-great-thou-art',
+    publicDomain: false, // Stuart K. Hine (English translation), d. 1989 — after 1955
     title: 'How Great Thou Art',
     titleTwi: null,
     author: 'Carl Boberg / Stuart K. Hine',
@@ -62,6 +70,8 @@ const hymns = [
   },
   {
     id: 5,
+    slug: 'the-lord-is-my-shepherd',
+    publicDomain: true, // Based on Psalm 23 / Scottish Psalter 1650, traditional
     title: 'The Lord Is My Shepherd',
     titleTwi: null,
     author: 'Based on Psalm 23',
@@ -78,6 +88,8 @@ const hymns = [
   },
   {
     id: 6,
+    slug: 'rock-of-ages',
+    publicDomain: true, // Augustus Montague Toplady, d. 1778
     title: 'Rock of Ages',
     titleTwi: null,
     author: 'Augustus Montague Toplady',
@@ -92,6 +104,8 @@ const hymns = [
   },
   {
     id: 7,
+    slug: 'nearer-my-god-to-thee',
+    publicDomain: true, // Sarah Flower Adams, d. 1848
     title: 'Nearer My God to Thee',
     titleTwi: null,
     author: 'Sarah Flower Adams',
@@ -108,6 +122,8 @@ const hymns = [
   },
   {
     id: 8,
+    slug: 'what-a-friend-we-have-in-jesus',
+    publicDomain: true, // Joseph M. Scriven, d. 1886
     title: 'What a Friend We Have in Jesus',
     titleTwi: null,
     author: 'Joseph M. Scriven',
@@ -122,6 +138,8 @@ const hymns = [
   },
   {
     id: 9,
+    slug: 'it-is-well-with-my-soul',
+    publicDomain: true, // Horatio G. Spafford, d. 1888
     title: 'It Is Well With My Soul',
     titleTwi: null,
     author: 'Horatio G. Spafford',
@@ -137,6 +155,8 @@ const hymns = [
   },
   {
     id: 10,
+    slug: 'great-is-thy-faithfulness',
+    publicDomain: false, // Thomas O. Chisholm, d. 1960 — after 1955
     title: 'Great Is Thy Faithfulness',
     titleTwi: null,
     author: 'Thomas O. Chisholm',
@@ -151,6 +171,8 @@ const hymns = [
   },
   {
     id: 11,
+    slug: 'be-still-my-soul',
+    publicDomain: true, // Katharina von Schlegel (c.1697–after 1768, traditional); English translation Jane Borthwick, d. 1897
     title: 'Be Still My Soul',
     titleTwi: null,
     author: 'Katharina von Schlegel / Jane Borthwick',
@@ -165,6 +187,8 @@ const hymns = [
   },
   {
     id: 12,
+    slug: 'when-peace-like-a-river',
+    publicDomain: true, // Horatio G. Spafford, d. 1888
     title: 'When Peace Like a River',
     titleTwi: null,
     author: 'Horatio G. Spafford',
@@ -181,6 +205,8 @@ const hymns = [
   },
   {
     id: 13,
+    slug: 'in-the-sweet-by-and-by',
+    publicDomain: true, // Sanford F. Bennett, d. 1898
     title: 'In the Sweet By and By',
     titleTwi: null,
     author: 'Sanford F. Bennett',
@@ -195,6 +221,8 @@ const hymns = [
   },
   {
     id: 14,
+    slug: 'softly-and-tenderly',
+    publicDomain: true, // Will L. Thompson, d. 1909
     title: 'Softly and Tenderly',
     titleTwi: null,
     author: 'Will L. Thompson',
@@ -210,6 +238,8 @@ const hymns = [
   },
   {
     id: 15,
+    slug: 'beyond-the-sunset',
+    publicDomain: false, // Virgil P. Brock, d. 1978 — after 1955
     title: 'Beyond the Sunset',
     titleTwi: null,
     author: 'Virgil P. Brock',
@@ -225,6 +255,8 @@ const hymns = [
   },
   {
     id: 16,
+    slug: 'lead-kindly-light',
+    publicDomain: true, // John Henry Newman, d. 1890
     title: 'Lead Kindly Light',
     titleTwi: null,
     author: 'John Henry Newman',
@@ -239,6 +271,8 @@ const hymns = [
   },
   {
     id: 17,
+    slug: 'o-god-our-help-in-ages-past',
+    publicDomain: true, // Isaac Watts, d. 1748
     title: 'O God Our Help in Ages Past',
     titleTwi: null,
     author: 'Isaac Watts',
@@ -256,6 +290,8 @@ const hymns = [
   },
   {
     id: 18,
+    slug: 'the-old-rugged-cross',
+    publicDomain: false, // George Bennard, d. 1958 — after 1955
     title: 'The Old Rugged Cross',
     titleTwi: null,
     author: 'George Bennard',
@@ -271,6 +307,8 @@ const hymns = [
   },
   {
     id: 19,
+    slug: 'onward-christian-soldiers',
+    publicDomain: true, // Sabine Baring-Gould, d. 1924
     title: 'Onward Christian Soldiers',
     titleTwi: null,
     author: 'Sabine Baring-Gould',
@@ -286,6 +324,8 @@ const hymns = [
   },
   {
     id: 20,
+    slug: 'safe-in-the-arms-of-jesus',
+    publicDomain: true, // Fanny Crosby, d. 1915
     title: 'Safe in the Arms of Jesus',
     titleTwi: null,
     author: 'Fanny Crosby',
@@ -300,51 +340,59 @@ const hymns = [
   },
   {
     id: 21,
+    slug: 'aseda',
+    publicDomain: true, // Traditional Ghanaian
     title: 'Aseda',
     titleTwi: 'Aseda',
     author: 'Traditional Ghanaian',
     language: 'twi',
     category: 'worship',
     verses: [
-      'Aseda nka Onyankop\u0254n,\nAseda, aseda;\nNea \u0254y\u025b me kese yi,\nAseda, aseda.',
-      'Onyame ay\u025b me adoe,\nAseda, aseda;\n\u0186de ne dom ahy\u025b me mu,\nAseda, aseda.',
-      'Me nkwa mu nyinaa,\nAseda, aseda;\nMede b\u025bma Onyankop\u0254n,\nAseda, aseda.',
-      'S\u025b menya me ho a,\nAseda, aseda;\nMeyi n\'ay\u025b daa daa,\nAseda, aseda.'
+      'Aseda nka Onyankopɔn,\nAseda, aseda;\nNea ɔyɛ me kese yi,\nAseda, aseda.',
+      'Onyame ayɛ me adoe,\nAseda, aseda;\nƆde ne dom ahyɛ me mu,\nAseda, aseda.',
+      'Me nkwa mu nyinaa,\nAseda, aseda;\nMede bɛma Onyankopɔn,\nAseda, aseda.',
+      'Sɛ menya me ho a,\nAseda, aseda;\nMeyi n\'ayɛ daa daa,\nAseda, aseda.'
     ],
-    chorus: 'Aseda, aseda, aseda nka Onyankop\u0254n;\nAseda, aseda, aseda nka no.'
+    chorus: 'Aseda, aseda, aseda nka Onyankopɔn;\nAseda, aseda, aseda nka no.'
   },
   {
     id: 22,
+    slug: 'onyame-ne-hene',
+    publicDomain: true, // Traditional Ghanaian
     title: 'Onyame Ne Hene',
     titleTwi: 'Onyame Ne Hene',
     author: 'Traditional Ghanaian',
     language: 'twi',
     category: 'worship',
     verses: [
-      'Onyame ne Hene,\n\u0186ne Tumfo\u0254;\n\u0186no na \u0254b\u0254\u0254 ewiase,\nNe ne mu nneema nyinaa.',
-      '\u0186no na \u0254di hene,\nW\u0254 soro ne asaase;\nTumi nyinaa y\u025b ne dea,\nOnyame ne Hene.',
-      'Y\u025bnka ne nkunim,\nY\u025bnkamfo ne din;\nEfise \u0254y\u025b kese,\nOnyame ne Hene.',
-      'Momma y\u025bnsom no,\nY\u025bnkot\u0254w no ase;\n\u0186no nko ara ne Nyame,\nOnyame ne Hene.'
+      'Onyame ne Hene,\nƆne Tumfoɔ;\nƆno na ɔbɔɔ ewiase,\nNe ne mu nneema nyinaa.',
+      'Ɔno na ɔdi hene,\nWɔ soro ne asaase;\nTumi nyinaa yɛ ne dea,\nOnyame ne Hene.',
+      'Yɛnka ne nkunim,\nYɛnkamfo ne din;\nEfise ɔyɛ kese,\nOnyame ne Hene.',
+      'Momma yɛnsom no,\nYɛnkotɔw no ase;\nƆno nko ara ne Nyame,\nOnyame ne Hene.'
     ],
-    chorus: 'Onyame ne Hene, Onyame ne Hene;\n\u0186no nko ara ne Nyame,\nOnyame ne Hene.'
+    chorus: 'Onyame ne Hene, Onyame ne Hene;\nƆno nko ara ne Nyame,\nOnyame ne Hene.'
   },
   {
     id: 23,
+    slug: 'me-nyame-ye-kese',
+    publicDomain: true, // Traditional Ghanaian
     title: 'Me Nyame Ye Kese',
-    titleTwi: 'Me Nyame Y\u025b Kese',
+    titleTwi: 'Me Nyame Yɛ Kese',
     author: 'Traditional Ghanaian',
     language: 'twi',
     category: 'worship',
     verses: [
-      'Me Nyame y\u025b kese,\n\u0186y\u025b kese, \u0254y\u025b kese;\nMe Nyame y\u025b kese,\n\u0186y\u025b ade nyinaa.',
-      '\u0186b\u0254\u0254 \u0254soro ne asaase,\n\u0186b\u0254\u0254 epo ne nsubonton;\nMe Nyame y\u025b kese,\n\u0186y\u025b ade nyinaa.',
-      'Obiara nte s\u025b no,\nObiara nni s\u025b no;\nMe Nyame y\u025b kese,\n\u0186y\u025b ade nyinaa.',
-      'Y\u025bnkamfo ne din,\nY\u025bnyi n\'ay\u025b;\nMe Nyame y\u025b kese,\n\u0186y\u025b ade nyinaa.'
+      'Me Nyame yɛ kese,\nƆyɛ kese, ɔyɛ kese;\nMe Nyame yɛ kese,\nƆyɛ ade nyinaa.',
+      'Ɔbɔɔ ɔsoro ne asaase,\nƆbɔɔ epo ne nsubonton;\nMe Nyame yɛ kese,\nƆyɛ ade nyinaa.',
+      'Obiara nte sɛ no,\nObiara nni sɛ no;\nMe Nyame yɛ kese,\nƆyɛ ade nyinaa.',
+      'Yɛnkamfo ne din,\nYɛnyi n\'ayɛ;\nMe Nyame yɛ kese,\nƆyɛ ade nyinaa.'
     ],
-    chorus: 'Me Nyame y\u025b kese, \u0254y\u025b kese;\n\u0186y\u025b ade nyinaa, \u0254y\u025b kese!'
+    chorus: 'Me Nyame yɛ kese, ɔyɛ kese;\nƆyɛ ade nyinaa, ɔyɛ kese!'
   },
   {
     id: 24,
+    slug: 'awurade-kasa',
+    publicDomain: true, // Traditional Ghanaian
     title: 'Awurade Kasa',
     titleTwi: 'Awurade Kasa',
     author: 'Traditional Ghanaian',
@@ -352,27 +400,29 @@ const hymns = [
     category: 'comfort',
     verses: [
       'Awurade kasa,\nWo somfo tie;\nAwurade kasa,\nMa me nte w\'asem.',
-      'Kasa w\u0254 sum mu,\nKasa w\u0254 hann mu;\nAwurade kasa,\nMa me nte w\'asem.',
-      'Kasa ma me koma,\nNte w\'anigye;\nAwurade kasa,\nKyer\u025b me wo kwan.',
-      'S\u025b wo kasa a,\nMe kra nya ahomeka;\nAwurade kasa,\nMa me nte w\'asem.'
+      'Kasa wɔ sum mu,\nKasa wɔ hann mu;\nAwurade kasa,\nMa me nte w\'asem.',
+      'Kasa ma me koma,\nNte w\'anigye;\nAwurade kasa,\nKyerɛ me wo kwan.',
+      'Sɛ wo kasa a,\nMe kra nya ahomeka;\nAwurade kasa,\nMa me nte w\'asem.'
     ],
     chorus: 'Awurade kasa, kasa, kasa;\nMa me nte w\'asem.\nAwurade kasa, kasa, kasa;\nWo somfo retie.'
   },
   {
     id: 25,
+    slug: 'yesu-ye-me-dea',
+    publicDomain: true, // Traditional Ghanaian
     title: 'Yesu Ye Me Dea',
-    titleTwi: 'Yesu Y\u025b Me Dea',
+    titleTwi: 'Yesu Yɛ Me Dea',
     author: 'Traditional Ghanaian',
     language: 'twi',
     category: 'comfort',
     verses: [
-      'Yesu y\u025b me dea,\nMe dea, me dea;\nYesu y\u025b me dea,\nDaa daa daa.',
-      '\u0186y\u025b me Gyefo,\nMe Nkwagye Hy\u025bn;\nYesu y\u025b me dea,\nDaa daa daa.',
-      '\u0186tantan me ho,\nBan me wim mu;\nYesu y\u025b me dea,\nDaa daa daa.',
-      'Owu mu mpo,\nMesr\u0254 no daa;\nYesu y\u025b me dea,\nDaa daa daa.',
-      'Me de me ho nyinaa,\nMema Yesu;\nYesu y\u025b me dea,\nDaa daa daa.'
+      'Yesu yɛ me dea,\nMe dea, me dea;\nYesu yɛ me dea,\nDaa daa daa.',
+      'Ɔyɛ me Gyefo,\nMe Nkwagye Hyɛn;\nYesu yɛ me dea,\nDaa daa daa.',
+      'Ɔtantan me ho,\nBan me wim mu;\nYesu yɛ me dea,\nDaa daa daa.',
+      'Owu mu mpo,\nMesrɔ no daa;\nYesu yɛ me dea,\nDaa daa daa.',
+      'Me de me ho nyinaa,\nMema Yesu;\nYesu yɛ me dea,\nDaa daa daa.'
     ],
-    chorus: 'Yesu y\u025b me dea, me dea;\nDaa daa, \u0254y\u025b me dea;\nYesu y\u025b me dea, me dea;\nDaa daa daa.'
+    chorus: 'Yesu yɛ me dea, me dea;\nDaa daa, ɔyɛ me dea;\nYesu yɛ me dea, me dea;\nDaa daa daa.'
   }
 ]
 
