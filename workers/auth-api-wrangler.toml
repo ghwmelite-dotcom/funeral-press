@@ -16,6 +16,11 @@ PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL = "PLN_cjvqwyiazu993a2"
 PAYSTACK_PLAN_MEMORIAL_HERITAGE_ANNUAL = "PLN_359u3n0v2uliz3y"
 SHOTSTACK_ENV = "stage"   # 'stage' = free sandbox (watermarked) · 'v1' = production
 ADMIN_EMAIL = "ohwpstudios@gmail.com"
+# TELEGRAM_CHAT_ID = "<numeric chat id>"  — uncomment after creating the bot:
+#   message your bot once, then read the id from
+#   https://api.telegram.org/bot<TOKEN>/getUpdates → message.chat.id.
+#   Telegram alerts (blog drafts + payments) silently no-op until this and
+#   the TELEGRAM_BOT_TOKEN secret are both set.
 
 [[d1_databases]]
 binding = "DB"
@@ -47,6 +52,7 @@ id = "3cf6b47818c04ca8828461650478a6c1"
 # SHOTSTACK_API_KEY         — Shotstack render API key; use the sandbox key while SHOTSTACK_ENV='stage', the prod key for 'v1'
 # STRIPE_SECRET_KEY         — Stripe secret key (sk_live_/sk_test_) for GBP/USD checkout
 # STRIPE_WEBHOOK_SECRET     — Stripe webhook signing secret (whsec_) for /stripe/webhook
+# TELEGRAM_BOT_TOKEN        — from @BotFather (/newbot); Telegram admin alerts for blog drafts + payments
 
 [[routes]]
 pattern = "auth-api.funeralpress.org/*"

@@ -25,6 +25,7 @@ import { PRODUCTS, priceFor, currencyForCountry, providerFor, isSubscription } f
 import { stripeRequest, verifyStripeSignature, checkoutSessionParams } from './stripeClient.js'
 import { draftPrompt, parseDraft, draftSlug } from './blogDraft.js'
 import { formatDelta, reportHtml } from './utils/growthReport.js'
+import { TELEGRAM_EVENTS, sendTelegram } from './telegramNotify.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -221,6 +222,9 @@ async function notifyAdmin(env, type, title, detail = {}) {
     ).bind(type, title, detailJson).run()
   } catch (e) {
     console.error('Notification insert failed:', e.message)
+  }
+  if (TELEGRAM_EVENTS.has(type)) {
+    await sendTelegram(env, title, detail) // no-ops until token/chat id configured
   }
   if (EMAIL_EVENTS.has(type) && env.RESEND_API_KEY) {
     try {
