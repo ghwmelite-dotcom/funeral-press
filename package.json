@@ -11,6 +11,7 @@
     "deploy": "npm run build && wrangler pages deploy dist",
     "test": "vitest run",
     "test:watch": "vitest",
+    "lint": "eslint src/ workers/ --max-warnings 0",
     "test:e2e": "node e2e/seed-local-d1.mjs && playwright test",
     "test:e2e:ui": "node e2e/seed-local-d1.mjs && playwright test --ui",
     "test:e2e:install": "playwright install --with-deps"
