@@ -52,6 +52,8 @@ export default function SiteHeader() {
 
   // Transparent overlay only while at the top of the homepage (over the hero).
   const transparent = isHome && !scrolled
+  // Use white chrome only when the hero underneath is dark (dark mode).
+  const onDarkHero = transparent && theme === 'dark'
 
   const position = isHome ? 'fixed inset-x-0' : 'sticky'
   const skin = transparent
@@ -66,10 +68,10 @@ export default function SiteHeader() {
       <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4">
         <Link
           to="/"
-          className={`flex items-center gap-2 transition-opacity hover:opacity-80 ${transparent ? 'text-white' : 'text-foreground'}`}
+          className={`flex items-center gap-2 transition-opacity hover:opacity-80 ${onDarkHero ? 'text-white' : 'text-foreground'}`}
           aria-label="FuneralPress home"
         >
-          <BookOpen size={20} className={transparent ? 'text-[#E8C766]' : 'text-primary'} />
+          <BookOpen size={20} className={onDarkHero ? '' : 'text-primary'} style={onDarkHero ? { color: 'var(--ceremonial-gold)' } : undefined} />
           <span className="text-base font-semibold tracking-wide">FuneralPress</span>
         </Link>
 
@@ -78,11 +80,11 @@ export default function SiteHeader() {
             type="button"
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className={`rounded-full p-2 transition-colors ${transparent ? 'text-white/80 hover:bg-white/10 hover:text-white' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+            className={`rounded-full p-2 transition-colors ${onDarkHero ? 'text-white/80 hover:bg-white/10 hover:text-white' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          {user ? <UserMenu onDark={transparent} /> : <SignInPopover onDark={transparent} />}
+          {user ? <UserMenu onDark={onDarkHero} /> : <SignInPopover onDark={onDarkHero} />}
         </div>
       </div>
       {!transparent && <KenteBand size="page" />}

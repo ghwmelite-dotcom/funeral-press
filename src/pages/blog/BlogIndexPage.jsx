@@ -56,22 +56,22 @@ export default function BlogIndexPage() {
             >
               <KenteBand size="card" />
               <div className="p-6">
-              <time className="text-xs text-muted-foreground">
-                {new Date(post.date).toLocaleDateString('en-GB', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </time>
-              <h2 className="text-lg font-semibold text-foreground mt-2 mb-2 group-hover:text-primary transition-colors leading-snug">
-                {post.title}
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                {post.description}
-              </p>
-              <span className="text-sm font-medium text-primary">
-                Read Guide &rarr;
-              </span>
+                <time className="text-xs text-muted-foreground">
+                  {new Date(post.date).toLocaleDateString('en-GB', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </time>
+                <h2 className="text-lg font-semibold text-foreground mt-2 mb-2 group-hover:text-primary transition-colors leading-snug">
+                  {post.title}
+                </h2>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                  {post.description}
+                </p>
+                <span className="text-sm font-medium text-primary">
+                  Read Guide &rarr;
+                </span>
               </div>
             </Link>
           ))}

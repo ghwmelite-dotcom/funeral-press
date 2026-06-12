@@ -205,6 +205,7 @@ export default function LandingPage() {
 
   // Hero product rotation
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
     heroTimerRef.current = setInterval(() => {
       setHeroAnimating(true)
       setTimeout(() => {
@@ -526,13 +527,8 @@ export default function LandingPage() {
                   {HERO_PRODUCTS.map((p, i) => (
                     <span
                       key={p.label}
-                      className="absolute left-0 whitespace-nowrap animate-shimmer"
+                      className="shimmer-text absolute left-0 whitespace-nowrap animate-shimmer"
                       style={{
-                        background: 'linear-gradient(110deg, #C9A24B 0%, #E8C766 28%, #FFF4D6 50%, #E8C766 72%, #C9A24B 100%)',
-                        backgroundSize: '200% auto',
-                        WebkitBackgroundClip: 'text',
-                        backgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
                         transition: 'all 0.4s ease',
                         transform: i === heroIdx
                           ? (heroAnimating ? 'translateY(-110%)' : 'translateY(0)')
@@ -571,7 +567,7 @@ export default function LandingPage() {
                 <button
                   onClick={() => setExampleOpen(true)}
                   className="inline-flex items-center gap-2 px-7 py-3.5 font-medium rounded-full transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  style={{ color: 'var(--ceremonial-ink-strong)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(232,199,102,0.34)' }}
+                  style={{ color: 'var(--ceremonial-ink-strong)', background: 'var(--ceremonial-outline-bg)', border: '1px solid var(--ceremonial-glass-border)' }}
                 >
                   <Eye size={18} />
                   See Example
@@ -644,11 +640,11 @@ export default function LandingPage() {
                 </div>
               ))}
               {/* Floating glass feature tags */}
-              <div className="absolute z-20 -left-6 top-[12%] hidden sm:flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium backdrop-blur-md" style={{ background: 'rgba(20,20,28,0.72)', border: '1px solid rgba(232,199,102,0.34)', color: 'var(--ceremonial-ink-strong)', boxShadow: '0 14px 30px rgba(0,0,0,0.5)' }}>
+              <div className="absolute z-20 -left-6 top-[12%] hidden sm:flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium backdrop-blur-md" style={{ background: 'var(--ceremonial-glass-bg)', border: '1px solid var(--ceremonial-glass-border)', color: 'var(--ceremonial-ink-strong)', boxShadow: '0 14px 30px rgba(0,0,0,0.5)' }}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--ceremonial-gold)', boxShadow: '0 0 8px var(--ceremonial-gold)' }} />
                 Print-ready PDF
               </div>
-              <div className="absolute z-20 -right-5 bottom-[14%] hidden sm:flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium backdrop-blur-md" style={{ background: 'rgba(20,20,28,0.72)', border: '1px solid rgba(232,199,102,0.34)', color: 'var(--ceremonial-ink-strong)', boxShadow: '0 14px 30px rgba(0,0,0,0.5)' }}>
+              <div className="absolute z-20 -right-5 bottom-[14%] hidden sm:flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium backdrop-blur-md" style={{ background: 'var(--ceremonial-glass-bg)', border: '1px solid var(--ceremonial-glass-border)', color: 'var(--ceremonial-ink-strong)', boxShadow: '0 14px 30px rgba(0,0,0,0.5)' }}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--ceremonial-gold)', boxShadow: '0 0 8px var(--ceremonial-gold)' }} />
                 40+ elegant themes
               </div>

@@ -84,10 +84,10 @@ export default function DiasporaPage() {
         <div className="overflow-hidden bg-card border border-border rounded-xl text-center">
           <KenteBand size="card" />
           <div className="p-6">
-          <div className="flex justify-end mb-2"><CurrencySwitcher /></div>
-          <p className="text-sm text-muted-foreground mb-1">A complete set of funeral designs from</p>
-          <p className="text-3xl font-bold text-card-foreground mb-1">{formatMoney(priceFor('bundle', currency), currency)}</p>
-          <p className="text-xs text-muted-foreground">One-time. Unlimited designs from {formatMoney(priceFor('suite', currency), currency)} · Pro from {formatMoney(priceFor('pro_monthly', currency), currency)}/month</p>
+            <div className="flex justify-end mb-2"><CurrencySwitcher /></div>
+            <p className="text-sm text-muted-foreground mb-1">A complete set of funeral designs from</p>
+            <p className="text-3xl font-bold text-card-foreground mb-1">{formatMoney(priceFor('bundle', currency), currency)}</p>
+            <p className="text-xs text-muted-foreground">One-time. Unlimited designs from {formatMoney(priceFor('suite', currency), currency)} · Pro from {formatMoney(priceFor('pro_monthly', currency), currency)}/month</p>
           </div>
         </div>
       </div>

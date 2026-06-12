@@ -1,4 +1,9 @@
 // The woven kente strip — purely decorative ceremonial framing (spec §2.2/§3).
+
+/**
+ * When used as a card/dialog top edge, the parent must be `overflow-hidden`
+ * so the band clips to the parent's border radius.
+ */
 const SIZES = {
   page: { height: '6px', width: '100%' },
   card: { height: '4px', width: '100%' },

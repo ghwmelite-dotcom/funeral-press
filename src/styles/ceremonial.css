@@ -23,6 +23,9 @@
   --ceremonial-aurora-gold: rgba(232, 199, 102, 0.20);
   --ceremonial-aurora-accent: rgba(161, 58, 69, 0.13);
   --ceremonial-watermark-opacity: 0.09;
+  --ceremonial-glass-bg: rgba(20, 20, 28, 0.72);
+  --ceremonial-glass-border: rgba(232, 199, 102, 0.34);
+  --ceremonial-outline-bg: rgba(255, 255, 255, 0.04);
 }
 
 [data-theme="light"] {
@@ -44,6 +47,9 @@
   --ceremonial-aurora-gold: rgba(154, 123, 28, 0.10);
   --ceremonial-aurora-accent: rgba(154, 123, 28, 0.05);
   --ceremonial-watermark-opacity: 0.07;
+  --ceremonial-glass-bg: rgba(255, 253, 248, 0.85);
+  --ceremonial-glass-border: rgba(154, 123, 28, 0.40);
+  --ceremonial-outline-bg: rgba(36, 31, 23, 0.04);
 }
 
 /* Kente weave — one gradient definition, both sizes consume it */
