@@ -16,6 +16,10 @@ import {
 } from '../../utils/memorialApi'
 import { useAuthStore } from '../../stores/authStore'
 import { useNotification } from '../ui/notification.jsx'
+import { useCurrencyStore } from '../../stores/currencyStore'
+import { priceFor, providerFor, formatMoney } from '../../config/priceBook'
+import CurrencySwitcher from '../pricing/CurrencySwitcher'
+import { apiFetch } from '../../utils/apiClient'
 
 // Human-readable labels for each feature key, ordered for display
 const FEATURE_LABELS = [
@@ -27,11 +31,6 @@ const FEATURE_LABELS = [
   { key: 'customDomain',     label: 'Custom domain' },
   { key: 'multiLanguage',    label: 'Multi-language pages' },
 ]
-
-function formatGHS(pesewas) {
-  const amount = pesewas / 100
-  return `GHS ${Number.isInteger(amount) ? amount : amount.toFixed(2)}`
-}
 
 function TierCard({ tierKey, selected, onSelect }) {
   const tier = TIERS[tierKey]
@@ -116,12 +115,19 @@ function PlanToggle({ value, onChange }) {
 
 function PriceDisplay({ tierKey, planType }) {
   const tier = TIERS[tierKey]
+  const currency = useCurrencyStore((s) => s.currency)
   if (!tier) return null
+
+  const productKey = planType === 'lifetime'
+    ? `memorial_${tierKey}_lifetime`
+    : `memorial_${tierKey}_annual`
+
+  const price = formatMoney(priceFor(productKey, currency), currency)
 
   if (planType === 'lifetime') {
     return (
       <p className="text-center text-sm text-foreground" data-testid="price-display">
-        <span className="text-lg font-bold">{formatGHS(tier.lifetimePesewas)}</span>
+        <span className="text-lg font-bold">{price}</span>
         {' '}
         <span className="text-muted-foreground">one-time</span>
       </p>
@@ -130,7 +136,7 @@ function PriceDisplay({ tierKey, planType }) {
 
   return (
     <p className="text-center text-sm text-foreground" data-testid="price-display">
-      <span className="text-lg font-bold">{formatGHS(tier.annualPesewas)}</span>
+      <span className="text-lg font-bold">{price}</span>
       <span className="text-muted-foreground">/year</span>
       {' '}
       &mdash;{' '}
@@ -175,6 +181,20 @@ export default function UpgradeDialog({ memorialId, open, onOpenChange, onSucces
     setBusy(true)
 
     try {
+      const currentCurrency = useCurrencyStore.getState().currency
+      const productKey = planType === 'lifetime'
+        ? `memorial_${selectedTier}_lifetime`
+        : `memorial_${selectedTier}_annual`
+
+      if (providerFor(currentCurrency) === 'stripe') {
+        const data = await apiFetch('/stripe/checkout', {
+          method: 'POST',
+          body: JSON.stringify({ productKey, currency: currentCurrency, memorialId }),
+        })
+        window.location.href = data.url
+        return
+      }
+
       if (planType === 'lifetime') {
         // Inline Paystack popup — mirrors LightCandleDialog exactly
         const PaystackPop = await loadPaystackInline()
@@ -216,6 +236,11 @@ export default function UpgradeDialog({ memorialId, open, onOpenChange, onSucces
   }
 
   const selectedTierConfig = TIERS[selectedTier]
+  const currency = useCurrencyStore((s) => s.currency)
+  const selectedProductKey = planType === 'lifetime'
+    ? `memorial_${selectedTier}_lifetime`
+    : `memorial_${selectedTier}_annual`
+  const selectedPrice = formatMoney(priceFor(selectedProductKey, currency), currency)
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -247,6 +272,11 @@ export default function UpgradeDialog({ memorialId, open, onOpenChange, onSucces
             </DialogHeader>
 
             <div className="mt-4 space-y-4">
+              {/* Currency switcher */}
+              <div className="flex justify-end">
+                <CurrencySwitcher />
+              </div>
+
               {/* Plan type toggle */}
               <PlanToggle value={planType} onChange={(p) => { setPlanType(p); setError('') }} />
 
@@ -302,8 +332,8 @@ export default function UpgradeDialog({ memorialId, open, onOpenChange, onSucces
                 {busy
                   ? 'Processing…'
                   : planType === 'lifetime'
-                    ? `Unlock ${selectedTierConfig?.label} — ${formatGHS(selectedTierConfig?.lifetimePesewas)}`
-                    : `Subscribe ${selectedTierConfig?.label} — ${formatGHS(selectedTierConfig?.annualPesewas)}/yr`}
+                    ? `Unlock ${selectedTierConfig?.label} — ${selectedPrice}`
+                    : `Subscribe ${selectedTierConfig?.label} — ${selectedPrice}/yr`}
               </button>
 
               <p className="text-center text-xs text-muted-foreground">

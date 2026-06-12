@@ -20,6 +20,8 @@ import {
   canGrantReward,
   applyReferralDiscount,
 } from './familyReferral.js'
+import { PRODUCTS, priceFor, currencyForCountry, providerFor, isSubscription } from './priceBook.js'
+import { stripeRequest, verifyStripeSignature, checkoutSessionParams } from './stripeClient.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -269,9 +271,9 @@ async function requireSuperAdmin(request, env) {
 // ─── Payment constants ───────────────────────────────────────────────────────
 
 const PLANS = {
-  single: { amount: 3500, credits: 1 },
-  bundle: { amount: 7500, credits: 3 },
-  suite:  { amount: 12000, credits: -1 }, // -1 = unlimited
+  single: { amount: priceFor('single', 'GHS'), credits: PRODUCTS.single.credits },
+  bundle: { amount: priceFor('bundle', 'GHS'), credits: PRODUCTS.bundle.credits },
+  suite:  { amount: priceFor('suite', 'GHS'),  credits: PRODUCTS.suite.credits }, // -1 = unlimited
   bulk10: { amount: 25000, credits: 10, institutional: true },
   bulk25: { amount: 50000, credits: 25, institutional: true },
   bulk50: { amount: 80000, credits: 50, institutional: true },
@@ -892,8 +894,8 @@ async function handlePaymentInitialize(request, env, userId) {
   const orderId = generateId()
 
   await env.DB.prepare(
-    `INSERT INTO orders (id, user_id, plan, amount_pesewas, paystack_reference, partner_id, commission_rate, commission_amount, referral_discount_pesewas)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO orders (id, user_id, plan, amount_pesewas, paystack_reference, partner_id, commission_rate, commission_amount, referral_discount_pesewas, currency)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'GHS')`
   ).bind(orderId, userId, plan, chargeAmount, reference, partnerId, commissionRate, commissionAmount, referralDiscount).run()
 
   return json({
@@ -931,6 +933,210 @@ async function markOrderPaid(env, order) {
       'UPDATE users SET referral_balance_pesewas = MAX(0, COALESCE(referral_balance_pesewas, 0) - ?) WHERE id = ?'
     ).bind(order.referral_discount_pesewas, order.user_id).run()
   }
+}
+
+// ─── Stripe fulfillment (shared by webhook + verify; all paths idempotent) ──
+
+async function fulfillStripeOneTime(env, session) {
+  const order = await env.DB.prepare('SELECT * FROM orders WHERE stripe_session_id = ?').bind(session.id).first()
+  if (!order) return
+  if (session.amount_total != null && session.amount_total !== order.amount_pesewas) {
+    console.error('[stripe] amount mismatch', { sessionId: session.id, expected: order.amount_pesewas, got: session.amount_total })
+    return
+  }
+  await markOrderPaid(env, order) // idempotent via status === 'success' early return
+}
+
+async function fulfillStripeSubscription(env, session) {
+  const meta = session.metadata || {}
+  const subscriptionId = session.subscription
+  if (!subscriptionId || !meta.userId || !meta.productKey) return
+
+  const product = PRODUCTS[meta.productKey]
+  if (!product) return
+  const now = new Date().toISOString()
+  const days = product.interval === 'year' ? 365 : 30
+  const periodEnd = new Date(Date.now() + days * 86400000).toISOString()
+
+  if (product.memorial) {
+    await env.DB.prepare(
+      `INSERT INTO subscriptions
+         (id, user_id, plan, status, stripe_subscription_id, stripe_customer_id, current_period_start, current_period_end, monthly_credits_remaining, memorial_id, memorial_tier, currency)
+       VALUES (?, ?, 'memorial_annual', 'active', ?, ?, ?, ?, 0, ?, ?, ?)
+       ON CONFLICT(stripe_subscription_id) DO UPDATE SET
+         status = 'active', current_period_end = excluded.current_period_end, updated_at = datetime('now')`
+    ).bind(generateId(), meta.userId, subscriptionId, session.customer || null, now, periodEnd, meta.memorialId, meta.tier, meta.currency).run()
+
+    await env.DB.prepare(
+      `INSERT INTO memorial_premium
+         (id, memorial_id, tier, plan_type, paystack_reference, status, amount_pesewas, currency, buyer_user_id, expires_at, created_at)
+       VALUES (?, ?, ?, 'annual', ?, 'succeeded', ?, ?, ?, ?, ?)
+       ON CONFLICT(memorial_id, plan_type) DO UPDATE SET
+         tier = excluded.tier, status = 'succeeded', amount_pesewas = excluded.amount_pesewas,
+         currency = excluded.currency, expires_at = excluded.expires_at, updated_at = datetime('now')`
+    ).bind(generateId(), meta.memorialId, meta.tier, `stripe-${session.id}`, session.amount_total, meta.currency, meta.userId, new Date(periodEnd).getTime(), now).run()
+  } else {
+    await env.DB.prepare(
+      `INSERT INTO subscriptions
+         (id, user_id, plan, status, stripe_subscription_id, stripe_customer_id, current_period_start, current_period_end, monthly_credits_remaining, currency)
+       VALUES (?, ?, ?, 'active', ?, ?, ?, ?, 15, ?)
+       ON CONFLICT(stripe_subscription_id) DO UPDATE SET
+         status = 'active', current_period_end = excluded.current_period_end, updated_at = datetime('now')`
+    ).bind(generateId(), meta.userId, meta.productKey, subscriptionId, session.customer || null, now, periodEnd, meta.currency).run()
+  }
+}
+
+async function fulfillStripeMemorialLifetime(env, session) {
+  const meta = session.metadata || {}
+  if (!meta.memorialId || !meta.tier) return
+  await env.DB.prepare(
+    `INSERT INTO memorial_premium
+       (id, memorial_id, tier, plan_type, paystack_reference, status, amount_pesewas, currency, buyer_user_id, created_at)
+     VALUES (?, ?, ?, 'lifetime', ?, 'succeeded', ?, ?, ?, ?)
+     ON CONFLICT(memorial_id, plan_type) DO UPDATE SET
+       tier = excluded.tier, status = 'succeeded', amount_pesewas = excluded.amount_pesewas,
+       currency = excluded.currency, updated_at = datetime('now')`
+  ).bind(generateId(), meta.memorialId, meta.tier, `stripe-${session.id}`, session.amount_total, meta.currency, meta.userId || null, new Date().toISOString()).run()
+}
+
+async function fulfillStripeSession(env, session) {
+  if (session.payment_status && session.payment_status !== 'paid') return
+  const meta = session.metadata || {}
+  const product = PRODUCTS[meta.productKey]
+  if (!product) return
+  if (product.kind === 'subscription') return await fulfillStripeSubscription(env, session)
+  if (product.memorial) return await fulfillStripeMemorialLifetime(env, session)
+  return await fulfillStripeOneTime(env, session)
+}
+
+async function handleStripeWebhook(request, env) {
+  if (!env.STRIPE_WEBHOOK_SECRET) return error('Stripe is not configured', 503, request)
+  const body = await request.text()
+  const ok = await verifyStripeSignature(body, request.headers.get('stripe-signature'), env.STRIPE_WEBHOOK_SECRET, Date.now())
+  if (!ok) return error('Invalid signature', 401, request)
+
+  const event = JSON.parse(body)
+  const obj = event.data?.object || {}
+
+  if (event.type === 'checkout.session.completed') {
+    await fulfillStripeSession(env, obj)
+    notifyAdmin(env, 'payment', `Stripe checkout completed: ${obj.metadata?.productKey || 'unknown'} ${obj.currency?.toUpperCase() || ''}`, { sessionId: obj.id || '' })
+  }
+
+  if (event.type === 'invoice.paid' && obj.billing_reason === 'subscription_cycle') {
+    // Renewal: extend the period and reset monthly credits (mirrors the
+    // Paystack charge.success renewal logic).
+    const sub = await env.DB.prepare('SELECT id, plan, memorial_id FROM subscriptions WHERE stripe_subscription_id = ?').bind(obj.subscription).first()
+    if (sub) {
+      const days = sub.plan === 'pro_monthly' ? 30 : 365
+      const periodEnd = new Date(Date.now() + days * 86400000).toISOString()
+      await env.DB.prepare(
+        "UPDATE subscriptions SET monthly_credits_remaining = CASE WHEN plan = 'memorial_annual' THEN monthly_credits_remaining ELSE 15 END, current_period_start = datetime('now'), current_period_end = ?, status = 'active', updated_at = datetime('now') WHERE id = ?"
+      ).bind(periodEnd, sub.id).run()
+      if (sub.memorial_id) {
+        await env.DB.prepare(
+          "UPDATE memorial_premium SET expires_at = ?, updated_at = datetime('now') WHERE memorial_id = ? AND plan_type = 'annual'"
+        ).bind(new Date(periodEnd).getTime(), sub.memorial_id).run()
+      }
+    }
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    await env.DB.prepare(
+      "UPDATE subscriptions SET status = 'cancelled', cancelled_at = datetime('now'), updated_at = datetime('now') WHERE stripe_subscription_id = ?"
+    ).bind(obj.id).run()
+  }
+
+  return json({ received: true }, 200, request)
+}
+
+async function handleStripeCheckout(request, env, userId) {
+  if (!env.STRIPE_SECRET_KEY) return error('Stripe is not configured', 503, request)
+  const { productKey, currency, memorialId } = await request.json()
+
+  const product = PRODUCTS[productKey]
+  if (!product) return error('Unknown product', 400, request)
+  if (providerFor(currency) !== 'stripe') return error('Use Paystack for this currency', 400, request)
+  if (product.memorial && !memorialId) return error('Missing memorialId', 400, request)
+
+  const user = await env.DB.prepare('SELECT id, email FROM users WHERE id = ? AND deleted_at IS NULL').bind(userId).first()
+  if (!user) return error('User not found', 404, request)
+
+  if (isSubscription(productKey) && !product.memorial) {
+    const existing = await getUserSubscription(env, userId)
+    if (existing && existing.status === 'active') return error('Already have an active subscription', 400, request)
+  }
+
+  if (isSubscription(productKey) && product.memorial) {
+    const existingMemorialSub = await env.DB.prepare(
+      "SELECT id FROM subscriptions WHERE memorial_id = ? AND status = 'active'"
+    ).bind(memorialId).first()
+    if (existingMemorialSub) return error('This memorial already has an active subscription', 400, request)
+  }
+
+  const amount = priceFor(productKey, currency)
+  const metadata = {
+    userId,
+    productKey,
+    currency,
+    ...(product.memorial ? { memorialId, tier: product.tier } : {}),
+  }
+
+  const successUrl = product.memorial
+    ? `${env.CORS_ORIGIN}/memorial/${encodeURIComponent(memorialId)}?stripe_session={CHECKOUT_SESSION_ID}`
+    : `${env.CORS_ORIGIN}/my-designs?stripe_session={CHECKOUT_SESSION_ID}`
+
+  let session
+  try {
+    session = await stripeRequest(env, '/checkout/sessions', checkoutSessionParams({
+      productKey,
+      currency,
+      amount,
+      label: product.label,
+      interval: product.interval || null,
+      email: user.email,
+      successUrl,
+      cancelUrl: `${env.CORS_ORIGIN}/`,
+      metadata,
+    }))
+  } catch (e) {
+    console.error('[stripe] checkout session creation failed', e)
+    Sentry.captureException(e)
+    return error('Payment provider error', 502, request)
+  }
+
+  // One-time credit purchases get a pending orders row so markOrderPaid can
+  // grant credits idempotently from either the webhook or the verify endpoint.
+  if (product.kind === 'one_time' && !product.memorial) {
+    await env.DB.prepare(
+      `INSERT INTO orders (id, user_id, plan, amount_pesewas, paystack_reference, currency, stripe_session_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(generateId(), userId, productKey, amount, `stripe-${session.id}`, currency, session.id).run()
+  }
+
+  return json({ url: session.url }, 200, request)
+}
+
+async function handleStripeVerify(request, env, userId) {
+  if (!env.STRIPE_SECRET_KEY) return error('Stripe is not configured', 503, request)
+  const url = new URL(request.url)
+  const sessionId = url.searchParams.get('session_id')
+  if (!sessionId) return error('Missing session_id', 400, request)
+
+  let session
+  try {
+    session = await stripeRequest(env, `/checkout/sessions/${encodeURIComponent(sessionId)}`, null, 'GET')
+  } catch (e) {
+    console.error('[stripe] session retrieval failed', e)
+    Sentry.captureException(e)
+    return error('Payment provider error', 502, request)
+  }
+  if (session.metadata?.userId !== userId) return error('Not your session', 403, request)
+  if (session.payment_status !== 'paid') return json({ verified: false }, 200, request)
+
+  await fulfillStripeSession(env, session)
+  const purchaseData = await getUserPurchaseData(env, userId)
+  return json({ verified: true, ...purchaseData }, 200, request)
 }
 
 async function handlePaymentVerify(request, env, userId) {
@@ -2402,6 +2608,15 @@ async function handleSubscriptionCancel(request, env, userId) {
     return error('No active subscription', 400, request)
   }
 
+  // Stripe-managed subscription: cancel at period end via Stripe API
+  if (sub.stripe_subscription_id) {
+    await stripeRequest(env, `/subscriptions/${sub.stripe_subscription_id}`, { cancel_at_period_end: true })
+    await env.DB.prepare(
+      "UPDATE subscriptions SET cancel_at_period_end = 1, updated_at = datetime('now') WHERE id = ?"
+    ).bind(sub.id).run()
+    return json({ ok: true, cancelsAt: sub.current_period_end }, 200, request)
+  }
+
   // Tell Paystack to cancel at period end
   if (sub.paystack_email_token && sub.paystack_subscription_code) {
     await fetch(`https://api.paystack.co/subscription/disable`, {
@@ -2488,6 +2703,12 @@ async function handleMemorialSubscriptionCreate(request, env, userId, memorialId
     console.error('[memorial-subscribe] missing plan code env var:', planCodeEnvVar)
     return error('Subscription plan not configured', 500, request)
   }
+
+  // Prevent stacking multiple live subscriptions on one memorial (double-billing)
+  const existingMemorialSub = await env.DB.prepare(
+    "SELECT id FROM subscriptions WHERE memorial_id = ? AND status = 'active'"
+  ).bind(memorialId).first()
+  if (existingMemorialSub) return error('This memorial already has an active subscription', 400, request)
 
   const callbackUrl = `${env.CORS_ORIGIN}/memorial/${encodeURIComponent(memorialId)}`
 
@@ -3353,6 +3574,12 @@ const handler = {
         return json({ ok: true }, 200, request)
       }
 
+      // Geo currency resolution (public, no auth)
+      if (method === 'GET' && path === '/geo') {
+        const country = request.cf?.country || null
+        return json({ country, currency: currencyForCountry(country) }, 200, request)
+      }
+
       // Public routes
       if (method === 'POST' && path === '/auth/google') return await handleGoogleLogin(request, env)
       if (method === 'POST' && path === '/auth/refresh') return await handleRefresh(request, env)
@@ -3368,6 +3595,7 @@ const handler = {
       if (method === 'GET' && path.startsWith('/images/')) return await handleImageServe(request, env, path.slice(8))
       if (method === 'POST' && path === '/payments/webhook') return await handlePaymentWebhook(request, env)
       if (method === 'POST' && path === '/subscriptions/webhook') return await handleSubscriptionWebhook(request, env)
+      if (method === 'POST' && path === '/stripe/webhook') return await handleStripeWebhook(request, env)
       const publicPartnerMatch = method === 'GET' && path.match(/^\/partner\/public\/([^/]+)$/)
       if (publicPartnerMatch) return await handlePublicPartnerPage(request, env, publicPartnerMatch[1])
 
@@ -3540,6 +3768,8 @@ const handler = {
       if (method === 'POST' && path === '/partner/upload-logo') return await handlePartnerLogoUpload(request, env, userId)
       if (method === 'POST' && path === '/payments/initialize') return await handlePaymentInitialize(request, env, userId)
       if (method === 'POST' && path === '/payments/verify') return await handlePaymentVerify(request, env, userId)
+      if (method === 'POST' && path === '/stripe/checkout') return await handleStripeCheckout(request, env, userId)
+      if (method === 'GET' && path === '/stripe/verify') return await handleStripeVerify(request, env, userId)
       if (method === 'POST' && path === '/memorial-premium/initialize') return await handlePremiumInitialize(request, env, userId)
       if (method === 'POST' && path === '/memorial-premium/verify') return await handlePremiumVerify(request, env, userId)
       // Annual memorial subscription — POST /memorial-premium/:id/subscribe

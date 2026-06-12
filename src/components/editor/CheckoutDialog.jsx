@@ -13,11 +13,14 @@ import { apiFetch } from '../../utils/apiClient'
 import { loadPaystackInline, PAYSTACK_PUBLIC_KEY } from '../../utils/paystack'
 import { haptic } from '../../hooks/useHaptic'
 import FamilyReferralCard from '../referral/FamilyReferralCard'
+import { useCurrencyStore } from '../../stores/currencyStore'
+import { PRODUCTS, priceFor, providerFor, formatMoney } from '../../config/priceBook'
+import CurrencySwitcher from '../pricing/CurrencySwitcher'
 
 const PLANS = [
-  { key: 'single', name: 'Single', price: 35, credits: '1 design', desc: 'Perfect for one project' },
-  { key: 'bundle', name: 'Bundle', price: 75, credits: '3 designs', desc: 'Best value for families', badge: 'Best Value' },
-  { key: 'suite', name: 'Suite', price: 120, credits: 'Unlimited', desc: 'All products, forever' },
+  { key: 'single', name: 'Single', credits: '1 design', desc: 'Perfect for one project' },
+  { key: 'bundle', name: 'Bundle', credits: '3 designs', desc: 'Best value for families', badge: 'Best Value' },
+  { key: 'suite', name: 'Suite', credits: 'Unlimited', desc: 'All products, forever' },
 ]
 
 const INSTITUTIONAL_PLANS = [
@@ -27,8 +30,8 @@ const INSTITUTIONAL_PLANS = [
 ]
 
 const SUBSCRIPTION_PLANS = [
-  { key: 'pro_monthly', name: 'Pro Monthly', price: 85, credits: '15/month', desc: 'No watermark, priority print, unlimited AI', badge: 'Popular' },
-  { key: 'pro_annual', name: 'Pro Annual', price: 850, credits: '15/month', desc: '2 months free vs monthly', badge: 'Best Value' },
+  { key: 'pro_monthly', name: 'Pro Monthly', credits: '15/month', desc: 'No watermark, priority print, unlimited AI', badge: 'Popular' },
+  { key: 'pro_annual', name: 'Pro Annual', credits: '15/month', desc: '2 months free vs monthly', badge: 'Best Value' },
 ]
 
 export default function CheckoutDialog() {
@@ -41,6 +44,7 @@ export default function CheckoutDialog() {
   const unlockDesign = usePurchaseStore(s => s.unlockDesign)
   const isLoggedIn = useAuthStore(s => s.isLoggedIn)
   const user = useAuthStore(s => s.user)
+  const currency = useCurrencyStore((s) => s.currency)
 
   const [stage, setStage] = useState('idle') // idle | has-credits | loading | paying | verifying | success | error | not-logged-in
   const [errorMsg, setErrorMsg] = useState('')
@@ -85,6 +89,20 @@ export default function CheckoutDialog() {
   const handleSelectPlan = useCallback(async (planKey) => {
     setStage('loading')
     try {
+      const currentCurrency = useCurrencyStore.getState().currency
+      if (providerFor(currentCurrency) === 'stripe') {
+        // Persist the pending unlock across the full-page redirect.
+        if (pendingDownload) {
+          try { localStorage.setItem('fp-pending-download', JSON.stringify(pendingDownload)) } catch { /* ignore */ }
+        }
+        const data = await apiFetch('/stripe/checkout', {
+          method: 'POST',
+          body: JSON.stringify({ productKey: planKey, currency: currentCurrency }),
+        })
+        window.location.href = data.url
+        return
+      }
+
       const PaystackPop = await loadPaystackInline()
       const initData = await apiFetch('/payments/initialize', {
         method: 'POST',
@@ -131,6 +149,20 @@ export default function CheckoutDialog() {
   const handleSelectSubscription = useCallback(async (planKey) => {
     setStage('loading')
     try {
+      const currentCurrency = useCurrencyStore.getState().currency
+      if (providerFor(currentCurrency) === 'stripe') {
+        // Persist the pending unlock across the full-page redirect (same as the
+        // one-time path) so the originating design auto-unlocks on return.
+        if (pendingDownload) {
+          try { localStorage.setItem('fp-pending-download', JSON.stringify(pendingDownload)) } catch { /* ignore */ }
+        }
+        const data = await apiFetch('/stripe/checkout', {
+          method: 'POST',
+          body: JSON.stringify({ productKey: planKey, currency: currentCurrency }),
+        })
+        window.location.href = data.url
+        return
+      }
       const data = await apiFetch('/subscriptions/create', {
         method: 'POST',
         body: JSON.stringify({ plan: planKey }),
@@ -140,7 +172,7 @@ export default function CheckoutDialog() {
       setErrorMsg(err.message || 'Failed to start subscription')
       setStage('error')
     }
-  }, [])
+  }, [pendingDownload])
 
   const handleGoogleSignIn = useCallback(() => {
     // Trigger Google One Tap / sign-in flow
@@ -241,6 +273,7 @@ export default function CheckoutDialog() {
           {/* Pricing cards (idle state) */}
           {stage === 'idle' && (
             <div className="space-y-3">
+              <CurrencySwitcher className="mb-3" />
               <div className="flex bg-muted rounded-lg p-1 mb-3">
                 <button
                   onClick={() => setPlanType('onetime')}
@@ -279,7 +312,7 @@ export default function CheckoutDialog() {
                         <p className="text-xs text-muted-foreground">{plan.credits}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-lg font-bold text-card-foreground">GHS {plan.price}</span>
+                        <span className="text-lg font-bold text-card-foreground">{formatMoney(priceFor(plan.key, currency), currency)}</span>
                         <p className="text-[10px] text-muted-foreground">{plan.key === 'pro_annual' ? '/year' : '/month'}</p>
                       </div>
                     </button>
@@ -308,13 +341,13 @@ export default function CheckoutDialog() {
                     <p className="text-xs text-muted-foreground">{plan.credits}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="text-lg font-bold text-card-foreground">GHS {plan.price}</span>
+                    <span className="text-lg font-bold text-card-foreground">{formatMoney(priceFor(plan.key, currency), currency)}</span>
                   </div>
                 </button>
               ))}
 
               {/* Institutional partner plans */}
-              {user?.partnerType && (
+              {user?.partnerType && currency === 'GHS' && (
                 <>
                   <div className="pt-4 pb-1">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Institutional Partner</p>
@@ -341,6 +374,7 @@ export default function CheckoutDialog() {
                         <p className="text-xs text-muted-foreground">{plan.credits}</p>
                       </div>
                       <div className="text-right shrink-0">
+                        {/* Bulk institutional plans: GHS-only, out of price-book scope */}
                         <span className="text-lg font-bold text-card-foreground">GHS {plan.price}</span>
                       </div>
                     </button>

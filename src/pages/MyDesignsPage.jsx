@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { apiFetch } from '../utils/apiClient'
+import { usePurchaseStore } from '../stores/purchaseStore'
 import {
   ArrowLeft,
   ArrowRight,
@@ -43,6 +45,33 @@ export default function MyDesignsPage() {
   const { theme, toggleTheme } = useThemeStore()
   const user = useAuthStore((s) => s.user)
   const [loadingCloudId, setLoadingCloudId] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Handle return from Stripe Checkout — verify payment and restore pending download.
+  useEffect(() => {
+    const sessionId = searchParams.get('stripe_session')
+    if (!sessionId) return
+    apiFetch(`/stripe/verify?session_id=${encodeURIComponent(sessionId)}`)
+      .then(async (data) => {
+        if (data.verified) {
+          usePurchaseStore.getState().hydrateFromUser(data)
+          const pending = localStorage.getItem('fp-pending-download')
+          if (pending) {
+            try {
+              const { designId, productType } = JSON.parse(pending)
+              await usePurchaseStore.getState().unlockDesign(designId, productType)
+            } catch { /* credit stays available; user can re-export */ }
+            localStorage.removeItem('fp-pending-download')
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        searchParams.delete('stripe_session')
+        setSearchParams(searchParams, { replace: true })
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Stores
   const store = useBrochureStore()

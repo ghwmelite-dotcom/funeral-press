@@ -8,6 +8,7 @@ import { Skeleton } from './components/ui/skeleton'
 import { useThemeStore } from './stores/themeStore'
 import { useAuthStore } from './stores/authStore'
 import { usePurchaseStore } from './stores/purchaseStore'
+import { useCurrencyStore } from './stores/currencyStore'
 import { useGoogleOneTap } from './hooks/useGoogleOneTap'
 import CheckoutDialog from './components/editor/CheckoutDialog'
 import PrintOrderDialog from './components/editor/PrintOrderDialog'
@@ -65,6 +66,7 @@ const BrochureDesignerPage = lazy(() => import('./pages/landing/BrochureDesigner
 const PosterMakerPage = lazy(() => import('./pages/landing/PosterMakerPage'))
 const MemorialCreatorPage = lazy(() => import('./pages/landing/MemorialCreatorPage'))
 const ProgrammeBookletPage = lazy(() => import('./pages/landing/ProgrammeBookletPage'))
+const DiasporaPage = lazy(() => import('./pages/landing/DiasporaPage'))
 const DonatePage = lazy(() => import('./pages/DonatePage.jsx'))
 const DonationThanksPage = lazy(() => import('./pages/DonationThanksPage.jsx'))
 const FamilyHeadApprovalPage = lazy(() => import('./pages/FamilyHeadApprovalPage.jsx'))
@@ -114,6 +116,7 @@ export default function App() {
 
   // Hydrate auth state from localStorage on app start
   useEffect(() => {
+    useCurrencyStore.getState().hydrate()
     useAuthStore.getState().hydrate()
     // If logged in, fetch purchase status and refresh user data
     if (useAuthStore.getState().isLoggedIn()) {
@@ -187,6 +190,7 @@ export default function App() {
               <Route path="/funeral-poster-maker" element={<PosterMakerPage />} />
               <Route path="/memorial-page-creator" element={<MemorialCreatorPage />} />
               <Route path="/funeral-programme-booklet" element={<ProgrammeBookletPage />} />
+              <Route path="/diaspora/:slug" element={<DiasporaPage />} />
               <Route path="/m/:slug/donate" element={<DonatePage />} />
               <Route path="/m/:slug/donation-thanks" element={<DonationThanksPage />} />
               <Route path="/approve/:token" element={<FamilyHeadApprovalPage />} />
