@@ -1099,6 +1099,21 @@ async function handleStripeCheckout(request, env, userId) {
   return json({ url: session.url }, 200, request)
 }
 
+async function handleStripeVerify(request, env, userId) {
+  if (!env.STRIPE_SECRET_KEY) return error('Stripe is not configured', 503, request)
+  const url = new URL(request.url)
+  const sessionId = url.searchParams.get('session_id')
+  if (!sessionId) return error('Missing session_id', 400, request)
+
+  const session = await stripeRequest(env, `/checkout/sessions/${encodeURIComponent(sessionId)}`, null, 'GET')
+  if (session.metadata?.userId !== userId) return error('Not your session', 403, request)
+  if (session.payment_status !== 'paid') return json({ verified: false }, 200, request)
+
+  await fulfillStripeSession(env, session)
+  const purchaseData = await getUserPurchaseData(env, userId)
+  return json({ verified: true, ...purchaseData }, 200, request)
+}
+
 async function handlePaymentVerify(request, env, userId) {
   const { reference } = await request.json()
   if (!reference) return error('Missing reference', 400, request)
@@ -3723,6 +3738,7 @@ const handler = {
       if (method === 'POST' && path === '/payments/initialize') return await handlePaymentInitialize(request, env, userId)
       if (method === 'POST' && path === '/payments/verify') return await handlePaymentVerify(request, env, userId)
       if (method === 'POST' && path === '/stripe/checkout') return await handleStripeCheckout(request, env, userId)
+      if (method === 'GET' && path === '/stripe/verify') return await handleStripeVerify(request, env, userId)
       if (method === 'POST' && path === '/memorial-premium/initialize') return await handlePremiumInitialize(request, env, userId)
       if (method === 'POST' && path === '/memorial-premium/verify') return await handlePremiumVerify(request, env, userId)
       // Annual memorial subscription — POST /memorial-premium/:id/subscribe
