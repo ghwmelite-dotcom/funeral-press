@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { REGIONS } from '../data/regions'
 import PageMeta from '../components/seo/PageMeta'
 import FAQSection from '../components/seo/FAQSection'
+import { KenteBand, CeremonialDivider } from '../components/ceremonial'
 import { ArrowRight, MapPin, Users, BookOpen, Star, CheckCircle, ChevronRight } from 'lucide-react'
 
 function buildFAQs(region) {
@@ -104,6 +105,7 @@ export default function RegionPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <KenteBand size="page" />
       <PageMeta
         title={`Funeral Services in ${region.name}, Ghana — FuneralPress`}
         description={`Design professional funeral brochures, obituary posters, and memorial pages for services in ${region.name}, Ghana. Trusted by families across ${region.capital} and surrounding areas.`}
@@ -171,6 +173,8 @@ export default function RegionPage() {
         </div>
       </section>
 
+      <CeremonialDivider />
+
       {/* Services Section */}
       <section className="max-w-7xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">
@@ -232,6 +236,8 @@ export default function RegionPage() {
           </div>
         )}
       </section>
+
+      <CeremonialDivider />
 
       {/* FAQ */}
       <section className="max-w-3xl mx-auto px-4 pb-16">

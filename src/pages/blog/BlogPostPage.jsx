@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import PageMeta from '../../components/seo/PageMeta'
 import blogPosts from '../../data/blogPosts'
+import { KenteBand, CeremonialDivider } from '../../components/ceremonial'
 
 const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
 
@@ -101,6 +102,7 @@ export default function BlogPostPage() {
           >
             {post.title}
           </h1>
+          <CeremonialDivider symbol="sankofa" />
         </header>
 
         <div className="space-y-5">
@@ -180,14 +182,17 @@ export default function BlogPostPage() {
               <Link
                 key={rp.slug}
                 to={`/blog/${rp.slug}`}
-                className="group block bg-card border border-border rounded-lg p-4 hover:border-primary/40 transition-all"
+                className="group overflow-hidden block bg-card border border-border rounded-lg hover:border-primary/40 transition-all"
               >
-                <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-snug">
-                  {rp.title}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {rp.description}
-                </p>
+                <KenteBand size="card" />
+                <div className="p-4">
+                  <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-snug">
+                    {rp.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {rp.description}
+                  </p>
+                </div>
               </Link>
             ))}
           </div>

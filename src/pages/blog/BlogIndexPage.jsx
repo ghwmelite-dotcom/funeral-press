@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import PageMeta from '../../components/seo/PageMeta'
 import blogPosts from '../../data/blogPosts'
+import { KenteBand, CeremonialDivider } from '../../components/ceremonial'
 
 const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
 
@@ -21,6 +22,7 @@ export default function BlogIndexPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <KenteBand size="page" />
       <PageMeta
         title="FuneralPress Blog — Funeral Planning Tips & Guides"
         description="Expert guides on funeral planning in Ghana. Learn about costs, customs, brochure design tips, hymn selections, and how to honour your loved ones beautifully."
@@ -50,8 +52,10 @@ export default function BlogIndexPage() {
             <Link
               key={post.slug}
               to={`/blog/${post.slug}`}
-              className="group block bg-card border border-border rounded-xl p-6 hover:border-primary/40 hover:shadow-md transition-all"
+              className="group overflow-hidden block bg-card border border-border rounded-xl hover:border-primary/40 hover:shadow-md transition-all"
             >
+              <KenteBand size="card" />
+              <div className="p-6">
               <time className="text-xs text-muted-foreground">
                 {new Date(post.date).toLocaleDateString('en-GB', {
                   year: 'numeric',
@@ -68,9 +72,11 @@ export default function BlogIndexPage() {
               <span className="text-sm font-medium text-primary">
                 Read Guide &rarr;
               </span>
+              </div>
             </Link>
           ))}
         </div>
+        <CeremonialDivider symbol="sankofa" />
       </div>
     </div>
   )

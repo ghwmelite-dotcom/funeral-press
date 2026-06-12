@@ -4,6 +4,7 @@ import FAQSection from '../../components/seo/FAQSection'
 import { useCurrencyStore } from '../../stores/currencyStore'
 import { priceFor, formatMoney } from '../../config/priceBook'
 import CurrencySwitcher from '../../components/pricing/CurrencySwitcher'
+import { KenteBand, CeremonialDivider } from '../../components/ceremonial'
 import {
   ArrowRight,
   Image,
@@ -110,6 +111,7 @@ export default function PosterMakerPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <KenteBand size="page" />
       <PageMeta
         title="Funeral Poster Maker — Design Elegant Obituary Posters | FuneralPress"
         description="Create professional funeral and obituary posters online with FuneralPress. A3 print-ready PDFs with Adinkra symbols and Ghanaian cultural designs. Starts at GHS 35."
@@ -221,6 +223,8 @@ export default function PosterMakerPage() {
         </div>
       </section>
 
+      <CeremonialDivider />
+
       {/* Pricing */}
       <section className="max-w-4xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">Simple, Transparent Pricing</h2>
@@ -255,6 +259,8 @@ export default function PosterMakerPage() {
           ))}
         </div>
       </section>
+
+      <CeremonialDivider />
 
       {/* FAQ */}
       <section className="max-w-3xl mx-auto px-4 pb-16">
