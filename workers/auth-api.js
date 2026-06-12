@@ -1828,9 +1828,12 @@ async function handleAdminOverview(request, env) {
     env.DB.prepare('SELECT COUNT(*) as count FROM users').first(),
     env.DB.prepare("SELECT COUNT(*) as count FROM users WHERE created_at >= datetime('now', '-7 days')").first(),
     env.DB.prepare("SELECT COUNT(*) as count FROM users WHERE created_at >= datetime('now', '-30 days')").first(),
-    env.DB.prepare("SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success'").first(),
-    env.DB.prepare("SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= datetime('now', '-7 days')").first(),
-    env.DB.prepare("SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= datetime('now', '-30 days')").first(),
+    // GHS-only: admin totals are GHS-labelled; USD revenue reports via the weekly growth report (multi-currency admin reporting = pre-USD-activation follow-up)
+    env.DB.prepare("SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND COALESCE(currency, 'GHS') = 'GHS'").first(),
+    // GHS-only: admin totals are GHS-labelled; USD revenue reports via the weekly growth report (multi-currency admin reporting = pre-USD-activation follow-up)
+    env.DB.prepare("SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= datetime('now', '-7 days') AND COALESCE(currency, 'GHS') = 'GHS'").first(),
+    // GHS-only: admin totals are GHS-labelled; USD revenue reports via the weekly growth report (multi-currency admin reporting = pre-USD-activation follow-up)
+    env.DB.prepare("SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= datetime('now', '-30 days') AND COALESCE(currency, 'GHS') = 'GHS'").first(),
     env.DB.prepare("SELECT plan, COUNT(*) as count FROM orders WHERE status = 'success' GROUP BY plan").all(),
     env.DB.prepare('SELECT COALESCE(SUM(credits_remaining), 0) as total FROM users WHERE credits_remaining > 0').first(),
     env.DB.prepare('SELECT COUNT(*) as count FROM unlocked_designs').first(),
@@ -2286,11 +2289,13 @@ async function handleAdminAnalyticsOverview(request, env) {
     `SELECT COUNT(*) as count FROM users WHERE created_at >= ${prevPeriod} AND created_at < ${period} AND deleted_at IS NULL`
   ).first()
 
+  // GHS-only: admin totals are GHS-labelled; USD revenue reports via the weekly growth report (multi-currency admin reporting = pre-USD-activation follow-up)
   const revenue = await env.DB.prepare(
-    `SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= ${period} AND deleted_at IS NULL`
+    `SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= ${period} AND deleted_at IS NULL AND COALESCE(currency, 'GHS') = 'GHS'`
   ).first()
+  // GHS-only: admin totals are GHS-labelled; USD revenue reports via the weekly growth report (multi-currency admin reporting = pre-USD-activation follow-up)
   const prevRevenue = await env.DB.prepare(
-    `SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= ${prevPeriod} AND paid_at < ${period} AND deleted_at IS NULL`
+    `SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= ${prevPeriod} AND paid_at < ${period} AND deleted_at IS NULL AND COALESCE(currency, 'GHS') = 'GHS'`
   ).first()
 
   const activeSubs = await env.DB.prepare(
@@ -2328,10 +2333,11 @@ async function handleAdminAnalyticsRevenue(request, env) {
   const url = new URL(request.url)
   const days = parseInt(url.searchParams.get('days')) || 30
 
+  // GHS-only: admin totals are GHS-labelled; USD revenue reports via the weekly growth report (multi-currency admin reporting = pre-USD-activation follow-up)
   const { results } = await env.DB.prepare(
     `SELECT DATE(paid_at) as date, SUM(amount_pesewas) as revenue, COUNT(*) as orders
      FROM orders
-     WHERE status = 'success' AND paid_at >= datetime('now', '-${days} days') AND deleted_at IS NULL
+     WHERE status = 'success' AND paid_at >= datetime('now', '-${days} days') AND deleted_at IS NULL AND COALESCE(currency, 'GHS') = 'GHS'
      GROUP BY DATE(paid_at)
      ORDER BY date ASC`
   ).all()
@@ -2915,14 +2921,16 @@ async function handleSubscriptionWebhook(request, env) {
         return json({ ok: true }, 200, request)
       }
 
-      // Defense-in-depth: assert the charged amount matches a catalog price.
-      // Accept either the GHS or USD catalog amount for this tier (both are valid
-      // once USD is activated). data.amount may be absent on subscription.create
-      // events — skip the check if so.
-      const expectedAmounts = [TIERS[tier].annualPesewas, PRODUCTS[`memorial_${tier}_annual`].prices.USD]
-      if (data.amount != null && !expectedAmounts.includes(data.amount)) {
+      // Defense-in-depth: assert the charged amount matches the catalog price for
+      // the webhook's currency. Paystack includes data.currency on the event;
+      // GHS webhooks carry pesewas, USD webhooks carry cents. data.amount may be
+      // absent on subscription.create events — skip the check if so.
+      const expectedAmount = data.currency === 'USD'
+        ? PRODUCTS[`memorial_${tier}_annual`].prices.USD
+        : TIERS[tier].annualPesewas
+      if (data.amount != null && data.amount !== expectedAmount) {
         console.error('[webhook] memorial annual amount mismatch', {
-          tier, got: data.amount, expected: expectedAmounts,
+          tier, got: data.amount, expected: expectedAmount,
         })
         return json({ ok: true }, 200, request)
       }

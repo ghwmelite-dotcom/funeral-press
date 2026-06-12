@@ -576,7 +576,7 @@ describe('POST /subscriptions/webhook — memorial_annual subscription.create', 
     expect(env.DB._state.inserts.filter((i) => i.type === 'memorial_premium')).toHaveLength(0)
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('memorial annual amount mismatch'),
-      expect.objectContaining({ tier: 'premium', got: 999, expected: expect.arrayContaining([12000]) })
+      expect.objectContaining({ tier: 'premium', got: 999, expected: 12000 })
     )
     consoleSpy.mockRestore()
   })

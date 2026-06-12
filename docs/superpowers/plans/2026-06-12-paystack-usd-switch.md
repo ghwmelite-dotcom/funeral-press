@@ -25,6 +25,8 @@
 3. Add to `workers/auth-api-wrangler.toml` `[vars]`: `PAYSTACK_PLAN_MONTHLY_USD`, `PAYSTACK_PLAN_ANNUAL_USD`, `PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL_USD`, `PAYSTACK_PLAN_MEMORIAL_HERITAGE_ANNUAL_USD`.
 4. Flip `CURRENCIES.USD.enabled` to `true` in BOTH `workers/priceBook.js` and `src/config/priceBook.js` (drift test enforces they match).
 5. Deploy; test a USD card charge end-to-end.
+6. Pre-activation engineering gates: (a) admin revenue dashboards are GHS-scoped — build multi-currency admin reporting (or accept GHS-only admin totals with USD visible in the weekly growth report); (b) run one real staged USD card charge end-to-end (initialize → webhook → credits) before announcing.
+7. Known scope note: candles/tributes, print orders, and bulk plans remain GHS-only — a USD-display visitor buying a candle is charged in GHS (working, but no UI signal). Extend if diaspora candle volume appears.
 
 ---
 
