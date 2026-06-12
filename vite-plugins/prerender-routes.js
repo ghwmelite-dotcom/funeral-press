@@ -2,6 +2,7 @@
 // Deliberately EXCLUDES editor/tool routes (Disallow'd in public/robots.txt)
 // and user-generated dynamic routes (/memorial/:id, /obituary/:slug), which
 // need runtime rendering and are handled by a separate plan.
+import { hymns } from '../src/data/hymns.js'
 export const STATIC_CONTENT_ROUTES = [
   '/',
   '/funeral-brochure-designer',
@@ -37,6 +38,7 @@ export function collectPrerenderRoutes({ blogPosts = [], regions = [] } = {}) {
     ...STATIC_CONTENT_ROUTES,
     ...blogPosts.map((p) => `/blog/${p.slug}`),
     ...regions.map((r) => `/funeral-services/${r.slug}`),
+    ...hymns.map((h) => `/hymns/${h.slug}`),
   ]
   return [...new Set(routes)]
 }

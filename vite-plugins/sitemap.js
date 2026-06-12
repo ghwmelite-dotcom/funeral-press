@@ -1,5 +1,6 @@
 import { writeFileSync } from 'fs'
 import { resolve } from 'path'
+import { hymns } from '../src/data/hymns.js'
 
 const BASE = 'https://funeralpress.org'
 
@@ -118,6 +119,11 @@ export function buildSitemap({ blogPosts = [], regions = GHANA_REGIONS } = {}) {
       priority: 0.6,
       lastmod: post.date || today,
     }))
+  }
+
+  // Hymn detail pages
+  for (const hymn of hymns) {
+    entries.push(urlEntry({ path: `/hymns/${hymn.slug}`, changefreq: 'yearly', priority: hymn.publicDomain ? 0.7 : 0.4 }))
   }
 
   return [
