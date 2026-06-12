@@ -56,7 +56,9 @@ export async function verifyStripeSignature(body, header, secret, nowMs) {
   return expected === v1
 }
 
-export function checkoutSessionParams({ productKey, currency, amount, label, interval, email, successUrl, cancelUrl, metadata }) {
+// (productKey travels via `metadata`, not as a session field — callers pass it
+// there; it is intentionally not a parameter here.)
+export function checkoutSessionParams({ currency, amount, label, interval, email, successUrl, cancelUrl, metadata }) {
   const priceData = {
     currency: currency.toLowerCase(),
     unit_amount: amount,
