@@ -153,7 +153,7 @@ describe('UpgradeDialog', () => {
     fireEvent.click(screen.getByTestId('upgrade-confirm-btn'))
 
     await waitFor(() =>
-      expect(mockInitLifetime).toHaveBeenCalledWith('m1', 'premium')
+      expect(mockInitLifetime).toHaveBeenCalledWith('m1', 'premium', 'GHS')
     )
 
     expect(mockNewTransaction).toHaveBeenCalledWith(
@@ -209,7 +209,7 @@ describe('UpgradeDialog', () => {
     fireEvent.click(screen.getByTestId('upgrade-confirm-btn'))
 
     await waitFor(() =>
-      expect(mockSubscribe).toHaveBeenCalledWith('m1', 'heritage')
+      expect(mockSubscribe).toHaveBeenCalledWith('m1', 'heritage', 'GHS')
     )
 
     await waitFor(() =>
@@ -225,7 +225,7 @@ describe('UpgradeDialog', () => {
     fireEvent.click(screen.getByTestId('upgrade-confirm-btn'))
 
     await waitFor(() =>
-      expect(mockSubscribe).toHaveBeenCalledWith('m1', 'premium')
+      expect(mockSubscribe).toHaveBeenCalledWith('m1', 'premium', 'GHS')
     )
   })
 
