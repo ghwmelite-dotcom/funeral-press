@@ -169,6 +169,21 @@ export function buildJsonFeed({ blogPosts = [] } = {}) {
   return `${JSON.stringify(feed, null, 2)}\n`
 }
 
+async function fetchPublishedPosts() {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 5000)
+    const res = await fetch('https://funeralpress-auth-api.ghwmelite.workers.dev/blog/published', { signal: controller.signal })
+    clearTimeout(timer)
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.posts || []
+  } catch {
+    console.warn('[feeds] could not fetch published D1 posts — building with static posts only')
+    return []
+  }
+}
+
 /**
  * Vite plugin that emits dist/rss.xml, dist/atom.xml, and dist/feed.json after
  * the build completes. Runs on closeBundle so it executes after Vite copies
@@ -182,12 +197,16 @@ export default function feedsPlugin(opts = {}) {
   return {
     name: 'funeralpress-feeds',
     apply: 'build',
-    closeBundle() {
+    async closeBundle() {
       const outDir = opts.outDir || 'dist'
+      const dynamicPosts = await fetchPublishedPosts()
+      const staticSlugs = new Set((opts.blogPosts || []).map((p) => p.slug))
+      const mergedPosts = [...(opts.blogPosts || []), ...dynamicPosts.filter((p) => !staticSlugs.has(p.slug))]
+      const mergedOpts = { ...opts, blogPosts: mergedPosts }
       const files = [
-        ['rss.xml', buildRssFeed(opts)],
-        ['atom.xml', buildAtomFeed(opts)],
-        ['feed.json', buildJsonFeed(opts)],
+        ['rss.xml', buildRssFeed(mergedOpts)],
+        ['atom.xml', buildAtomFeed(mergedOpts)],
+        ['feed.json', buildJsonFeed(mergedOpts)],
       ]
       for (const [name, content] of files) {
         const outPath = resolve(outDir, name)

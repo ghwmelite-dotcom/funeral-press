@@ -1,12 +1,40 @@
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import PageMeta from '../../components/seo/PageMeta'
 import blogPosts from '../../data/blogPosts'
 
+const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
+
 export default function BlogPostPage() {
   const { slug } = useParams()
-  const post = blogPosts.find((p) => p.slug === slug)
+  const staticPost = blogPosts.find((p) => p.slug === slug)
+  const [dynamicPost, setDynamicPost] = useState(null)
+  const [loading, setLoading] = useState(!staticPost)
+  const [notFound, setNotFound] = useState(false)
 
-  if (!post) {
+  useEffect(() => {
+    if (staticPost) return
+    setLoading(true)
+    fetch(`${API_BASE}/blog/published/${encodeURIComponent(slug)}`)
+      .then((r) => {
+        if (!r.ok) throw new Error('not found')
+        return r.json()
+      })
+      .then((d) => { setDynamicPost(d.post); setLoading(false) })
+      .catch(() => { setNotFound(true); setLoading(false) })
+  }, [slug, staticPost])
+
+  const post = staticPost || dynamicPost
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!post || notFound) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-center">

@@ -135,6 +135,21 @@ export function buildSitemap({ blogPosts = [], regions = GHANA_REGIONS } = {}) {
   ].join('\n')
 }
 
+async function fetchPublishedPosts() {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 5000)
+    const res = await fetch('https://funeralpress-auth-api.ghwmelite.workers.dev/blog/published', { signal: controller.signal })
+    clearTimeout(timer)
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.posts || []
+  } catch {
+    console.warn('[sitemap] could not fetch published D1 posts — building with static posts only')
+    return []
+  }
+}
+
 /**
  * Vite plugin that emits dist/sitemap.xml after the build completes.
  * Runs on closeBundle, so it executes after Vite copies public/ assets and
@@ -149,8 +164,11 @@ export default function sitemapPlugin(opts = {}) {
   return {
     name: 'funeralpress-sitemap',
     apply: 'build',
-    closeBundle() {
-      const xml = buildSitemap(opts)
+    async closeBundle() {
+      const dynamicPosts = await fetchPublishedPosts()
+      const staticSlugs = new Set((opts.blogPosts || []).map((p) => p.slug))
+      const mergedPosts = [...(opts.blogPosts || []), ...dynamicPosts.filter((p) => !staticSlugs.has(p.slug))]
+      const xml = buildSitemap({ ...opts, blogPosts: mergedPosts })
       const outPath = resolve(opts.outDir || 'dist', 'sitemap.xml')
       writeFileSync(outPath, xml, 'utf8')
       console.log(`[sitemap] wrote ${outPath} (${xml.split('\n').length} lines)`)
