@@ -118,6 +118,14 @@ export default function MemorialCreatorPage() {
           { name: 'Memorial Page Creator', path: '/memorial-page-creator' },
         ]}
         faqs={faqs}
+        howTo={{
+          name: 'How to create an online memorial page',
+          steps: [
+            { name: 'Add their story and photos', text: 'Upload photographs and write the biography for a permanent tribute page.' },
+            { name: 'Add the service details', text: 'Include funeral dates, venues, and a live-stream link for relatives abroad.' },
+            { name: 'Share one link', text: 'Share on WhatsApp — friends worldwide can sign the guest book, light candles, and watch the service.' },
+          ],
+        }}
       />
 
       {/* Breadcrumb */}

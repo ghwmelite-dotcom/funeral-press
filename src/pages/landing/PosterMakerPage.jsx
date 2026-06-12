@@ -119,6 +119,14 @@ export default function PosterMakerPage() {
           { name: 'Funeral Poster Maker', path: '/funeral-poster-maker' },
         ]}
         faqs={faqs}
+        howTo={{
+          name: 'How to make a funeral poster',
+          steps: [
+            { name: 'Choose a poster template', text: 'Select a funeral announcement poster layout sized from A3 to A0.' },
+            { name: 'Add the photo and details', text: 'Upload the portrait and enter the name, dates, and funeral arrangements.' },
+            { name: 'Download or order prints', text: 'Export a print-ready file or order large-format printing delivered in Ghana.' },
+          ],
+        }}
       />
 
       {/* Breadcrumb */}

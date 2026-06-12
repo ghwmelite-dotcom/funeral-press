@@ -114,6 +114,7 @@ export default function RegionPage() {
           { name: region.name, path: `/funeral-services/${region.slug}` },
         ]}
         faqs={faqs}
+        speakable={['.region-intro', 'h1']}
       />
 
       {/* Breadcrumb */}
@@ -136,7 +137,7 @@ export default function RegionPage() {
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 leading-tight">
           Funeral Services in {region.name}, Ghana
         </h1>
-        <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-8">
+        <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-8 region-intro">
           Create beautiful, dignified funeral materials for families across {region.name} region.
           FuneralPress provides professional design tools trusted by bereaved families in {region.capital} and beyond.
         </p>
