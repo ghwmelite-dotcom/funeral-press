@@ -23,10 +23,15 @@ describe('hymn data integrity', () => {
       expect(CATEGORY_NOTES[c].length).toBeGreaterThan(120)
     }
   })
-  it('relatedHymns returns up to 5 same-category hymns, excluding self', () => {
+  it('relatedHymns returns up to 5 hymns, same category first, excluding self', () => {
     const target = hymns[0]
     const related = relatedHymns(target, hymns, 5)
     expect(related.length).toBeLessThanOrEqual(5)
     expect(related.every((h) => h.slug !== target.slug)).toBe(true)
+    // same-category entries must all appear before any cross-category entry
+    const firstCross = related.findIndex((h) => h.category !== target.category)
+    if (firstCross !== -1) {
+      expect(related.slice(firstCross).every((h) => h.category !== target.category)).toBe(true)
+    }
   })
 })

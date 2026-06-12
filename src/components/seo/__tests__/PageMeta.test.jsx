@@ -65,6 +65,22 @@ describe('PageMeta structured data extensions', () => {
     expect(scripts).toContain('Abide With Me')
   })
 
+  it('escapes </script> sequences in JSON-LD fields', async () => {
+    render(
+      <HelmetProvider>
+        <PageMeta title="T" description="D" path="/x"
+          jsonLd={{ '@context': 'https://schema.org', '@type': 'Person', name: 'Evil </script><script>alert(1)</script>' }} />
+      </HelmetProvider>
+    )
+    await waitFor(() => {
+      const scripts = [...document.querySelectorAll('script[type="application/ld+json"]')]
+      const target = scripts.find((s) => s.textContent.includes('Person'))
+      expect(target).toBeTruthy()
+      expect(target.textContent).not.toContain('</script>')
+      expect(JSON.parse(target.textContent).name).toContain('alert(1)') // still valid JSON, content preserved
+    })
+  })
+
   it('emits none of the above when props are absent (no regressions)', async () => {
     render(
       <HelmetProvider>

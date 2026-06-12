@@ -1,6 +1,11 @@
 import { useMemo } from 'react'
 import { Helmet } from 'react-helmet-async'
 
+// JSON-LD is injected via innerHTML; escaping `<` prevents a literal
+// `</script>` inside any field (user or AI supplied) from breaking out of
+// the script tag, while keeping the JSON valid.
+const jsonLdString = (obj) => JSON.stringify(obj).replace(/</g, '\\u003c')
+
 /**
  * Enhanced SEO meta component with structured data support.
  *
@@ -32,7 +37,7 @@ export default function PageMeta({
   const breadcrumbSchema = useMemo(
     () =>
       breadcrumbs?.length
-        ? JSON.stringify({
+        ? jsonLdString({
             '@context': 'https://schema.org',
             '@type': 'BreadcrumbList',
             itemListElement: breadcrumbs.map((crumb, i) => ({
@@ -49,7 +54,7 @@ export default function PageMeta({
   const faqSchema = useMemo(
     () =>
       faqs?.length
-        ? JSON.stringify({
+        ? jsonLdString({
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
             mainEntity: faqs.map((faq) => ({
@@ -68,7 +73,7 @@ export default function PageMeta({
   const articleSchema = useMemo(
     () =>
       type === 'article' && article
-        ? JSON.stringify({
+        ? jsonLdString({
             '@context': 'https://schema.org',
             '@type': 'Article',
             headline: title,
@@ -105,7 +110,7 @@ export default function PageMeta({
   const speakableSchema = useMemo(
     () =>
       speakable?.length
-        ? JSON.stringify({
+        ? jsonLdString({
             '@context': 'https://schema.org',
             '@type': 'WebPage',
             '@id': url,
@@ -121,7 +126,7 @@ export default function PageMeta({
   const howToSchema = useMemo(
     () =>
       howTo?.steps?.length
-        ? JSON.stringify({
+        ? jsonLdString({
             '@context': 'https://schema.org',
             '@type': 'HowTo',
             name: howTo.name,
@@ -137,7 +142,7 @@ export default function PageMeta({
   )
 
   const extraJsonLd = useMemo(
-    () => (jsonLd ? JSON.stringify(jsonLd) : null),
+    () => (jsonLd ? jsonLdString(jsonLd) : null),
     [jsonLd],
   )
 
