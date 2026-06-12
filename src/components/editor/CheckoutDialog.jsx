@@ -151,6 +151,11 @@ export default function CheckoutDialog() {
     try {
       const currentCurrency = useCurrencyStore.getState().currency
       if (providerFor(currentCurrency) === 'stripe') {
+        // Persist the pending unlock across the full-page redirect (same as the
+        // one-time path) so the originating design auto-unlocks on return.
+        if (pendingDownload) {
+          try { localStorage.setItem('fp-pending-download', JSON.stringify(pendingDownload)) } catch { /* ignore */ }
+        }
         const data = await apiFetch('/stripe/checkout', {
           method: 'POST',
           body: JSON.stringify({ productKey: planKey, currency: currentCurrency }),
@@ -167,7 +172,7 @@ export default function CheckoutDialog() {
       setErrorMsg(err.message || 'Failed to start subscription')
       setStage('error')
     }
-  }, [])
+  }, [pendingDownload])
 
   const handleGoogleSignIn = useCallback(() => {
     // Trigger Google One Tap / sign-in flow
@@ -342,7 +347,7 @@ export default function CheckoutDialog() {
               ))}
 
               {/* Institutional partner plans */}
-              {user?.partnerType && (
+              {user?.partnerType && currency === 'GHS' && (
                 <>
                   <div className="pt-4 pb-1">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Institutional Partner</p>
