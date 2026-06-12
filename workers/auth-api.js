@@ -23,6 +23,8 @@ import {
 } from './familyReferral.js'
 import { PRODUCTS, priceFor, currencyForCountry, providerFor, isSubscription } from './priceBook.js'
 import { stripeRequest, verifyStripeSignature, checkoutSessionParams } from './stripeClient.js'
+import { draftPrompt, parseDraft, draftSlug } from './blogDraft.js'
+import { formatDelta, reportHtml } from './utils/growthReport.js'
 
 // FuneralPress Auth API Worker
 // Bindings: DB (D1), IMAGES (R2), JWT_SECRET (secret), GOOGLE_CLIENT_ID (var)
@@ -3580,6 +3582,178 @@ async function handleAdminUpdateVenue(request, env, venueId) {
   return json({ ok: true }, 200, request)
 }
 
+// ─── Blog draft generation (§4.6) ────────────────────────────────────────────
+
+async function generateBlogDraft(env) {
+  const topicRow = await env.DB.prepare(
+    'SELECT id, topic FROM blog_topics WHERE used_at IS NULL ORDER BY id LIMIT 1'
+  ).first()
+  if (!topicRow) {
+    notifyAdmin(env, 'blog_draft', 'Blog topic queue is empty — add topics', {})
+    return
+  }
+
+  const result = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    messages: [
+      { role: 'system', content: 'You are a compassionate funeral-industry content writer for a Ghanaian audience. You MUST respond with valid JSON only — no markdown, no code blocks, no extra text.' },
+      { role: 'user', content: draftPrompt(topicRow.topic) },
+    ],
+    max_tokens: 3500,
+  })
+
+  let draft
+  try {
+    draft = parseDraft(result.response || '')
+  } catch (e) {
+    // One retry on malformed output, then surface to the owner
+    const retry = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        { role: 'system', content: 'Respond with ONLY the corrected, valid JSON object. No other text.' },
+        { role: 'user', content: `This JSON was invalid (${e.message}). Fix it:\n${(result.response || '').slice(0, 6000)}` },
+      ],
+      max_tokens: 3500,
+    })
+    draft = parseDraft(retry.response || '') // throws to scheduled()'s catch if still bad
+  }
+
+  const slug = draftSlug(draft.title)
+  await env.DB.prepare(
+    `INSERT INTO blog_posts (id, slug, title, description, keywords, content, status, source, topic)
+     VALUES (?, ?, ?, ?, ?, ?, 'draft', 'ai', ?)
+     ON CONFLICT(slug) DO NOTHING`
+  ).bind(generateId(), slug, draft.title, draft.description, JSON.stringify(draft.keywords), JSON.stringify(draft.content), topicRow.topic).run()
+  await env.DB.prepare("UPDATE blog_topics SET used_at = datetime('now') WHERE id = ?").bind(topicRow.id).run()
+
+  notifyAdmin(env, 'blog_draft', `Blog draft ready for review: ${draft.title}`, { slug, topic: topicRow.topic })
+}
+
+// ─── Blog admin handlers (§4.6) ──────────────────────────────────────────────
+
+async function handleAdminBlogDrafts(request, env) {
+  const auth = await requireAdmin(request, env)
+  if (auth.error) return auth.error
+  const rows = await env.DB.prepare(
+    "SELECT id, slug, title, description, topic, status, created_at, published_at FROM blog_posts ORDER BY created_at DESC LIMIT 100"
+  ).all()
+  return json({ posts: rows.results || [] }, 200, request)
+}
+
+async function handleAdminBlogGet(request, env, id) {
+  const auth = await requireAdmin(request, env)
+  if (auth.error) return auth.error
+  const row = await env.DB.prepare('SELECT * FROM blog_posts WHERE id = ?').bind(id).first()
+  if (!row) return error('Not found', 404, request)
+  return json({ post: { ...row, keywords: JSON.parse(row.keywords || '[]'), content: JSON.parse(row.content || '[]') } }, 200, request)
+}
+
+async function handleAdminBlogUpdate(request, env, id) {
+  const auth = await requireAdmin(request, env)
+  if (auth.error) return auth.error
+  const { title, description, keywords, content } = await request.json()
+  const existing = await env.DB.prepare('SELECT id FROM blog_posts WHERE id = ?').bind(id).first()
+  if (!existing) return error('Not found', 404, request)
+  await env.DB.prepare(
+    'UPDATE blog_posts SET title = COALESCE(?, title), description = COALESCE(?, description), keywords = COALESCE(?, keywords), content = COALESCE(?, content) WHERE id = ?'
+  ).bind(title || null, description || null, keywords ? JSON.stringify(keywords) : null, content ? JSON.stringify(content) : null, id).run()
+  return json({ ok: true }, 200, request)
+}
+
+async function handleAdminBlogStatus(request, env, id, status) {
+  const auth = await requireAdmin(request, env)
+  if (auth.error) return auth.error
+  if (!['published', 'rejected', 'draft'].includes(status)) return error('Bad status', 400, request)
+  const publishedAt = status === 'published' ? "datetime('now')" : 'NULL'
+  const result = await env.DB.prepare(
+    `UPDATE blog_posts SET status = ?, published_at = ${publishedAt} WHERE id = ?`
+  ).bind(status, id).run()
+  if (!result.meta.changes) return error('Not found', 404, request)
+  return json({ ok: true, status }, 200, request)
+}
+
+// ─── Blog public handlers (§4.6) — cached 5 minutes ─────────────────────────
+
+async function handlePublicBlogList(request, env) {
+  const rows = await env.DB.prepare(
+    "SELECT slug, title, description, keywords, published_at FROM blog_posts WHERE status = 'published' ORDER BY published_at DESC LIMIT 100"
+  ).all()
+  const posts = (rows.results || []).map((r) => ({ ...r, keywords: JSON.parse(r.keywords || '[]'), date: (r.published_at || '').slice(0, 10) }))
+  return withSecurityHeaders(new Response(JSON.stringify({ posts }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300', ...corsHeaders(request) },
+  }))
+}
+
+async function handlePublicBlogPost(request, env, slug) {
+  const row = await env.DB.prepare(
+    "SELECT slug, title, description, keywords, content, published_at FROM blog_posts WHERE slug = ? AND status = 'published'"
+  ).bind(slug).first()
+  if (!row) return error('Not found', 404, request)
+  return withSecurityHeaders(new Response(JSON.stringify({ post: { ...row, keywords: JSON.parse(row.keywords || '[]'), content: JSON.parse(row.content || '[]'), date: (row.published_at || '').slice(0, 10) } }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300', ...corsHeaders(request) },
+  }))
+}
+
+// ─── Weekly growth report (§5.3) ─────────────────────────────────────────────
+
+async function weekCounts(env, sql, binds = []) {
+  const current = await env.DB.prepare(sql.replaceAll('{FROM}', "datetime('now','-7 days')").replaceAll('{TO}', "datetime('now')")).bind(...binds).first()
+  const previous = await env.DB.prepare(sql.replaceAll('{FROM}', "datetime('now','-14 days')").replaceAll('{TO}', "datetime('now','-7 days')")).bind(...binds).first()
+  return { current: current?.n || 0, previous: previous?.n || 0 }
+}
+
+async function sendGrowthReport(env) {
+  const signups = await weekCounts(env, 'SELECT COUNT(*) as n FROM users WHERE created_at >= {FROM} AND created_at < {TO}')
+  const loopSignups = await weekCounts(env, "SELECT COUNT(*) as n FROM analytics_events WHERE event_type = 'loop_signup' AND created_at >= {FROM} AND created_at < {TO}")
+  const referralRewards = await weekCounts(env, "SELECT COUNT(*) as n FROM referrals WHERE type = 'family' AND reward_status = 'granted' AND reward_granted_at >= {FROM} AND reward_granted_at < {TO}")
+  const memorialsCreated = await weekCounts(env, "SELECT COUNT(*) as n FROM analytics_events WHERE event_type = 'memorial_page_created' AND created_at >= {FROM} AND created_at < {TO}")
+
+  const surfaceRows = await env.DB.prepare(
+    `SELECT json_extract(metadata, '$.surface') as surface,
+            SUM(CASE WHEN event_type = 'loop_impression' THEN 1 ELSE 0 END) as impressions,
+            SUM(CASE WHEN event_type = 'loop_click' THEN 1 ELSE 0 END) as clicks,
+            SUM(CASE WHEN event_type = 'loop_signup' THEN 1 ELSE 0 END) as signups
+     FROM analytics_events
+     WHERE event_type IN ('loop_impression','loop_click','loop_signup')
+       AND created_at >= datetime('now','-7 days')
+     GROUP BY surface ORDER BY impressions DESC`
+  ).all()
+
+  const revenueRows = await env.DB.prepare(
+    `SELECT COALESCE(currency, 'GHS') as currency, COALESCE(SUM(amount_pesewas), 0) as total
+     FROM orders WHERE status = 'success' AND paid_at >= datetime('now','-7 days')
+     GROUP BY currency`
+  ).all()
+
+  const today = new Date()
+  const weekAgo = new Date(Date.now() - 7 * 86400000)
+  const html = reportHtml({
+    weekLabel: `${weekAgo.toISOString().slice(0, 10)} — ${today.toISOString().slice(0, 10)}`,
+    signups, loopSignups, referralRewards, memorialsCreated,
+    surfaces: (surfaceRows.results || []).filter((s) => s.surface),
+    revenue: revenueRows.results || [],
+  })
+
+  if (!env.RESEND_API_KEY) {
+    console.warn('[growth-report] RESEND_API_KEY missing; skipping email')
+    return
+  }
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'FuneralPress <notifications@funeralpress.org>',
+      to: [env.ADMIN_EMAIL || 'ohwpstudios@gmail.com'],
+      subject: `Weekly growth report — ${today.toISOString().slice(0, 10)}`,
+      html,
+    }),
+  })
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '')
+    console.error('[growth-report] Resend non-2xx:', res.status, errBody.slice(0, 200))
+  }
+}
+
 // ─── Router ─────────────────────────────────────────────────────────────────
 
 const handler = {
@@ -3650,6 +3824,11 @@ const handler = {
       // Obituary sitemap (public, cached)
       if (method === 'GET' && path === '/sitemap-obituaries.xml') return await handleObituarySitemap(request, env)
 
+      // Public blog endpoints (cached 5 minutes)
+      if (method === 'GET' && path === '/blog/published') return await handlePublicBlogList(request, env)
+      const publicBlogMatch = method === 'GET' && path.match(/^\/blog\/published\/([^/]+)$/)
+      if (publicBlogMatch) return await handlePublicBlogPost(request, env, decodeURIComponent(publicBlogMatch[1]))
+
       // Public guest book, obituary, gallery
       const guestBookMatch = method === 'GET' && path.match(/^\/guest-book\/([^/]+)$/)
       if (guestBookMatch) return await handleGetGuestBook(request, env, guestBookMatch[1])
@@ -3701,6 +3880,16 @@ const handler = {
         if (method === 'GET' && path === '/admin/analytics/funnel') return await handleAdminFunnel(request, env)
         const adminPrintMatch = path.match(/^\/admin\/print-orders\/([^/]+)$/)
         if (adminPrintMatch && method === 'PUT') return await handleAdminUpdatePrintOrder(request, env, adminPrintMatch[1])
+
+        // Admin blog draft review routes (§4.6)
+        if (method === 'GET' && path === '/admin/blog') return await handleAdminBlogDrafts(request, env)
+        const adminBlogMatch = path.match(/^\/admin\/blog\/([^/]+)$/)
+        if (method === 'GET' && adminBlogMatch) return await handleAdminBlogGet(request, env, adminBlogMatch[1])
+        if (method === 'PUT' && adminBlogMatch) return await handleAdminBlogUpdate(request, env, adminBlogMatch[1])
+        const adminBlogStatusMatch = path.match(/^\/admin\/blog\/([^/]+)\/(publish|reject)$/)
+        if (method === 'POST' && adminBlogStatusMatch) {
+          return await handleAdminBlogStatus(request, env, adminBlogStatusMatch[1], adminBlogStatusMatch[2] === 'publish' ? 'published' : 'rejected')
+        }
 
         // Admin venue routes
         if (method === 'POST' && path === '/admin/venues') return await handleAdminCreateVenue(request, env)
@@ -3898,6 +4087,16 @@ const handler = {
     } else if (cron === '0 7 * * *') {
       ctx.waitUntil(runAnniversarySweep(env).catch((e) => {
         console.error('[scheduled] runAnniversarySweep failed:', e?.message || e)
+        Sentry.captureException(e)
+      }))
+    } else if (cron === '0 6 * * 3') {
+      ctx.waitUntil(generateBlogDraft(env).catch((e) => {
+        console.error('[scheduled] generateBlogDraft failed:', e?.message || e)
+        Sentry.captureException(e)
+      }))
+    } else if (cron === '0 9 * * 1') {
+      ctx.waitUntil(sendGrowthReport(env).catch((e) => {
+        console.error('[scheduled] sendGrowthReport failed:', e?.message || e)
         Sentry.captureException(e)
       }))
     } else {

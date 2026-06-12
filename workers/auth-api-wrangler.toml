@@ -15,6 +15,7 @@ PAYSTACK_PLAN_ANNUAL = "PLN_2ijmz43rukw84ql"
 PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL = "PLN_cjvqwyiazu993a2"
 PAYSTACK_PLAN_MEMORIAL_HERITAGE_ANNUAL = "PLN_359u3n0v2uliz3y"
 SHOTSTACK_ENV = "stage"   # 'stage' = free sandbox (watermarked) · 'v1' = production
+ADMIN_EMAIL = "ohwpstudios@gmail.com"
 
 [[d1_databases]]
 binding = "DB"
@@ -52,11 +53,13 @@ pattern = "auth-api.funeralpress.org/*"
 zone_name = "funeralpress.org"
 
 [triggers]
-# Three daily crons — dispatch lives in auth-api.js scheduled() by cron string.
-#   03:00 UTC  D1 cleanup (analytics_events 90d, phone_otps 48h,
-#              processed_webhooks 30d). Runs an hour before donation-api's
-#              04:00 UTC reconciliation to avoid DELETE/SELECT contention.
-#   07:00 UTC  Anniversary reminder sweep (birthday / death anniversary / holidays).
-#              Africa/Accra is UTC+0 year-round so 07:00 UTC == 07:00 local.
-#   08:00 UTC  Subscription dunning sweep (Day 1 / Day 3 / Day 7-downgrade).
-crons = ["0 3 * * *", "0 7 * * *", "0 8 * * *"]
+# Five crons — dispatch lives in auth-api.js scheduled() by cron string.
+#   03:00 UTC daily    D1 cleanup (analytics_events 90d, phone_otps 48h,
+#                      processed_webhooks 30d). Runs an hour before donation-api's
+#                      04:00 UTC reconciliation to avoid DELETE/SELECT contention.
+#   07:00 UTC daily    Anniversary reminder sweep (birthday / death anniversary / holidays).
+#                      Africa/Accra is UTC+0 year-round so 07:00 UTC == 07:00 local.
+#   08:00 UTC daily    Subscription dunning sweep (Day 1 / Day 3 / Day 7-downgrade).
+#   06:00 UTC Wed      AI blog draft generation (§4.6).
+#   09:00 UTC Mon      Weekly growth report email (§5.3).
+crons = ["0 3 * * *", "0 7 * * *", "0 8 * * *", "0 6 * * 3", "0 9 * * 1"]
