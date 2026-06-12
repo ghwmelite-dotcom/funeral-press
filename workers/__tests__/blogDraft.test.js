@@ -35,6 +35,17 @@ describe('parseDraft', () => {
     expect(() => parseDraft(JSON.stringify({ title: 'x', description: 'y'.repeat(60), keywords: [], content: [{ type: 'video', text: 'no' }] }))).toThrow()
     expect(() => parseDraft('not json')).toThrow()
   })
+  it('rejects cta blocks with missing or off-allowlist links', () => {
+    const withBadCta = (cta) => JSON.stringify({
+      title: 'x', description: 'y'.repeat(60), keywords: [],
+      content: [
+        { type: 'paragraph', text: 'a' }, { type: 'paragraph', text: 'b' }, cta,
+      ],
+    })
+    expect(() => parseDraft(withBadCta({ type: 'cta', text: 'Go' }))).toThrow(/cta link/i)
+    expect(() => parseDraft(withBadCta({ type: 'cta', text: 'Go', link: 'https://evil.example' }))).toThrow(/cta link/i)
+    expect(parseDraft(withBadCta({ type: 'cta', text: 'Go', link: '/hymns' })).content).toHaveLength(3)
+  })
 })
 
 describe('draftSlug', () => {

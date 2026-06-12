@@ -3,6 +3,7 @@
 // in auth-api.js owns DB and AI bindings. Nothing here auto-publishes.
 
 const ALLOWED_BLOCK_TYPES = ['paragraph', 'heading', 'list', 'cta']
+const ALLOWED_CTA_LINKS = ['/budget-planner', '/funeral-brochure-designer', '/memorial-page-creator', '/hymns']
 
 export function draftPrompt(topic) {
   return [
@@ -31,6 +32,7 @@ export function parseDraft(raw) {
     if (!ALLOWED_BLOCK_TYPES.includes(block.type)) throw new Error(`Bad block type: ${block.type}`)
     if (block.type === 'list' && !Array.isArray(block.items)) throw new Error('List block missing items')
     if (block.type !== 'list' && typeof block.text !== 'string') throw new Error(`Block missing text: ${block.type}`)
+    if (block.type === 'cta' && !ALLOWED_CTA_LINKS.includes(block.link)) throw new Error(`Bad cta link: ${block.link}`)
   }
   return draft
 }

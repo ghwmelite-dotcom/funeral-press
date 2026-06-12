@@ -136,7 +136,8 @@ export default function BlogPostPage() {
             }
 
             if (section.type === 'cta') {
-              const isExternal = section.link.startsWith('http')
+              if (!section.link) return null
+              const isExternal = section.link?.startsWith('http')
               return (
                 <div key={i} className="my-8 text-center">
                   {isExternal ? (
