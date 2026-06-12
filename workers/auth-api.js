@@ -940,6 +940,10 @@ async function markOrderPaid(env, order) {
 async function fulfillStripeOneTime(env, session) {
   const order = await env.DB.prepare('SELECT * FROM orders WHERE stripe_session_id = ?').bind(session.id).first()
   if (!order) return
+  if (session.amount_total != null && session.amount_total !== order.amount_pesewas) {
+    console.error('[stripe] amount mismatch', { sessionId: session.id, expected: order.amount_pesewas, got: session.amount_total })
+    return
+  }
   await markOrderPaid(env, order) // idempotent via status === 'success' early return
 }
 
@@ -1063,6 +1067,13 @@ async function handleStripeCheckout(request, env, userId) {
     if (existing && existing.status === 'active') return error('Already have an active subscription', 400, request)
   }
 
+  if (isSubscription(productKey) && product.memorial) {
+    const existingMemorialSub = await env.DB.prepare(
+      "SELECT id FROM subscriptions WHERE memorial_id = ? AND status = 'active'"
+    ).bind(memorialId).first()
+    if (existingMemorialSub) return error('This memorial already has an active subscription', 400, request)
+  }
+
   const amount = priceFor(productKey, currency)
   const metadata = {
     userId,
@@ -1075,17 +1086,24 @@ async function handleStripeCheckout(request, env, userId) {
     ? `${env.CORS_ORIGIN}/memorial/${encodeURIComponent(memorialId)}?stripe_session={CHECKOUT_SESSION_ID}`
     : `${env.CORS_ORIGIN}/my-designs?stripe_session={CHECKOUT_SESSION_ID}`
 
-  const session = await stripeRequest(env, '/checkout/sessions', checkoutSessionParams({
-    productKey,
-    currency,
-    amount,
-    label: product.label,
-    interval: product.interval || null,
-    email: user.email,
-    successUrl,
-    cancelUrl: `${env.CORS_ORIGIN}/`,
-    metadata,
-  }))
+  let session
+  try {
+    session = await stripeRequest(env, '/checkout/sessions', checkoutSessionParams({
+      productKey,
+      currency,
+      amount,
+      label: product.label,
+      interval: product.interval || null,
+      email: user.email,
+      successUrl,
+      cancelUrl: `${env.CORS_ORIGIN}/`,
+      metadata,
+    }))
+  } catch (e) {
+    console.error('[stripe] checkout session creation failed', e)
+    Sentry.captureException(e)
+    return error('Payment provider error', 502, request)
+  }
 
   // One-time credit purchases get a pending orders row so markOrderPaid can
   // grant credits idempotently from either the webhook or the verify endpoint.
@@ -1105,7 +1123,14 @@ async function handleStripeVerify(request, env, userId) {
   const sessionId = url.searchParams.get('session_id')
   if (!sessionId) return error('Missing session_id', 400, request)
 
-  const session = await stripeRequest(env, `/checkout/sessions/${encodeURIComponent(sessionId)}`, null, 'GET')
+  let session
+  try {
+    session = await stripeRequest(env, `/checkout/sessions/${encodeURIComponent(sessionId)}`, null, 'GET')
+  } catch (e) {
+    console.error('[stripe] session retrieval failed', e)
+    Sentry.captureException(e)
+    return error('Payment provider error', 502, request)
+  }
   if (session.metadata?.userId !== userId) return error('Not your session', 403, request)
   if (session.payment_status !== 'paid') return json({ verified: false }, 200, request)
 
@@ -2678,6 +2703,12 @@ async function handleMemorialSubscriptionCreate(request, env, userId, memorialId
     console.error('[memorial-subscribe] missing plan code env var:', planCodeEnvVar)
     return error('Subscription plan not configured', 500, request)
   }
+
+  // Prevent stacking multiple live subscriptions on one memorial (double-billing)
+  const existingMemorialSub = await env.DB.prepare(
+    "SELECT id FROM subscriptions WHERE memorial_id = ? AND status = 'active'"
+  ).bind(memorialId).first()
+  if (existingMemorialSub) return error('This memorial already has an active subscription', 400, request)
 
   const callbackUrl = `${env.CORS_ORIGIN}/memorial/${encodeURIComponent(memorialId)}`
 
