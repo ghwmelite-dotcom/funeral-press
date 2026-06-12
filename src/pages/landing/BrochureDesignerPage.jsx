@@ -1,6 +1,9 @@
 import { useNavigate, Link } from 'react-router-dom'
 import PageMeta from '../../components/seo/PageMeta'
 import FAQSection from '../../components/seo/FAQSection'
+import { useCurrencyStore } from '../../stores/currencyStore'
+import { priceFor, formatMoney } from '../../config/priceBook'
+import CurrencySwitcher from '../../components/pricing/CurrencySwitcher'
 import {
   ArrowRight,
   Image,
@@ -93,14 +96,15 @@ const faqs = [
   },
 ]
 
-const pricing = [
-  { name: 'Single', price: 'GHS 35', desc: 'One brochure design download', cta: 'Get Started', primary: false },
-  { name: 'Bundle', price: 'GHS 75', desc: 'Brochure + poster + invitation', cta: 'Best Value', primary: true },
-  { name: 'Suite', price: 'GHS 120', desc: 'All designs, unlimited downloads', cta: 'Go Unlimited', primary: false },
+const PRICING_PLANS = [
+  { key: 'single', name: 'Single', desc: 'One brochure design download', cta: 'Get Started', primary: false },
+  { key: 'bundle', name: 'Bundle', desc: 'Brochure + poster + invitation', cta: 'Best Value', primary: true },
+  { key: 'suite', name: 'Suite', desc: 'All designs, unlimited downloads', cta: 'Go Unlimited', primary: false },
 ]
 
 export default function BrochureDesignerPage() {
   const navigate = useNavigate()
+  const currency = useCurrencyStore((s) => s.currency)
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -210,11 +214,14 @@ export default function BrochureDesignerPage() {
       {/* Pricing */}
       <section className="max-w-4xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-semibold mb-2 text-center">Simple, Transparent Pricing</h2>
-        <p className="text-muted-foreground text-center mb-10">Pay once, download your print-ready PDF. No subscriptions.</p>
+        <p className="text-muted-foreground text-center mb-4">Pay once, download your print-ready PDF. No subscriptions.</p>
+        <div className="flex justify-end mb-6">
+          <CurrencySwitcher />
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {pricing.map(({ name, price, desc, cta, primary }) => (
+          {PRICING_PLANS.map(({ key, name, desc, cta, primary }) => (
             <div
-              key={name}
+              key={key}
               className={`rounded-2xl p-7 border flex flex-col items-center text-center transition-all ${
                 primary
                   ? 'bg-primary text-white border-primary shadow-lg scale-105'
@@ -222,7 +229,7 @@ export default function BrochureDesignerPage() {
               }`}
             >
               <p className={`text-sm font-medium mb-1 ${primary ? 'text-white/70' : 'text-muted-foreground'}`}>{name}</p>
-              <p className={`text-3xl font-bold mb-2 ${primary ? 'text-white' : 'text-foreground'}`}>{price}</p>
+              <p className={`text-3xl font-bold mb-2 ${primary ? 'text-white' : 'text-foreground'}`}>{formatMoney(priceFor(key, currency), currency)}</p>
               <p className={`text-sm mb-6 ${primary ? 'text-white/80' : 'text-muted-foreground'}`}>{desc}</p>
               <button
                 onClick={() => navigate('/editor')}
