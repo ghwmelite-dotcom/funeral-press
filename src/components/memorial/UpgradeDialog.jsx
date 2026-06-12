@@ -19,6 +19,7 @@ import { useNotification } from '../ui/notification.jsx'
 import { useCurrencyStore } from '../../stores/currencyStore'
 import { priceFor, providerFor, formatMoney } from '../../config/priceBook'
 import CurrencySwitcher from '../pricing/CurrencySwitcher'
+import { apiFetch } from '../../utils/apiClient'
 
 // Human-readable labels for each feature key, ordered for display
 const FEATURE_LABELS = [
@@ -191,8 +192,7 @@ export default function UpgradeDialog({ memorialId, open, onOpenChange, onSucces
         : `memorial_${selectedTier}_annual`
 
       if (providerFor(currentCurrency) === 'stripe') {
-        const { apiFetch: fetchApi } = await import('../../utils/apiClient')
-        const data = await fetchApi('/stripe/checkout', {
+        const data = await apiFetch('/stripe/checkout', {
           method: 'POST',
           body: JSON.stringify({ productKey, currency: currentCurrency, memorialId }),
         })
