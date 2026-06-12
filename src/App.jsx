@@ -66,6 +66,7 @@ const BrochureDesignerPage = lazy(() => import('./pages/landing/BrochureDesigner
 const PosterMakerPage = lazy(() => import('./pages/landing/PosterMakerPage'))
 const MemorialCreatorPage = lazy(() => import('./pages/landing/MemorialCreatorPage'))
 const ProgrammeBookletPage = lazy(() => import('./pages/landing/ProgrammeBookletPage'))
+const DiasporaPage = lazy(() => import('./pages/landing/DiasporaPage'))
 const DonatePage = lazy(() => import('./pages/DonatePage.jsx'))
 const DonationThanksPage = lazy(() => import('./pages/DonationThanksPage.jsx'))
 const FamilyHeadApprovalPage = lazy(() => import('./pages/FamilyHeadApprovalPage.jsx'))
@@ -189,6 +190,7 @@ export default function App() {
               <Route path="/funeral-poster-maker" element={<PosterMakerPage />} />
               <Route path="/memorial-page-creator" element={<MemorialCreatorPage />} />
               <Route path="/funeral-programme-booklet" element={<ProgrammeBookletPage />} />
+              <Route path="/diaspora/:slug" element={<DiasporaPage />} />
               <Route path="/m/:slug/donate" element={<DonatePage />} />
               <Route path="/m/:slug/donation-thanks" element={<DonationThanksPage />} />
               <Route path="/approve/:token" element={<FamilyHeadApprovalPage />} />

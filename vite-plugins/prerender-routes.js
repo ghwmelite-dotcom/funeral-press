@@ -17,6 +17,12 @@ export const STATIC_CONTENT_ROUTES = [
   '/venues',
   '/blog',
   '/privacy/donations',
+  // Diaspora landing pages (spec §3.4)
+  '/diaspora/plan-a-funeral-in-ghana-from-abroad',
+  '/diaspora/watch-a-funeral-from-abroad',
+  '/diaspora/funeral-order-of-service-template',
+  '/diaspora/send-condolences-to-ghana',
+  '/diaspora/nigeria',
 ]
 
 /**

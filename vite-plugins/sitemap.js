@@ -46,6 +46,12 @@ const STATIC_ROUTES = [
   { path: '/guest-book-creator', changefreq: 'monthly', priority: 0.5 },
   { path: '/obituary-creator', changefreq: 'monthly', priority: 0.5 },
   { path: '/privacy/donations', changefreq: 'yearly', priority: 0.3 },
+  // Diaspora landing pages (spec §3.4)
+  { path: '/diaspora/plan-a-funeral-in-ghana-from-abroad', changefreq: 'monthly', priority: 0.9 },
+  { path: '/diaspora/watch-a-funeral-from-abroad', changefreq: 'monthly', priority: 0.8 },
+  { path: '/diaspora/funeral-order-of-service-template', changefreq: 'monthly', priority: 0.9 },
+  { path: '/diaspora/send-condolences-to-ghana', changefreq: 'monthly', priority: 0.8 },
+  { path: '/diaspora/nigeria', changefreq: 'monthly', priority: 0.8 },
 ]
 
 // 16 Ghana regions for /funeral-services/:region (matches src/data/regions.js).
