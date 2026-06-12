@@ -5,6 +5,7 @@ import { useThemeStore } from '../../stores/themeStore'
 import { useAuthStore } from '../../stores/authStore'
 import { SignInPopover } from '../auth/SignInPopover'
 import UserMenu from '../auth/UserMenu'
+import { KenteBand } from '../ceremonial'
 
 // Persistent header for the homepage and content/browse surfaces so the brand +
 // controls stay visible while scrolling. NOT shown on editors (own toolbars),
@@ -84,6 +85,7 @@ export default function SiteHeader() {
           {user ? <UserMenu onDark={transparent} /> : <SignInPopover onDark={transparent} />}
         </div>
       </div>
+      {!transparent && <KenteBand size="page" />}
     </header>
   )
 }

@@ -86,6 +86,8 @@ import LoadSharedDialog from '../components/layout/LoadSharedDialog'
 import PartnerBanner from '../components/landing/PartnerBanner'
 import FAQSection from '../components/seo/FAQSection'
 import { captureReferralCode } from '../utils/referralTracker'
+import { useThemeStore } from '../stores/themeStore'
+import { AuroraField, AdinkraMark } from '../components/ceremonial'
 
 const FEATURES = [
   { icon: Palette, title: '9 Premium Themes', desc: 'From classic Black & Gold to bold Kente Gold — 9 beautiful themes' },
@@ -172,6 +174,7 @@ export default function LandingPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const user = useAuthStore((s) => s.user)
+  const { theme } = useThemeStore()
   const getReferralLink = useAuthStore((s) => s.getReferralLink)
   const store = useBrochureStore()
   const brochures = store.brochuresList
@@ -486,35 +489,23 @@ export default function LandingPage() {
       {/* Migration dialog (shown on first login with existing local designs) */}
       <MigrationDialog />
 
-      {/* ═══ Hero — cinematic obsidian + gold brand moment (fixed dark) ═══ */}
-      <section className="relative overflow-hidden" style={{ backgroundColor: '#08080C' }}>
+      {/* ═══ Hero — cinematic ceremonial brand moment ═══ */}
+      <section className="relative overflow-hidden" style={{ backgroundColor: 'var(--ceremonial-canvas)' }}>
+        <AuroraField twinkles={4} mist={theme === 'light'} />
+        <AdinkraMark
+          symbol="adinkrahene"
+          variant="watermark"
+          className="absolute right-[-40px] top-1/2 -translate-y-1/2 pointer-events-none"
+        />
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">
           {/* Top spotlight */}
-          <div className="absolute inset-x-0 top-0 h-[480px]" style={{ background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(232,199,102,0.12), transparent 70%)' }} />
-          {/* Drifting gold aurora */}
-          <div className="absolute rounded-full animate-aurora-drift" style={{ width: 720, height: 720, top: -260, right: -180, background: 'radial-gradient(circle, rgba(232,199,102,0.22), transparent 60%)', filter: 'blur(90px)' }} />
-          <div className="absolute rounded-full animate-aurora-drift" style={{ width: 560, height: 560, bottom: -260, left: -200, background: 'radial-gradient(circle, rgba(196,140,60,0.14), transparent 60%)', filter: 'blur(90px)', animationDelay: '5s' }} />
+          <div className="absolute inset-x-0 top-0 h-[480px]" style={{ background: 'radial-gradient(ellipse 60% 100% at 50% 0%, var(--ceremonial-aurora-gold), transparent 70%)' }} />
           {/* Faint lattice motif */}
           <div className="absolute inset-0" style={{ opacity: 0.04, backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M22 0L44 22L22 44L0 22z' fill='none' stroke='%23E8C766' stroke-width='1'/%3E%3C/svg%3E\")", backgroundSize: '44px 44px' }} />
-          {/* Shimmer sweep */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute inset-y-0 w-1/3 animate-shimmer-sweep" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.045), transparent)' }} />
-          </div>
           {/* Grain */}
           <div className="absolute inset-0" style={{ opacity: 0.5, mixBlendMode: 'overlay', backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E\")" }} />
-          {/* Twinkling gold accents */}
-          {[
-            { top: '18%', left: '12%', s: 3, d: '0s' },
-            { top: '32%', left: '46%', s: 2, d: '1.2s' },
-            { top: '24%', left: '72%', s: 2.5, d: '2s' },
-            { top: '62%', left: '24%', s: 2, d: '0.6s' },
-            { top: '70%', left: '60%', s: 3, d: '1.6s' },
-            { top: '14%', left: '88%', s: 2, d: '2.4s' },
-          ].map((p, i) => (
-            <span key={i} className="absolute rounded-full animate-twinkle" style={{ top: p.top, left: p.left, width: p.s, height: p.s, background: '#F6E2A0', boxShadow: '0 0 8px 1px rgba(246,226,160,0.8)', animationDelay: p.d }} />
-          ))}
           {/* Bottom fade */}
-          <div className="absolute inset-x-0 bottom-0 h-32" style={{ background: 'linear-gradient(to bottom, transparent, #08080C)' }} />
+          <div className="absolute inset-x-0 bottom-0 h-32" style={{ background: 'linear-gradient(to bottom, transparent, var(--ceremonial-canvas))' }} />
         </div>
 
         <div className="relative max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-16 sm:pt-20 pb-20 sm:pb-28">
@@ -522,13 +513,13 @@ export default function LandingPage() {
             {/* Left: text content */}
             <div className="flex-1 text-center lg:text-left">
               <div className="inline-flex items-center gap-2.5 mb-7">
-                <span className="h-px w-7" style={{ background: 'linear-gradient(90deg, transparent, #E8C766)' }} />
-                <span className="text-[11px] sm:text-xs uppercase tracking-[0.3em] font-medium" style={{ color: '#E8C766' }}>A dignified farewell, beautifully made</span>
+                <span className="h-px w-7" style={{ background: 'linear-gradient(90deg, transparent, var(--ceremonial-gold))' }} />
+                <span className="text-[11px] sm:text-xs uppercase tracking-[0.3em] font-medium" style={{ color: 'var(--ceremonial-gold)' }}>A dignified farewell, beautifully made</span>
               </div>
 
               <h1
                 className="text-5xl sm:text-6xl md:text-7xl font-semibold mb-6 leading-[1.02] tracking-tight"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F4EFE4', textShadow: '0 1px 30px rgba(0,0,0,0.5)' }}
+                style={{ fontFamily: "'Playfair Display', Georgia, serif", color: 'var(--ceremonial-ink-strong)', textShadow: '0 1px 30px rgba(0,0,0,0.5)' }}
               >
                 Create Beautiful Memorial<br className="hidden sm:block" />
                 <span className="relative inline-block overflow-hidden h-[1.2em] align-bottom">
@@ -563,7 +554,7 @@ export default function LandingPage() {
                 </span>
               </h1>
 
-              <p className="text-lg max-w-2xl mb-9 leading-relaxed font-light mx-auto lg:mx-0" style={{ color: '#9C968B' }}>
+              <p className="text-lg max-w-2xl mb-9 leading-relaxed font-light mx-auto lg:mx-0" style={{ color: 'var(--ceremonial-ink-muted)' }}>
                 Design premium funeral brochures, posters, invitations, booklets, collages, and more
                 with our elegant editor. Choose from professional themes — then download as a print-ready PDF.
               </p>
@@ -572,7 +563,7 @@ export default function LandingPage() {
                 <button
                   onClick={handleNew}
                   className="group inline-flex items-center gap-2 px-8 py-3.5 font-semibold rounded-full text-sm transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  style={{ color: '#1a1408', background: 'linear-gradient(135deg, #F6E2A0, #C9A24B)', boxShadow: '0 10px 34px rgba(201,162,75,0.35), inset 0 1px 0 rgba(255,255,255,0.45)' }}
+                  style={{ color: 'var(--ceremonial-cta-text)', background: 'var(--ceremonial-cta-bg)', boxShadow: '0 10px 34px rgba(201,162,75,0.35), inset 0 1px 0 rgba(255,255,255,0.45)' }}
                 >
                   <Plus size={18} />
                   Start Creating
@@ -580,7 +571,7 @@ export default function LandingPage() {
                 <button
                   onClick={() => setExampleOpen(true)}
                   className="inline-flex items-center gap-2 px-7 py-3.5 font-medium rounded-full transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  style={{ color: '#F4EFE4', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(232,199,102,0.34)' }}
+                  style={{ color: 'var(--ceremonial-ink-strong)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(232,199,102,0.34)' }}
                 >
                   <Eye size={18} />
                   See Example
@@ -590,18 +581,18 @@ export default function LandingPage() {
               {/* Social proof */}
               <div className="flex items-center gap-5 sm:gap-7 mt-10 justify-center lg:justify-start">
                 <div className="text-center lg:text-left">
-                  <div className="font-semibold text-2xl tabular-nums" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F4EFE4' }}>500+</div>
-                  <div className="text-xs" style={{ color: '#6B665E' }}>Families served</div>
+                  <div className="font-semibold text-2xl tabular-nums" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: 'var(--ceremonial-ink-strong)' }}>500+</div>
+                  <div className="text-xs" style={{ color: 'var(--ceremonial-ink-muted)' }}>Families served</div>
                 </div>
                 <div className="w-px h-9" style={{ background: 'rgba(232,199,102,0.16)' }} />
                 <div className="text-center lg:text-left">
-                  <div className="font-semibold text-2xl tabular-nums" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F4EFE4' }}>2,000+</div>
-                  <div className="text-xs" style={{ color: '#6B665E' }}>Tributes created</div>
+                  <div className="font-semibold text-2xl tabular-nums" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: 'var(--ceremonial-ink-strong)' }}>2,000+</div>
+                  <div className="text-xs" style={{ color: 'var(--ceremonial-ink-muted)' }}>Tributes created</div>
                 </div>
                 <div className="w-px h-9" style={{ background: 'rgba(232,199,102,0.16)' }} />
                 <div className="text-center lg:text-left">
-                  <div className="text-sm tracking-[3px]" style={{ color: '#E8C766' }}>★★★★★</div>
-                  <div className="text-xs" style={{ color: '#6B665E' }}>Loved across Ghana</div>
+                  <div className="text-sm tracking-[3px]" style={{ color: 'var(--ceremonial-gold)' }}>★★★★★</div>
+                  <div className="text-xs" style={{ color: 'var(--ceremonial-ink-muted)' }}>Loved across Ghana</div>
                 </div>
               </div>
 
@@ -618,10 +609,10 @@ export default function LandingPage() {
                         setHeroAnimating(false)
                       }, 400)
                     }}
-                    className="px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#08080C]"
+                    className="px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                     style={i === heroIdx
-                      ? { background: 'rgba(232,199,102,0.14)', borderColor: 'rgba(232,199,102,0.45)', color: '#F6E2A0' }
-                      : { background: 'rgba(255,255,255,0.03)', borderColor: 'transparent', color: '#9C968B' }}
+                      ? { background: 'rgba(232,199,102,0.14)', borderColor: 'rgba(232,199,102,0.45)', color: 'var(--ceremonial-ink-strong)' }
+                      : { background: 'rgba(255,255,255,0.03)', borderColor: 'transparent', color: 'var(--ceremonial-ink-muted)' }}
                   >
                     {p.label}
                   </button>
@@ -653,12 +644,12 @@ export default function LandingPage() {
                 </div>
               ))}
               {/* Floating glass feature tags */}
-              <div className="absolute z-20 -left-6 top-[12%] hidden sm:flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium backdrop-blur-md" style={{ background: 'rgba(20,20,28,0.72)', border: '1px solid rgba(232,199,102,0.34)', color: '#F4EFE4', boxShadow: '0 14px 30px rgba(0,0,0,0.5)' }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#E8C766', boxShadow: '0 0 8px #E8C766' }} />
+              <div className="absolute z-20 -left-6 top-[12%] hidden sm:flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium backdrop-blur-md" style={{ background: 'rgba(20,20,28,0.72)', border: '1px solid rgba(232,199,102,0.34)', color: 'var(--ceremonial-ink-strong)', boxShadow: '0 14px 30px rgba(0,0,0,0.5)' }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--ceremonial-gold)', boxShadow: '0 0 8px var(--ceremonial-gold)' }} />
                 Print-ready PDF
               </div>
-              <div className="absolute z-20 -right-5 bottom-[14%] hidden sm:flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium backdrop-blur-md" style={{ background: 'rgba(20,20,28,0.72)', border: '1px solid rgba(232,199,102,0.34)', color: '#F4EFE4', boxShadow: '0 14px 30px rgba(0,0,0,0.5)' }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#E8C766', boxShadow: '0 0 8px #E8C766' }} />
+              <div className="absolute z-20 -right-5 bottom-[14%] hidden sm:flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium backdrop-blur-md" style={{ background: 'rgba(20,20,28,0.72)', border: '1px solid rgba(232,199,102,0.34)', color: 'var(--ceremonial-ink-strong)', boxShadow: '0 14px 30px rgba(0,0,0,0.5)' }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--ceremonial-gold)', boxShadow: '0 0 8px var(--ceremonial-gold)' }} />
                 40+ elegant themes
               </div>
             </div>
@@ -1839,46 +1830,38 @@ export default function LandingPage() {
       </div>
 
       {/* ═══ Closing CTA — bookends the cinematic hero ═══ */}
-      <section className="relative overflow-hidden" style={{ backgroundColor: '#08080C' }}>
+      <section className="relative overflow-hidden" style={{ backgroundColor: 'var(--ceremonial-canvas)' }}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">
           <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(232,199,102,0.4), transparent)' }} />
-          <div className="absolute rounded-full animate-glow-breathe" style={{ width: 640, height: 640, top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'radial-gradient(circle, rgba(232,199,102,0.18), transparent 60%)', filter: 'blur(90px)' }} />
+          <div className="absolute rounded-full animate-glow-breathe" style={{ width: 640, height: 640, top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'radial-gradient(circle, var(--ceremonial-aurora-gold), transparent 60%)', filter: 'blur(90px)' }} />
           <div className="absolute inset-0" style={{ opacity: 0.04, backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M22 0L44 22L22 44L0 22z' fill='none' stroke='%23E8C766' stroke-width='1'/%3E%3C/svg%3E\")", backgroundSize: '44px 44px' }} />
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute inset-y-0 w-1/3 animate-shimmer-sweep" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)' }} />
           </div>
-          {[
-            { top: '24%', left: '18%', d: '0s' },
-            { top: '36%', left: '80%', d: '1.4s' },
-            { top: '68%', left: '30%', d: '0.8s' },
-            { top: '60%', left: '72%', d: '2.1s' },
-          ].map((p, i) => (
-            <span key={i} className="absolute rounded-full animate-twinkle" style={{ top: p.top, left: p.left, width: 2.5, height: 2.5, background: '#F6E2A0', boxShadow: '0 0 8px 1px rgba(246,226,160,0.8)', animationDelay: p.d }} />
-          ))}
         </div>
         <div className="relative max-w-3xl mx-auto px-6 py-24 sm:py-28 text-center">
           <div className="flex items-center justify-center gap-3 mb-7">
-            <span className="h-px w-12" style={{ background: 'linear-gradient(90deg, transparent, #C9A24B)' }} />
-            <span className="text-sm" style={{ color: '#C9A24B' }}>&#9670;</span>
-            <span className="text-3xl" style={{ color: '#E8C766', textShadow: '0 0 24px rgba(232,199,102,0.5)' }}>&#10013;</span>
-            <span className="text-sm" style={{ color: '#C9A24B' }}>&#9670;</span>
-            <span className="h-px w-12" style={{ background: 'linear-gradient(90deg, #C9A24B, transparent)' }} />
+            <span className="h-px w-12" style={{ background: 'linear-gradient(90deg, transparent, var(--ceremonial-gold-soft))' }} />
+            <span className="text-sm" style={{ color: 'var(--ceremonial-gold-soft)' }}>&#9670;</span>
+            <span className="text-3xl" style={{ color: 'var(--ceremonial-gold)' }}>&#10013;</span>
+            <span className="text-sm" style={{ color: 'var(--ceremonial-gold-soft)' }}>&#9670;</span>
+            <span className="h-px w-12" style={{ background: 'linear-gradient(90deg, var(--ceremonial-gold-soft), transparent)' }} />
           </div>
-          <h2 className="text-4xl sm:text-6xl font-semibold mb-6 leading-[1.05]" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F4EFE4', textShadow: '0 1px 30px rgba(0,0,0,0.5)' }}>
+          <h2 className="text-4xl sm:text-6xl font-semibold mb-6 leading-[1.05]" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: 'var(--ceremonial-ink-strong)', textShadow: '0 1px 30px rgba(0,0,0,0.5)' }}>
             A farewell worthy of the<br className="hidden sm:block" /> ones we love
           </h2>
-          <p className="text-lg mb-9 font-light max-w-xl mx-auto" style={{ color: '#9C968B' }}>
+          <p className="text-lg mb-9 font-light max-w-xl mx-auto" style={{ color: 'var(--ceremonial-ink-muted)' }}>
             Start designing in minutes — beautiful, dignified, and print-ready. No design skills needed.
           </p>
           <button
             onClick={handleNew}
-            className="inline-flex items-center gap-2 px-9 py-4 font-semibold rounded-full text-sm transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#08080C]"
-            style={{ color: '#1a1408', background: 'linear-gradient(135deg, #F6E2A0, #C9A24B)', boxShadow: '0 10px 34px rgba(201,162,75,0.35), inset 0 1px 0 rgba(255,255,255,0.45)' }}
+            className="inline-flex items-center gap-2 px-9 py-4 font-semibold rounded-full text-sm transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            style={{ color: 'var(--ceremonial-cta-text)', background: 'var(--ceremonial-cta-bg)', boxShadow: '0 10px 34px rgba(201,162,75,0.35), inset 0 1px 0 rgba(255,255,255,0.45)' }}
           >
             <Plus size={18} />
             Start Creating
           </button>
-          <p className="mt-7 text-xs tracking-wide" style={{ color: '#6B665E' }}>500+ families served &nbsp;·&nbsp; 2,000+ tributes created</p>
+          <p className="mt-7 text-xs tracking-wide" style={{ color: 'var(--ceremonial-ink-muted)' }}>500+ families served &nbsp;·&nbsp; 2,000+ tributes created</p>
         </div>
       </section>
 
