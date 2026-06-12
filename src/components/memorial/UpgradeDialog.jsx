@@ -198,7 +198,7 @@ export default function UpgradeDialog({ memorialId, open, onOpenChange, onSucces
       if (planType === 'lifetime') {
         // Inline Paystack popup — mirrors LightCandleDialog exactly
         const PaystackPop = await loadPaystackInline()
-        const init = await initMemorialTierLifetime(memorialId, selectedTier)
+        const init = await initMemorialTierLifetime(memorialId, selectedTier, currentCurrency)
 
         const popup = new PaystackPop()
         popup.newTransaction({
@@ -225,7 +225,7 @@ export default function UpgradeDialog({ memorialId, open, onOpenChange, onSucces
         })
       } else {
         // Annual subscription — redirect to Paystack hosted checkout
-        const result = await subscribeMemorialTier(memorialId, selectedTier)
+        const result = await subscribeMemorialTier(memorialId, selectedTier, currentCurrency)
         window.location.href = result.authorization_url
         // No setBusy(false) — page is navigating away
       }

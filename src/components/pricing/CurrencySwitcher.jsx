@@ -9,6 +9,8 @@ export default function CurrencySwitcher({ className = '' }) {
   const setCurrency = useCurrencyStore((s) => s.setCurrency)
   const enabled = Object.keys(CURRENCIES).filter((c) => CURRENCIES[c].enabled)
 
+  if (enabled.length < 2) return null
+
   return (
     <label className={`inline-flex items-center gap-2 text-xs text-muted-foreground ${className}`}>
       Prices in

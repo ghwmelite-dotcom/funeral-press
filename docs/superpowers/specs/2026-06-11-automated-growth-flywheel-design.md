@@ -91,6 +91,7 @@ All conversion copy follows the Solemn Radiance brand voice and the three-audien
 
 - **Paystack:** GHS (mobile money for Ghana is non-negotiable). *Correction (2026-06-11, found at Phase B planning):* Paystack currencies are per-business-country — a Ghana Paystack account cannot charge NGN. The NGN price book ships dormant until a Paystack Nigeria account exists; `NG` visitors see USD meanwhile.
 - **Stripe:** GBP + USD, one-time and subscriptions. *Correction (2026-06-11):* Stripe was NOT already integrated (earlier briefing was wrong); Phase B builds it (Checkout Sessions via REST, no SDK). Stripe Billing handles dunning for GBP/USD; existing Paystack dunning flow unchanged for GHS.
+- *Correction (2026-06-12):* **Stripe does not onboard Ghana-registered merchants**, so the Stripe rail is unusable without a UK/US entity. The diaspora rail is **Paystack USD** (supported for Ghana businesses, requires account activation by Paystack). GBP is dormant pending a UK entity; UK/EU visitors pay in USD. The Stripe integration remains in the codebase, dormant behind 503 guards, for a future entity.
 - Webhook handling: Stripe webhooks get the same idempotency + signature-verification treatment as the existing Paystack webhooks (HMAC pattern already established in `workers/auth-api.js`).
 - The credit-resolution waterfall is currency-agnostic (credits are counted in units, not money); only purchase/renewal flows touch currency.
 

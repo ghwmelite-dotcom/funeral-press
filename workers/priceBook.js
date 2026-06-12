@@ -7,8 +7,11 @@
 export const CURRENCIES = {
   GHS: { enabled: true,  symbol: 'GHS', provider: 'paystack' },
   NGN: { enabled: false, symbol: '₦',   provider: 'paystack' },
-  GBP: { enabled: true,  symbol: '£',   provider: 'stripe' },
-  USD: { enabled: true,  symbol: '$',   provider: 'stripe' },
+  // GBP dormant pending a UK entity (Stripe doesn't onboard Ghana merchants).
+  GBP: { enabled: false, symbol: '£',   provider: 'stripe' },
+  // USD via Paystack Ghana — flip enabled once Paystack activates USD for the
+  // business (see the activation checklist in the 2026-06-12 paystack-usd plan).
+  USD: { enabled: false, symbol: '$',   provider: 'paystack' },
 }
 
 // kind: 'one_time' grants credits via the existing waterfall; 'subscription'
@@ -39,9 +42,9 @@ const EU = ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU',
 
 export function currencyForCountry(country) {
   if (country === 'GH') return 'GHS'
-  if (country === 'NG') return CURRENCIES.NGN.enabled ? 'NGN' : 'USD'
-  if (country === 'GB' || EU.includes(country)) return 'GBP'
-  return 'USD'
+  if (country === 'NG' && CURRENCIES.NGN.enabled) return 'NGN'
+  if ((country === 'GB' || EU.includes(country)) && CURRENCIES.GBP.enabled) return 'GBP'
+  return CURRENCIES.USD.enabled ? 'USD' : 'GHS'
 }
 
 export function priceFor(productKey, currency) {

@@ -21,7 +21,7 @@ import {
   canGrantReward,
   applyReferralDiscount,
 } from './familyReferral.js'
-import { PRODUCTS, priceFor, currencyForCountry, providerFor, isSubscription } from './priceBook.js'
+import { PRODUCTS, CURRENCIES, priceFor, currencyForCountry, providerFor, isSubscription } from './priceBook.js'
 import { stripeRequest, verifyStripeSignature, checkoutSessionParams } from './stripeClient.js'
 import { draftPrompt, parseDraft, draftSlug } from './blogDraft.js'
 import { reportHtml } from './utils/growthReport.js'
@@ -872,44 +872,62 @@ function resolveCredit(user, subscription) {
 }
 
 async function handlePaymentInitialize(request, env, userId) {
-  const { plan } = await request.json()
+  const { plan, currency: rawCurrency } = await request.json()
   if (!plan || !PLANS[plan]) return error('Invalid plan', 400, request)
+
+  const currency = rawCurrency || 'GHS'
+  if (currency !== 'GHS') {
+    if (!CURRENCIES[currency]?.enabled || providerFor(currency) !== 'paystack') {
+      return error('Unsupported currency', 400, request)
+    }
+    if (PLANS[plan].institutional) return error('Institutional plans are GHS-only', 400, request)
+  }
 
   const planInfo = PLANS[plan]
   const user = await env.DB.prepare('SELECT id, email, referral_balance_pesewas FROM users WHERE id = ?').bind(userId).first()
   if (!user) return error('User not found', 404, request)
 
-  // Check for referral partner (for commission tracking)
+  // Base amount in the charge currency. GHS amounts come from PLANS (which
+  // derives from the price book); other currencies resolve directly.
+  const baseAmount = currency === 'GHS' ? planInfo.amount : priceFor(plan, currency)
+
+  // Partner commission: GHS-only (commission sums assume one currency —
+  // plan decision #1). Attribution (partner_id) is still recorded.
   const referral = await env.DB.prepare("SELECT partner_id FROM referrals WHERE referred_user_id = ? AND type = 'partner'").bind(userId).first()
   const partnerId = referral?.partner_id || null
   let commissionRate = null
   let commissionAmount = null
-  if (partnerId) {
+  if (partnerId && currency === 'GHS') {
     const partner = await env.DB.prepare('SELECT partner_commission_override FROM users WHERE id = ?').bind(partnerId).first()
     commissionRate = partner?.partner_commission_override || 0.10
-    commissionAmount = Math.round(planInfo.amount * commissionRate)
+    commissionAmount = Math.round(baseAmount * commissionRate)
   }
 
-  // Referral balance auto-applies as a discount (spec §2.5). Commission (above)
-  // stays computed on the full plan price.
-  const { discount: referralDiscount, amount: chargeAmount } = applyReferralDiscount({
-    balancePesewas: user.referral_balance_pesewas || 0,
-    amountPesewas: planInfo.amount,
-  })
+  // Referral balance discount: GHS-only (balance is denominated in pesewas).
+  let referralDiscount = 0
+  let chargeAmount = baseAmount
+  if (currency === 'GHS') {
+    const applied = applyReferralDiscount({
+      balancePesewas: user.referral_balance_pesewas || 0,
+      amountPesewas: baseAmount,
+    })
+    referralDiscount = applied.discount
+    chargeAmount = applied.amount
+  }
 
   const reference = `fp-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
   const orderId = generateId()
 
   await env.DB.prepare(
     `INSERT INTO orders (id, user_id, plan, amount_pesewas, paystack_reference, partner_id, commission_rate, commission_amount, referral_discount_pesewas, currency)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'GHS')`
-  ).bind(orderId, userId, plan, chargeAmount, reference, partnerId, commissionRate, commissionAmount, referralDiscount).run()
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(orderId, userId, plan, chargeAmount, reference, partnerId, commissionRate, commissionAmount, referralDiscount, currency).run()
 
   return json({
     reference,
     amount: chargeAmount,
     email: user.email,
-    currency: 'GHS',
+    currency,
   }, 200, request)
 }
 
@@ -1307,7 +1325,7 @@ async function handlePremiumStatus(request, env, memorialId) {
 // Authed: create a pending entitlement + return Paystack inline params.
 async function handlePremiumInitialize(request, env, userId) {
   if (!userId) return error('Sign in required', 401, request)
-  const { memorialId, tier: rawTier, planType: rawPlanType } = await request.json().catch(() => ({}))
+  const { memorialId, tier: rawTier, planType: rawPlanType, currency: rawCurrency } = await request.json().catch(() => ({}))
   if (!memorialId) return error('Missing memorialId', 400, request)
 
   // Default backward-compatible values
@@ -1324,8 +1342,14 @@ async function handlePremiumInitialize(request, env, userId) {
     return error('Annual not yet supported here', 400, request)
   }
 
+  const currency = rawCurrency || 'GHS'
+  if (currency !== 'GHS' && (!CURRENCIES[currency]?.enabled || providerFor(currency) !== 'paystack')) {
+    return error('Unsupported currency', 400, request)
+  }
+
   // Amount is always resolved server-side from the catalog — never from client input
-  const amountPesewas = TIERS[tier].lifetimePesewas
+  const productKey = `memorial_${tier}_lifetime`
+  const amountPesewas = currency === 'GHS' ? TIERS[tier].lifetimePesewas : priceFor(productKey, currency)
 
   const existing = await env.DB.prepare(
     `SELECT id FROM memorial_premium WHERE memorial_id = ? AND status = 'succeeded' LIMIT 1`
@@ -1342,17 +1366,18 @@ async function handlePremiumInitialize(request, env, userId) {
   // (409), so any conflict here is a pending/failed row safe to refresh.
   await env.DB.prepare(
     `INSERT INTO memorial_premium (id, memorial_id, tier, status, paystack_reference, amount_pesewas, currency, buyer_user_id, plan_type, expires_at, created_at, updated_at)
-     VALUES (?, ?, ?, 'pending', ?, ?, 'GHS', ?, 'lifetime', NULL, ?, datetime('now'))
+     VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, 'lifetime', NULL, ?, datetime('now'))
      ON CONFLICT(memorial_id, plan_type) DO UPDATE SET
        tier = excluded.tier,
        status = 'pending',
        paystack_reference = excluded.paystack_reference,
        amount_pesewas = excluded.amount_pesewas,
+       currency = excluded.currency,
        buyer_user_id = excluded.buyer_user_id,
        updated_at = datetime('now')`
-  ).bind(generateId(), memorialId, tier, reference, amountPesewas, userId, Date.now()).run()
+  ).bind(generateId(), memorialId, tier, reference, amountPesewas, currency, userId, Date.now()).run()
 
-  return json({ reference, amount: amountPesewas, email: user.email, currency: 'GHS' }, 200, request)
+  return json({ reference, amount: amountPesewas, email: user.email, currency }, 200, request)
 }
 
 // Authed: verify with Paystack after the inline popup succeeds.
@@ -1803,9 +1828,12 @@ async function handleAdminOverview(request, env) {
     env.DB.prepare('SELECT COUNT(*) as count FROM users').first(),
     env.DB.prepare("SELECT COUNT(*) as count FROM users WHERE created_at >= datetime('now', '-7 days')").first(),
     env.DB.prepare("SELECT COUNT(*) as count FROM users WHERE created_at >= datetime('now', '-30 days')").first(),
-    env.DB.prepare("SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success'").first(),
-    env.DB.prepare("SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= datetime('now', '-7 days')").first(),
-    env.DB.prepare("SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= datetime('now', '-30 days')").first(),
+    // GHS-only: admin totals are GHS-labelled; USD revenue reports via the weekly growth report (multi-currency admin reporting = pre-USD-activation follow-up)
+    env.DB.prepare("SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND COALESCE(currency, 'GHS') = 'GHS'").first(),
+    // GHS-only: admin totals are GHS-labelled; USD revenue reports via the weekly growth report (multi-currency admin reporting = pre-USD-activation follow-up)
+    env.DB.prepare("SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= datetime('now', '-7 days') AND COALESCE(currency, 'GHS') = 'GHS'").first(),
+    // GHS-only: admin totals are GHS-labelled; USD revenue reports via the weekly growth report (multi-currency admin reporting = pre-USD-activation follow-up)
+    env.DB.prepare("SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= datetime('now', '-30 days') AND COALESCE(currency, 'GHS') = 'GHS'").first(),
     env.DB.prepare("SELECT plan, COUNT(*) as count FROM orders WHERE status = 'success' GROUP BY plan").all(),
     env.DB.prepare('SELECT COALESCE(SUM(credits_remaining), 0) as total FROM users WHERE credits_remaining > 0').first(),
     env.DB.prepare('SELECT COUNT(*) as count FROM unlocked_designs').first(),
@@ -2261,11 +2289,13 @@ async function handleAdminAnalyticsOverview(request, env) {
     `SELECT COUNT(*) as count FROM users WHERE created_at >= ${prevPeriod} AND created_at < ${period} AND deleted_at IS NULL`
   ).first()
 
+  // GHS-only: admin totals are GHS-labelled; USD revenue reports via the weekly growth report (multi-currency admin reporting = pre-USD-activation follow-up)
   const revenue = await env.DB.prepare(
-    `SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= ${period} AND deleted_at IS NULL`
+    `SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= ${period} AND deleted_at IS NULL AND COALESCE(currency, 'GHS') = 'GHS'`
   ).first()
+  // GHS-only: admin totals are GHS-labelled; USD revenue reports via the weekly growth report (multi-currency admin reporting = pre-USD-activation follow-up)
   const prevRevenue = await env.DB.prepare(
-    `SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= ${prevPeriod} AND paid_at < ${period} AND deleted_at IS NULL`
+    `SELECT COALESCE(SUM(amount_pesewas), 0) as total FROM orders WHERE status = 'success' AND paid_at >= ${prevPeriod} AND paid_at < ${period} AND deleted_at IS NULL AND COALESCE(currency, 'GHS') = 'GHS'`
   ).first()
 
   const activeSubs = await env.DB.prepare(
@@ -2303,10 +2333,11 @@ async function handleAdminAnalyticsRevenue(request, env) {
   const url = new URL(request.url)
   const days = parseInt(url.searchParams.get('days')) || 30
 
+  // GHS-only: admin totals are GHS-labelled; USD revenue reports via the weekly growth report (multi-currency admin reporting = pre-USD-activation follow-up)
   const { results } = await env.DB.prepare(
     `SELECT DATE(paid_at) as date, SUM(amount_pesewas) as revenue, COUNT(*) as orders
      FROM orders
-     WHERE status = 'success' AND paid_at >= datetime('now', '-${days} days') AND deleted_at IS NULL
+     WHERE status = 'success' AND paid_at >= datetime('now', '-${days} days') AND deleted_at IS NULL AND COALESCE(currency, 'GHS') = 'GHS'
      GROUP BY DATE(paid_at)
      ORDER BY date ASC`
   ).all()
@@ -2598,7 +2629,7 @@ async function handleListUserGalleries(request, env, userId) {
 // ─── Subscription handlers ───────────────────────────────────────────────────
 
 async function handleSubscriptionCreate(request, env, userId) {
-  const { plan } = await request.json()
+  const { plan, currency: rawCurrency } = await request.json()
   if (!plan || !['pro_monthly', 'pro_annual'].includes(plan)) {
     return error('Invalid plan. Use pro_monthly or pro_annual', 400, request)
   }
@@ -2612,7 +2643,18 @@ async function handleSubscriptionCreate(request, env, userId) {
   const user = await env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(userId).first()
   if (!user) return error('User not found', 404, request)
 
-  const planCode = plan === 'pro_monthly' ? env.PAYSTACK_PLAN_MONTHLY : env.PAYSTACK_PLAN_ANNUAL
+  const currency = rawCurrency || 'GHS'
+  if (currency !== 'GHS' && (!CURRENCIES[currency]?.enabled || providerFor(currency) !== 'paystack')) {
+    return error('Unsupported currency', 400, request)
+  }
+
+  let planCode
+  if (currency === 'USD') {
+    planCode = plan === 'pro_monthly' ? env.PAYSTACK_PLAN_MONTHLY_USD : env.PAYSTACK_PLAN_ANNUAL_USD
+    if (!planCode) return error('USD subscriptions are not configured yet', 503, request)
+  } else {
+    planCode = plan === 'pro_monthly' ? env.PAYSTACK_PLAN_MONTHLY : env.PAYSTACK_PLAN_ANNUAL
+  }
 
   // Initialize Paystack subscription via transaction
   const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -2741,19 +2783,29 @@ async function handleMemorialSubscriptionCreate(request, env, userId, memorialId
   if (!memorialId) return error('Missing memorialId', 400, request)
 
   const body = await request.json().catch(() => ({}))
-  const { tier } = body
+  const { tier, currency: rawCurrency } = body
 
   if (!tier || !['premium', 'heritage'].includes(tier)) {
     return error('Invalid tier. Must be "premium" or "heritage"', 400, request)
+  }
+
+  const currency = rawCurrency || 'GHS'
+  if (currency !== 'GHS' && (!CURRENCIES[currency]?.enabled || providerFor(currency) !== 'paystack')) {
+    return error('Unsupported currency', 400, request)
   }
 
   const user = await env.DB.prepare('SELECT id, email FROM users WHERE id = ?').bind(userId).first()
   if (!user) return error('User not found', 404, request)
 
   // Amount and plan code are always resolved server-side from the catalog.
-  const planCodeEnvVar = TIERS[tier].planCodeAnnual  // e.g. 'PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL'
+  const planCodeEnvVar = currency === 'USD'
+    ? `${TIERS[tier].planCodeAnnual}_USD`  // e.g. 'PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL_USD'
+    : TIERS[tier].planCodeAnnual           // e.g. 'PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL'
   const planCode = env[planCodeEnvVar]
   if (!planCode) {
+    if (currency === 'USD') {
+      return error('USD subscriptions are not configured yet', 503, request)
+    }
     console.error('[memorial-subscribe] missing plan code env var:', planCodeEnvVar)
     return error('Subscription plan not configured', 500, request)
   }
@@ -2764,6 +2816,7 @@ async function handleMemorialSubscriptionCreate(request, env, userId, memorialId
   ).bind(memorialId).first()
   if (existingMemorialSub) return error('This memorial already has an active subscription', 400, request)
 
+  const amountPesewas = currency === 'GHS' ? TIERS[tier].annualPesewas : priceFor(`memorial_${tier}_annual`, currency)
   const callbackUrl = `${env.CORS_ORIGIN}/memorial/${encodeURIComponent(memorialId)}`
 
   const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -2774,8 +2827,8 @@ async function handleMemorialSubscriptionCreate(request, env, userId, memorialId
     },
     body: JSON.stringify({
       email: user.email,
-      amount: TIERS[tier].annualPesewas, // Paystack requires amount even with a plan; must match the plan's price
-      currency: 'GHS',
+      amount: amountPesewas, // Paystack requires amount even with a plan; must match the plan's price
+      currency,
       plan: planCode,
       callback_url: callbackUrl,
       metadata: { userId, memorialId, tier, kind: 'memorial_annual' },
@@ -2868,12 +2921,16 @@ async function handleSubscriptionWebhook(request, env) {
         return json({ ok: true }, 200, request)
       }
 
-      // Defense-in-depth: assert the charged amount matches the catalog price.
-      // Mirrors the lifetime/candle amount guards in the payments webhook.
-      // data.amount may be absent on subscription.create events — skip check if so.
-      if (data.amount != null && data.amount !== amountPesewas) {
+      // Defense-in-depth: assert the charged amount matches the catalog price for
+      // the webhook's currency. Paystack includes data.currency on the event;
+      // GHS webhooks carry pesewas, USD webhooks carry cents. data.amount may be
+      // absent on subscription.create events — skip the check if so.
+      const expectedAmount = data.currency === 'USD'
+        ? PRODUCTS[`memorial_${tier}_annual`].prices.USD
+        : TIERS[tier].annualPesewas
+      if (data.amount != null && data.amount !== expectedAmount) {
         console.error('[webhook] memorial annual amount mismatch', {
-          tier, got: data.amount, expected: amountPesewas,
+          tier, got: data.amount, expected: expectedAmount,
         })
         return json({ ok: true }, 200, request)
       }

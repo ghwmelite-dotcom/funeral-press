@@ -13,33 +13,37 @@ describe('currencyStore', () => {
   })
 
   it('hydrates from /geo and stores the result', async () => {
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({ country: 'GB', currency: 'GBP' }),
-    })))
-    await useCurrencyStore.getState().hydrate()
-    expect(useCurrencyStore.getState().currency).toBe('GBP')
-    expect(useCurrencyStore.getState().country).toBe('GB')
-    vi.unstubAllGlobals()
-  })
-
-  it('a manual session override beats geo', async () => {
-    sessionStorage.setItem('fp-currency', 'USD')
+    // /geo returns GH → GHS (the only enabled currency while USD is dormant)
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({
       ok: true,
       json: () => Promise.resolve({ country: 'GH', currency: 'GHS' }),
     })))
     await useCurrencyStore.getState().hydrate()
-    expect(useCurrencyStore.getState().currency).toBe('USD')
+    expect(useCurrencyStore.getState().currency).toBe('GHS')
+    expect(useCurrencyStore.getState().country).toBe('GH')
+    vi.unstubAllGlobals()
+  })
+
+  it('a manual session override beats geo', async () => {
+    // GHS is the only enabled currency; a stored GHS override should survive
+    sessionStorage.setItem('fp-currency', 'GHS')
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ country: 'GH', currency: 'GHS' }),
+    })))
+    await useCurrencyStore.getState().hydrate()
+    expect(useCurrencyStore.getState().currency).toBe('GHS')
     vi.unstubAllGlobals()
   })
 
   it('setCurrency persists per session and rejects disabled currencies', () => {
-    useCurrencyStore.getState().setCurrency('GBP')
-    expect(useCurrencyStore.getState().currency).toBe('GBP')
-    expect(sessionStorage.getItem('fp-currency')).toBe('GBP')
-    useCurrencyStore.getState().setCurrency('NGN') // dormant
-    expect(useCurrencyStore.getState().currency).toBe('GBP')
+    // GHS is enabled — should persist
+    useCurrencyStore.getState().setCurrency('GHS')
+    expect(useCurrencyStore.getState().currency).toBe('GHS')
+    expect(sessionStorage.getItem('fp-currency')).toBe('GHS')
+    // NGN is dormant — should be rejected (currency stays GHS)
+    useCurrencyStore.getState().setCurrency('NGN')
+    expect(useCurrencyStore.getState().currency).toBe('GHS')
   })
 
   it('falls back silently to GHS when /geo fails', async () => {
@@ -51,16 +55,17 @@ describe('currencyStore', () => {
   })
 
   it('concurrent hydrate calls share one /geo request', async () => {
+    // Both calls share one fetch; result is GHS (Ghana geo response)
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({
       ok: true,
-      json: () => Promise.resolve({ country: 'US', currency: 'USD' }),
+      json: () => Promise.resolve({ country: 'GH', currency: 'GHS' }),
     })))
     await Promise.all([
       useCurrencyStore.getState().hydrate(),
       useCurrencyStore.getState().hydrate(),
     ])
     expect(fetch).toHaveBeenCalledTimes(1)
-    expect(useCurrencyStore.getState().currency).toBe('USD')
+    expect(useCurrencyStore.getState().currency).toBe('GHS')
     vi.unstubAllGlobals()
   })
 })

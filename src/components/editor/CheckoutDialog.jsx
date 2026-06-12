@@ -106,7 +106,7 @@ export default function CheckoutDialog() {
       const PaystackPop = await loadPaystackInline()
       const initData = await apiFetch('/payments/initialize', {
         method: 'POST',
-        body: JSON.stringify({ plan: planKey }),
+        body: JSON.stringify({ plan: planKey, currency: currentCurrency }),
       })
 
       setStage('paying')
@@ -165,7 +165,7 @@ export default function CheckoutDialog() {
       }
       const data = await apiFetch('/subscriptions/create', {
         method: 'POST',
-        body: JSON.stringify({ plan: planKey }),
+        body: JSON.stringify({ plan: planKey, currency: currentCurrency }),
       })
       window.location.href = data.authorization_url
     } catch (err) {
