@@ -124,4 +124,28 @@ Disallow: /anniversaries
 Disallow: /api/
 Disallow: /flipbook
 
+User-agent: Google-Extended
+Allow: /
+Disallow: /editor
+Disallow: /poster-editor
+Disallow: /invitation-editor
+Disallow: /thankyou-editor
+Disallow: /booklet-editor
+Disallow: /banner-editor
+Disallow: /collage-maker
+Disallow: /my-designs
+Disallow: /partner-dashboard
+Disallow: /admin
+Disallow: /receipt
+Disallow: /preview
+Disallow: /slideshow
+Disallow: /aseda-editor
+Disallow: /gallery-editor/
+Disallow: /guest-book-creator
+Disallow: /obituary-creator
+Disallow: /oneweek-editor
+Disallow: /anniversaries
+Disallow: /api/
+Disallow: /flipbook
+
 Sitemap: https://funeralpress.org/sitemap.xml
