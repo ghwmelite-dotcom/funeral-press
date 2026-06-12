@@ -122,6 +122,8 @@ Pure messaging — every feature referenced already exists. Each page: 1,200+ wo
 
 ### 4.3 Hymn pages (the goldmine)
 
+> *Correction (2026-06-12, found at Phase C planning):* the hymn library contains **25 hymns, not 11,000** — the larger figure came from the early marketing briefing. Phase C builds the full programmatic infrastructure below (works at any scale); growing the dataset is a separate public-domain hymnal import initiative (see the older Phase-3D plan). The batching/crawl-budget guidance applies when that dataset lands.
+
 - One indexable page per hymn at `/hymns/:slug`: full lyrics, tradition/denomination, occasions, language, 5 related hymns, and a CTA *"Add this hymn to a funeral programme"* deep-linking into the brochure designer.
 - **Copyright gate:** only hymns verified public-domain get full lyrics pages; others get title/first-line/metadata pages with lyrics behind the in-app library. Implementation plan must include a PD-flagging pass over the 11,000-hymn dataset (rule of thumb: author death +70 years; unknown-provenance hymns default to metadata-only).
 - Anti-thin-content: pages with <80 words of lyrics get merged occasion/tradition context; `noindex` any page that still falls below a quality floor.
