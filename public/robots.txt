@@ -149,3 +149,4 @@ Disallow: /api/
 Disallow: /flipbook
 
 Sitemap: https://funeralpress.org/sitemap.xml
+Sitemap: https://auth-api.funeralpress.org/sitemap-obituaries.xml
