@@ -32,11 +32,6 @@ const FEATURE_LABELS = [
   { key: 'multiLanguage',    label: 'Multi-language pages' },
 ]
 
-function formatGHS(pesewas) {
-  const amount = pesewas / 100
-  return `GHS ${Number.isInteger(amount) ? amount : amount.toFixed(2)}`
-}
-
 function TierCard({ tierKey, selected, onSelect }) {
   const tier = TIERS[tierKey]
   const isPremium = tierKey === 'premium'

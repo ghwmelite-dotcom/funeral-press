@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import CondolencePrompt, { hasSeenCondolencePrompt, markCondolencePromptSeen } from '../CondolencePrompt.jsx'
+import CondolencePrompt from '../CondolencePrompt.jsx'
+import { hasSeenCondolencePrompt, markCondolencePromptSeen } from '../../../utils/condolencePrompt.js'
 
 describe('CondolencePrompt', () => {
   beforeEach(() => {
