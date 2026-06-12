@@ -14,6 +14,13 @@ PAYSTACK_PLAN_MONTHLY = "PLN_e0z9m03nuwd582x"
 PAYSTACK_PLAN_ANNUAL = "PLN_2ijmz43rukw84ql"
 PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL = "PLN_cjvqwyiazu993a2"
 PAYSTACK_PLAN_MEMORIAL_HERITAGE_ANNUAL = "PLN_359u3n0v2uliz3y"
+# USD Paystack plan codes — create in the Paystack dashboard once USD is
+# activated for the business, then uncomment (see the 2026-06-12 paystack-usd
+# plan's activation checklist). USD subscriptions 503 until these exist.
+# PAYSTACK_PLAN_MONTHLY_USD = ""
+# PAYSTACK_PLAN_ANNUAL_USD = ""
+# PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL_USD = ""
+# PAYSTACK_PLAN_MEMORIAL_HERITAGE_ANNUAL_USD = ""
 SHOTSTACK_ENV = "stage"   # 'stage' = free sandbox (watermarked) · 'v1' = production
 ADMIN_EMAIL = "ohwpstudios@gmail.com"
 # Telegram admin alerts (blog drafts + payments) — bot: @funeralpress_alerts_bot.

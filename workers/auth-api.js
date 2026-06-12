@@ -1325,7 +1325,7 @@ async function handlePremiumStatus(request, env, memorialId) {
 // Authed: create a pending entitlement + return Paystack inline params.
 async function handlePremiumInitialize(request, env, userId) {
   if (!userId) return error('Sign in required', 401, request)
-  const { memorialId, tier: rawTier, planType: rawPlanType } = await request.json().catch(() => ({}))
+  const { memorialId, tier: rawTier, planType: rawPlanType, currency: rawCurrency } = await request.json().catch(() => ({}))
   if (!memorialId) return error('Missing memorialId', 400, request)
 
   // Default backward-compatible values
@@ -1342,8 +1342,14 @@ async function handlePremiumInitialize(request, env, userId) {
     return error('Annual not yet supported here', 400, request)
   }
 
+  const currency = rawCurrency || 'GHS'
+  if (currency !== 'GHS' && (!CURRENCIES[currency]?.enabled || providerFor(currency) !== 'paystack')) {
+    return error('Unsupported currency', 400, request)
+  }
+
   // Amount is always resolved server-side from the catalog — never from client input
-  const amountPesewas = TIERS[tier].lifetimePesewas
+  const productKey = `memorial_${tier}_lifetime`
+  const amountPesewas = currency === 'GHS' ? TIERS[tier].lifetimePesewas : priceFor(productKey, currency)
 
   const existing = await env.DB.prepare(
     `SELECT id FROM memorial_premium WHERE memorial_id = ? AND status = 'succeeded' LIMIT 1`
@@ -1360,17 +1366,18 @@ async function handlePremiumInitialize(request, env, userId) {
   // (409), so any conflict here is a pending/failed row safe to refresh.
   await env.DB.prepare(
     `INSERT INTO memorial_premium (id, memorial_id, tier, status, paystack_reference, amount_pesewas, currency, buyer_user_id, plan_type, expires_at, created_at, updated_at)
-     VALUES (?, ?, ?, 'pending', ?, ?, 'GHS', ?, 'lifetime', NULL, ?, datetime('now'))
+     VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, 'lifetime', NULL, ?, datetime('now'))
      ON CONFLICT(memorial_id, plan_type) DO UPDATE SET
        tier = excluded.tier,
        status = 'pending',
        paystack_reference = excluded.paystack_reference,
        amount_pesewas = excluded.amount_pesewas,
+       currency = excluded.currency,
        buyer_user_id = excluded.buyer_user_id,
        updated_at = datetime('now')`
-  ).bind(generateId(), memorialId, tier, reference, amountPesewas, userId, Date.now()).run()
+  ).bind(generateId(), memorialId, tier, reference, amountPesewas, currency, userId, Date.now()).run()
 
-  return json({ reference, amount: amountPesewas, email: user.email, currency: 'GHS' }, 200, request)
+  return json({ reference, amount: amountPesewas, email: user.email, currency }, 200, request)
 }
 
 // Authed: verify with Paystack after the inline popup succeeds.
@@ -2616,7 +2623,7 @@ async function handleListUserGalleries(request, env, userId) {
 // ─── Subscription handlers ───────────────────────────────────────────────────
 
 async function handleSubscriptionCreate(request, env, userId) {
-  const { plan } = await request.json()
+  const { plan, currency: rawCurrency } = await request.json()
   if (!plan || !['pro_monthly', 'pro_annual'].includes(plan)) {
     return error('Invalid plan. Use pro_monthly or pro_annual', 400, request)
   }
@@ -2630,7 +2637,18 @@ async function handleSubscriptionCreate(request, env, userId) {
   const user = await env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(userId).first()
   if (!user) return error('User not found', 404, request)
 
-  const planCode = plan === 'pro_monthly' ? env.PAYSTACK_PLAN_MONTHLY : env.PAYSTACK_PLAN_ANNUAL
+  const currency = rawCurrency || 'GHS'
+  if (currency !== 'GHS' && (!CURRENCIES[currency]?.enabled || providerFor(currency) !== 'paystack')) {
+    return error('Unsupported currency', 400, request)
+  }
+
+  let planCode
+  if (currency === 'USD') {
+    planCode = plan === 'pro_monthly' ? env.PAYSTACK_PLAN_MONTHLY_USD : env.PAYSTACK_PLAN_ANNUAL_USD
+    if (!planCode) return error('USD subscriptions are not configured yet', 503, request)
+  } else {
+    planCode = plan === 'pro_monthly' ? env.PAYSTACK_PLAN_MONTHLY : env.PAYSTACK_PLAN_ANNUAL
+  }
 
   // Initialize Paystack subscription via transaction
   const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -2759,19 +2777,29 @@ async function handleMemorialSubscriptionCreate(request, env, userId, memorialId
   if (!memorialId) return error('Missing memorialId', 400, request)
 
   const body = await request.json().catch(() => ({}))
-  const { tier } = body
+  const { tier, currency: rawCurrency } = body
 
   if (!tier || !['premium', 'heritage'].includes(tier)) {
     return error('Invalid tier. Must be "premium" or "heritage"', 400, request)
+  }
+
+  const currency = rawCurrency || 'GHS'
+  if (currency !== 'GHS' && (!CURRENCIES[currency]?.enabled || providerFor(currency) !== 'paystack')) {
+    return error('Unsupported currency', 400, request)
   }
 
   const user = await env.DB.prepare('SELECT id, email FROM users WHERE id = ?').bind(userId).first()
   if (!user) return error('User not found', 404, request)
 
   // Amount and plan code are always resolved server-side from the catalog.
-  const planCodeEnvVar = TIERS[tier].planCodeAnnual  // e.g. 'PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL'
+  const planCodeEnvVar = currency === 'USD'
+    ? `${TIERS[tier].planCodeAnnual}_USD`  // e.g. 'PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL_USD'
+    : TIERS[tier].planCodeAnnual           // e.g. 'PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL'
   const planCode = env[planCodeEnvVar]
   if (!planCode) {
+    if (currency === 'USD') {
+      return error('USD subscriptions are not configured yet', 503, request)
+    }
     console.error('[memorial-subscribe] missing plan code env var:', planCodeEnvVar)
     return error('Subscription plan not configured', 500, request)
   }
@@ -2782,6 +2810,7 @@ async function handleMemorialSubscriptionCreate(request, env, userId, memorialId
   ).bind(memorialId).first()
   if (existingMemorialSub) return error('This memorial already has an active subscription', 400, request)
 
+  const amountPesewas = currency === 'GHS' ? TIERS[tier].annualPesewas : priceFor(`memorial_${tier}_annual`, currency)
   const callbackUrl = `${env.CORS_ORIGIN}/memorial/${encodeURIComponent(memorialId)}`
 
   const psRes = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -2792,8 +2821,8 @@ async function handleMemorialSubscriptionCreate(request, env, userId, memorialId
     },
     body: JSON.stringify({
       email: user.email,
-      amount: TIERS[tier].annualPesewas, // Paystack requires amount even with a plan; must match the plan's price
-      currency: 'GHS',
+      amount: amountPesewas, // Paystack requires amount even with a plan; must match the plan's price
+      currency,
       plan: planCode,
       callback_url: callbackUrl,
       metadata: { userId, memorialId, tier, kind: 'memorial_annual' },
@@ -2886,12 +2915,14 @@ async function handleSubscriptionWebhook(request, env) {
         return json({ ok: true }, 200, request)
       }
 
-      // Defense-in-depth: assert the charged amount matches the catalog price.
-      // Mirrors the lifetime/candle amount guards in the payments webhook.
-      // data.amount may be absent on subscription.create events — skip check if so.
-      if (data.amount != null && data.amount !== amountPesewas) {
+      // Defense-in-depth: assert the charged amount matches a catalog price.
+      // Accept either the GHS or USD catalog amount for this tier (both are valid
+      // once USD is activated). data.amount may be absent on subscription.create
+      // events — skip the check if so.
+      const expectedAmounts = [TIERS[tier].annualPesewas, PRODUCTS[`memorial_${tier}_annual`].prices.USD]
+      if (data.amount != null && !expectedAmounts.includes(data.amount)) {
         console.error('[webhook] memorial annual amount mismatch', {
-          tier, got: data.amount, expected: amountPesewas,
+          tier, got: data.amount, expected: expectedAmounts,
         })
         return json({ ok: true }, 200, request)
       }
