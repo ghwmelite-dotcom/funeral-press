@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { FileText, Undo2, Redo2, Save, Download, Upload, History, Sun, Moon } from 'lucide-react'
+import { KenteBand } from '../ceremonial'
 import { usePosterStore } from '../../stores/posterStore'
 import { useThemeStore } from '../../stores/themeStore'
 import { useAuthStore } from '../../stores/authStore'
@@ -183,6 +184,7 @@ export default function PosterNavbar() {
           </button>
         </div>
       </nav>
+      <KenteBand size="card" className="shrink-0" />
 
       {/* Dialogs */}
       <PosterVersionsDialog open={versionsOpen} onOpenChange={setVersionsOpen} />

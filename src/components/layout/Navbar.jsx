@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { BookOpen, Undo2, Redo2, Save, Download, Upload, History, CalendarCheck, Share2, Sun, Moon } from 'lucide-react'
+import { KenteBand } from '../ceremonial'
 import { useBrochureStore } from '../../stores/brochureStore'
 import { useThemeStore } from '../../stores/themeStore'
 import { useAuthStore } from '../../stores/authStore'
@@ -207,6 +208,7 @@ export default function Navbar() {
           </button>
         </div>
       </nav>
+      <KenteBand size="card" className="shrink-0" />
 
       {/* Dialogs */}
       <VersionsDialog open={versionsOpen} onOpenChange={setVersionsOpen} />

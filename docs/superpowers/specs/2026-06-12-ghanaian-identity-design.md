@@ -82,3 +82,18 @@ LandingPage, the 4 product landing pages, 16 regional pages (RegionPage), 5 dias
 3. Lighthouse gate (§5) holds; `prefers-reduced-motion` verified.
 4. All ceremonial components covered by render tests; full suite + lint + build green.
 5. The kit is reusable as-is for the future editors/dashboards phase.
+
+## 9. Phase 2 — work surfaces (added 2026-06-12, owner-approved scope: all editors + all dashboards, chrome-only dose)
+
+The ceremonial identity extends to the 8 design editors, collage/gallery tools, My Designs, the partner dashboard, and the admin dashboard, under a stricter **chrome-only rule**: the identity lives in toolbars, panels, page frames, and buttons — **never adjacent to a design preview or canvas**, which keeps its neutral backdrop so users' funeral designs read true.
+
+Work-surface dose (deliberately lighter than public pages):
+- **Editor navbars** (all 7 navbar components + the inline navs in AsedaEditorPage/GalleryEditorPage): a `KenteBand size="card"` rendered as the navbar's bottom edge. Nothing else changes in editors — no AuroraField, no watermarks, no dividers (focus + export-screenshot hygiene).
+- **My Designs:** page band at top; one `CeremonialDivider` above the referral card.
+- **Partner dashboard:** page band at top; `KenteBand size="card"` on the tier/earnings hero card; one `CeremonialDivider` before "How It Works".
+- **Admin dashboard:** page band at top only. Charts, tabs, and tab content untouched.
+- No CTA recoloring on work surfaces (the purchase dialogs already carry the ceremonial CTA).
+
+Memorial pages, guest books, obituaries, and donation/candle flows remain excluded.
+
+Phase 2 success criteria: chrome-only rule verifiably held (no ceremonial element within the preview/canvas containers); all existing editor/dashboard tests pass unmodified; lint/suite/build green.

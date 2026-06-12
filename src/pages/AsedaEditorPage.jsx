@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import PageMeta from '../components/seo/PageMeta'
+import { KenteBand } from '../components/ceremonial'
 import { useThemeStore } from '../stores/themeStore'
 import { useAsedaStore } from '../stores/asedaStore'
 import { asedaTemplates, getTemplateStyle } from '../utils/asedaDefaultData'
@@ -653,6 +654,7 @@ export default function AsedaEditorPage() {
           </button>
         </div>
       </nav>
+      <KenteBand size="card" className="shrink-0" />
 
       {/* Backup reminder banner */}
       {showBackupBanner && (

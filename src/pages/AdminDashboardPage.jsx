@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Shield, Sun, Moon } from 'lucide-react'
+import { KenteBand } from '../components/ceremonial'
 import { useAuthStore } from '../stores/authStore'
 import { useAdminStore } from '../stores/adminStore'
 import { useThemeStore } from '../stores/themeStore'
@@ -43,6 +44,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <KenteBand size="page" />
       {/* Top bar */}
       <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
         <NotificationBell />
