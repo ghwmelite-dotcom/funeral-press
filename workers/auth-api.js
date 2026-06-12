@@ -3,6 +3,7 @@ import { checkRateLimit, getRouteGroup } from './utils/rateLimiter.js'
 import { sanitizeInput, escapeHtml } from './utils/sanitize.js'
 import { withSecurityHeaders } from './utils/securityHeaders.js'
 import { logAudit, getClientIP } from './utils/auditLog.js'
+import { obituarySitemapXml } from './obituarySitemap.js'
 import { signJWT, verifyJWT } from './utils/jwt.js'
 import { runDunningCron } from './utils/dunning.js'
 import { runAnniversarySweep } from './utils/anniversaryEmail.js'
@@ -2454,10 +2455,7 @@ async function handleObituarySitemap(request, env) {
   const rows = await env.DB.prepare(
     "SELECT slug, updated_at FROM obituary_pages WHERE is_active = 1 AND search_indexable = 1 ORDER BY updated_at DESC LIMIT 5000"
   ).all()
-  const urls = (rows.results || []).map((r) =>
-    `  <url>\n    <loc>https://funeralpress.org/obituary/${encodeURIComponent(r.slug)}</loc>\n    <lastmod>${(r.updated_at || '').slice(0, 10)}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>`
-  ).join('\n')
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`
+  const xml = obituarySitemapXml(rows.results)
   return new Response(xml, {
     status: 200,
     headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
@@ -2491,7 +2489,7 @@ async function handleGetObituary(request, env, slug) {
 async function handleObituaryIndexingToggle(request, env, userId, slug) {
   const { indexable } = await request.json()
   const result = await env.DB.prepare(
-    "UPDATE obituary_pages SET search_indexable = ?, updated_at = datetime('now') WHERE slug = ? AND user_id = ?"
+    "UPDATE obituary_pages SET search_indexable = ?, updated_at = datetime('now') WHERE slug = ? AND user_id = ? AND is_active = 1"
   ).bind(indexable ? 1 : 0, slug, userId).run()
   if (!result.meta.changes) return error('Obituary not found', 404, request)
   return json({ ok: true, searchIndexable: !!indexable }, 200, request)

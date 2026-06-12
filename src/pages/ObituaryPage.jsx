@@ -85,21 +85,31 @@ export default function ObituaryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
-        <Loader2 size={32} className="animate-spin text-[#C9A84C]" />
-      </div>
+      <>
+        <Helmet>
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
+        <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
+          <Loader2 size={32} className="animate-spin text-[#C9A84C]" />
+        </div>
+      </>
     )
   }
 
   if (error || !obituary) {
     return (
-      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center text-center px-4">
-        <div>
-          <Scroll size={48} className="text-[#C9A84C]/40 mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-white mb-2">Obituary Not Found</h1>
-          <p className="text-[#999] text-sm">This obituary may have been removed or the link is incorrect.</p>
+      <>
+        <Helmet>
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
+        <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center text-center px-4">
+          <div>
+            <Scroll size={48} className="text-[#C9A84C]/40 mx-auto mb-4" />
+            <h1 className="text-xl font-semibold text-white mb-2">Obituary Not Found</h1>
+            <p className="text-[#999] text-sm">This obituary may have been removed or the link is incorrect.</p>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
@@ -128,7 +138,7 @@ export default function ObituaryPage() {
           } : {}),
         } : undefined}
       />
-      {!obituary.searchIndexable && (
+      {obituary?.searchIndexable !== true && (
         <Helmet>
           <meta name="robots" content="noindex, nofollow" />
         </Helmet>

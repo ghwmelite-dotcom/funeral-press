@@ -35,6 +35,14 @@ function getRobotsContent() {
 describe('ObituaryPage indexing meta', () => {
   beforeEach(() => vi.restoreAllMocks())
 
+  it('emits noindex while the obituary is still loading (fail-closed)', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {}))) // never resolves
+    renderPage()
+    await waitFor(() => {
+      const robots = document.querySelector('meta[name="robots"]')
+      expect(robots?.getAttribute('content')).toContain('noindex')
+    })
+  })
 
   it('emits noindex when the family has not opted in', async () => {
     mockObituary(false)
