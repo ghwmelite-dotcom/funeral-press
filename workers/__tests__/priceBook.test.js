@@ -11,16 +11,33 @@ import {
 
 describe('currencyForCountry', () => {
   it('maps Ghana to GHS', () => expect(currencyForCountry('GH')).toBe('GHS'))
-  it('maps Nigeria to USD while NGN is dormant', () => expect(currencyForCountry('NG')).toBe('USD'))
-  it('maps UK and EU to GBP', () => {
-    expect(currencyForCountry('GB')).toBe('GBP')
-    expect(currencyForCountry('DE')).toBe('GBP')
-    expect(currencyForCountry('IE')).toBe('GBP')
+  it('falls back to GHS everywhere while USD is dormant', () => {
+    expect(currencyForCountry('NG')).toBe('GHS')
+    expect(currencyForCountry('GB')).toBe('GHS')
+    expect(currencyForCountry('DE')).toBe('GHS')
+    expect(currencyForCountry('US')).toBe('GHS')
+    expect(currencyForCountry(null)).toBe('GHS')
   })
-  it('maps everything else (and unknown) to USD', () => {
-    expect(currencyForCountry('US')).toBe('USD')
-    expect(currencyForCountry(null)).toBe('USD')
-    expect(currencyForCountry(undefined)).toBe('USD')
+  it('routes non-Ghana traffic to USD once USD is enabled', () => {
+    CURRENCIES.USD.enabled = true
+    try {
+      expect(currencyForCountry('US')).toBe('USD')
+      expect(currencyForCountry('NG')).toBe('USD')   // NGN still dormant
+      expect(currencyForCountry('GB')).toBe('USD')   // GBP still dormant
+      expect(currencyForCountry('GH')).toBe('GHS')
+    } finally {
+      CURRENCIES.USD.enabled = false
+    }
+  })
+  it('prefers GBP for UK/EU when GBP is enabled', () => {
+    CURRENCIES.GBP.enabled = true
+    try {
+      expect(currencyForCountry('GB')).toBe('GBP')
+      expect(currencyForCountry('FR')).toBe('GBP')
+      expect(currencyForCountry('US')).toBe('GHS') // USD still dormant
+    } finally {
+      CURRENCIES.GBP.enabled = false
+    }
   })
 })
 
@@ -41,13 +58,13 @@ describe('priceFor', () => {
 })
 
 describe('providerFor', () => {
-  it('routes GHS and NGN to paystack', () => {
+  it('routes GHS, NGN, and USD to paystack', () => {
     expect(providerFor('GHS')).toBe('paystack')
     expect(providerFor('NGN')).toBe('paystack')
+    expect(providerFor('USD')).toBe('paystack')
   })
-  it('routes GBP and USD to stripe', () => {
+  it('keeps GBP on stripe (dormant, pending a UK entity)', () => {
     expect(providerFor('GBP')).toBe('stripe')
-    expect(providerFor('USD')).toBe('stripe')
   })
 })
 
@@ -65,10 +82,10 @@ describe('product metadata', () => {
     expect(PRODUCTS.memorial_premium_annual.interval).toBe('year')
     expect(isSubscription('single')).toBe(false)
   })
-  it('declares NGN dormant and the other three enabled', () => {
-    expect(CURRENCIES.NGN.enabled).toBe(false)
+  it('only GHS is enabled until Paystack activates USD', () => {
     expect(CURRENCIES.GHS.enabled).toBe(true)
-    expect(CURRENCIES.GBP.enabled).toBe(true)
-    expect(CURRENCIES.USD.enabled).toBe(true)
+    expect(CURRENCIES.USD.enabled).toBe(false)
+    expect(CURRENCIES.GBP.enabled).toBe(false)
+    expect(CURRENCIES.NGN.enabled).toBe(false)
   })
 })
