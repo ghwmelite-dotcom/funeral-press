@@ -16,11 +16,9 @@ PAYSTACK_PLAN_MEMORIAL_PREMIUM_ANNUAL = "PLN_cjvqwyiazu993a2"
 PAYSTACK_PLAN_MEMORIAL_HERITAGE_ANNUAL = "PLN_359u3n0v2uliz3y"
 SHOTSTACK_ENV = "stage"   # 'stage' = free sandbox (watermarked) · 'v1' = production
 ADMIN_EMAIL = "ohwpstudios@gmail.com"
-# TELEGRAM_CHAT_ID = "<numeric chat id>"  — uncomment after creating the bot:
-#   message your bot once, then read the id from
-#   https://api.telegram.org/bot<TOKEN>/getUpdates → message.chat.id.
-#   Telegram alerts (blog drafts + payments) silently no-op until this and
-#   the TELEGRAM_BOT_TOKEN secret are both set.
+# Telegram admin alerts (blog drafts + payments) — bot: @funeralpress_alerts_bot.
+# Requires the TELEGRAM_BOT_TOKEN secret; alerts no-op if either is missing.
+TELEGRAM_CHAT_ID = "1978649984"
 
 [[d1_databases]]
 binding = "DB"
