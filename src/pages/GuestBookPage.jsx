@@ -4,7 +4,8 @@ import PageMeta from '../components/seo/PageMeta'
 import { BookOpen, Send, Loader2, User, MessageSquare, Clock } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { recordLoopEvent } from '../utils/loopAnalytics'
-import CondolencePrompt, { hasSeenCondolencePrompt, markCondolencePromptSeen } from '../components/memorial/CondolencePrompt'
+import CondolencePrompt from '../components/memorial/CondolencePrompt'
+import { hasSeenCondolencePrompt, markCondolencePromptSeen } from '../utils/condolencePrompt'
 
 const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
 

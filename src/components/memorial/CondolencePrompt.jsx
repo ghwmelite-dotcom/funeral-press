@@ -5,15 +5,8 @@ import { Link } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { recordLoopEvent, captureLoopSurface } from '../../utils/loopAnalytics'
 
-const STORAGE_PREFIX = 'fp-condolence-prompt-'
-
-export function hasSeenCondolencePrompt(slug) {
-  try { return !!localStorage.getItem(STORAGE_PREFIX + slug) } catch { return false }
-}
-
-export function markCondolencePromptSeen(slug) {
-  try { localStorage.setItem(STORAGE_PREFIX + slug, '1') } catch { /* ignore */ }
-}
+// Seen-state helpers live in src/utils/condolencePrompt.js — this module must
+// only export components (react-refresh/only-export-components).
 
 export default function CondolencePrompt({ slug, deceasedFirstName, onDismiss }) {
   return (
