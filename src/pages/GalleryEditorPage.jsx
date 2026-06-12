@@ -5,6 +5,7 @@ import { apiFetch } from '../utils/apiClient'
 import { useAuthStore } from '../stores/authStore'
 import { useNotification } from '../components/ui/notification'
 import PageMeta from '../components/seo/PageMeta'
+import { KenteBand } from '../components/ceremonial'
 
 const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
 
@@ -289,6 +290,7 @@ export default function GalleryEditorPage() {
           <span className="hidden sm:inline">Preview</span>
         </a>
       </nav>
+      <KenteBand size="card" className="shrink-0" />
 
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
         {/* Gallery Info + Share Link */}

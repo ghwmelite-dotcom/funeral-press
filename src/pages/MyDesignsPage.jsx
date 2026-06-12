@@ -39,6 +39,7 @@ import { usePrintOrderStore } from '../stores/printOrderStore'
 import GoogleLoginButton from '../components/auth/GoogleLoginButton'
 import UserMenu from '../components/auth/UserMenu'
 import FamilyReferralCard from '../components/referral/FamilyReferralCard'
+import { KenteBand, CeremonialDivider } from '../components/ceremonial'
 
 export default function MyDesignsPage() {
   const navigate = useNavigate()
@@ -191,6 +192,7 @@ export default function MyDesignsPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <KenteBand size="page" />
       {/* Top bar */}
       <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
         {user ? <UserMenu /> : <GoogleLoginButton />}
@@ -377,6 +379,7 @@ export default function MyDesignsPage() {
           </div>
         )}
       <div className="mt-8">
+        <CeremonialDivider />
         <FamilyReferralCard />
       </div>
       </div>

@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { Mail, Undo2, Redo2, Save, Download, Upload, History, Sun, Moon } from 'lucide-react'
+import { KenteBand } from '../ceremonial'
 import { useInvitationStore } from '../../stores/invitationStore'
 import { useThemeStore } from '../../stores/themeStore'
 import { useAuthStore } from '../../stores/authStore'
@@ -178,6 +179,7 @@ export default function InvitationNavbar() {
           </button>
         </div>
       </nav>
+      <KenteBand size="card" className="shrink-0" />
 
       <InvitationVersionsDialog open={versionsOpen} onOpenChange={setVersionsOpen} />
       <ImportConfirmDialog open={importConfirmOpen} onOpenChange={setImportConfirmOpen} onConfirm={handleImportConfirm} />

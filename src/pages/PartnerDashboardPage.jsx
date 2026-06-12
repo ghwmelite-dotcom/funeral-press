@@ -34,6 +34,7 @@ import { useThemeStore } from '../stores/themeStore'
 import UserMenu from '../components/auth/UserMenu'
 import GoogleLoginButton from '../components/auth/GoogleLoginButton'
 import WhatsAppTemplates from '../components/partner/WhatsAppTemplates'
+import { KenteBand, CeremonialDivider } from '../components/ceremonial'
 
 // ─── Commission config ───────────────────────────────────────────────────────
 
@@ -179,6 +180,7 @@ export default function PartnerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <KenteBand size="page" />
       {/* Top bar */}
       <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
         {user ? <UserMenu /> : <GoogleLoginButton />}
@@ -254,7 +256,9 @@ export default function PartnerDashboardPage() {
 
         {/* ═══ Tier & Earnings Hero ═══ */}
         {profile && (
-          <div className="bg-card border border-border rounded-xl p-6 mb-6">
+          <div className="bg-card border border-border rounded-xl mb-6 overflow-hidden">
+            <KenteBand size="card" />
+            <div className="p-6">
             <div className="flex flex-col sm:flex-row items-center gap-6">
               {/* Tier ring */}
               <div className="relative shrink-0">
@@ -280,6 +284,7 @@ export default function PartnerDashboardPage() {
                   </p>
                 )}
               </div>
+            </div>
             </div>
           </div>
         )}
@@ -627,6 +632,7 @@ export default function PartnerDashboardPage() {
         </div>
 
         {/* ═══ How It Works ═══ */}
+        <CeremonialDivider />
         <div className="mt-8 bg-muted/30 border border-border rounded-xl p-6">
           <h3 className="text-sm font-semibold text-foreground mb-3">How Partner Earnings Work</h3>
           <div className="space-y-3">
