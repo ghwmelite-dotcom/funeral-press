@@ -5,26 +5,31 @@ import blogPosts from '../../data/blogPosts'
 
 const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'https://funeralpress-auth-api.ghwmelite.workers.dev'
 
+const NOT_FOUND = Symbol('not-found')
+
 export default function BlogPostPage() {
   const { slug } = useParams()
   const staticPost = blogPosts.find((p) => p.slug === slug)
-  const [dynamicPost, setDynamicPost] = useState(null)
-  const [loading, setLoading] = useState(!staticPost)
-  const [notFound, setNotFound] = useState(false)
+  // Fetched D1 posts keyed by slug — loading/not-found derive from the map,
+  // so the effect never calls setState synchronously and navigating between
+  // two dynamic posts can't flash stale content.
+  const [fetched, setFetched] = useState({})
 
   useEffect(() => {
-    if (staticPost) return
-    setLoading(true)
+    if (staticPost || fetched[slug] !== undefined) return
     fetch(`${API_BASE}/blog/published/${encodeURIComponent(slug)}`)
       .then((r) => {
         if (!r.ok) throw new Error('not found')
         return r.json()
       })
-      .then((d) => { setDynamicPost(d.post); setLoading(false) })
-      .catch(() => { setNotFound(true); setLoading(false) })
-  }, [slug, staticPost])
+      .then((d) => setFetched((prev) => ({ ...prev, [slug]: d.post })))
+      .catch(() => setFetched((prev) => ({ ...prev, [slug]: NOT_FOUND })))
+  }, [slug, staticPost, fetched])
 
-  const post = staticPost || dynamicPost
+  const dynamicPost = fetched[slug]
+  const loading = !staticPost && dynamicPost === undefined
+  const notFound = dynamicPost === NOT_FOUND
+  const post = staticPost || (notFound ? null : dynamicPost)
 
   if (loading) {
     return (

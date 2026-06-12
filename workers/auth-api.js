@@ -24,7 +24,7 @@ import {
 import { PRODUCTS, priceFor, currencyForCountry, providerFor, isSubscription } from './priceBook.js'
 import { stripeRequest, verifyStripeSignature, checkoutSessionParams } from './stripeClient.js'
 import { draftPrompt, parseDraft, draftSlug } from './blogDraft.js'
-import { formatDelta, reportHtml } from './utils/growthReport.js'
+import { reportHtml } from './utils/growthReport.js'
 import { TELEGRAM_EVENTS, sendTelegram } from './telegramNotify.js'
 
 // FuneralPress Auth API Worker
