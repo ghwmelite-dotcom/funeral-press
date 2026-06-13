@@ -77,6 +77,7 @@ const OnboardingTour = lazy(() => import('./components/onboarding/OnboardingTour
 const ResetPinPage = lazy(() => import('./pages/ResetPinPage.jsx'))
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage.jsx'))
 const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage.jsx'))
+const AccountPage = lazy(() => import('./pages/AccountPage.jsx'))
 const EmailVerificationBanner = lazy(() => import('./components/auth/EmailVerificationBanner.jsx').then((m) => ({ default: m.EmailVerificationBanner })))
 
 function LoadingFallback() {
@@ -198,6 +199,7 @@ export default function App() {
               <Route path="/approve/:token" element={<FamilyHeadApprovalPage />} />
               <Route path="/family-head/:memorialId" element={<FamilyHeadDashboardPage />} />
               <Route path="/privacy/donations" element={<DonationPrivacyPage />} />
+              <Route path="/account" element={<AccountPage />} />
               <Route path="/auth/reset-pin" element={<ResetPinPage />} />
               <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
               <Route path="/reminders/unsubscribe" element={<UnsubscribePage />} />

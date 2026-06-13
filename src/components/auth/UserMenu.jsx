@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { LogOut, Cloud, FolderOpen, Users, Shield, BookOpen } from 'lucide-react'
+import { LogOut, Cloud, FolderOpen, Users, Shield, BookOpen, Settings } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { haptic } from '../../hooks/useHaptic'
 
@@ -123,6 +123,14 @@ export default function UserMenu({ onDark = false }) {
                 )
               })}
             </div>
+
+            <button
+              onClick={() => { setOpen(false); navigate('/account') }}
+              className="w-full flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <Settings size={14} />
+              <span>Account</span>
+            </button>
 
             <button
               onClick={() => { setOpen(false); logout() }}
