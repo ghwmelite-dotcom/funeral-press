@@ -441,6 +441,7 @@ async function handleGoogleLogin(request, env) {
   return json({
     user: {
       id: user.id, email: user.email, name: user.name, picture: user.picture,
+      phone: user.phone_e164 || null, authMethods: user.auth_methods || null,
       isPartner: !!(user.is_partner), referralCode: user.referral_code || null,
       partnerType: user.partner_type || null, partnerLogoUrl: user.partner_logo_url || null, partnerDenomination: user.partner_denomination || null,
       isAdmin: hasAdminPriv,
@@ -488,6 +489,7 @@ async function handleRefresh(request, env) {
   return json({
     user: {
       id: user.id, email: user.email, name: user.name, picture: user.picture,
+      phone: user.phone_e164 || null, authMethods: user.auth_methods || null,
       isPartner: !!(user.is_partner), referralCode: user.referral_code || null,
       partnerType: user.partner_type || null, partnerLogoUrl: user.partner_logo_url || null, partnerDenomination: user.partner_denomination || null,
       isAdmin: hasAdminPriv,
@@ -511,13 +513,14 @@ async function handleLogout(request, env, userId) {
 }
 
 async function handleGetMe(request, env, userId) {
-  const user = await env.DB.prepare('SELECT id, email, name, picture, is_partner, referral_code, partner_name, partner_type, partner_logo_url, partner_denomination, onboarded_at, email_verified_at FROM users WHERE id = ? AND deleted_at IS NULL').bind(userId).first()
+  const user = await env.DB.prepare('SELECT id, email, name, picture, phone_e164, auth_methods, is_partner, referral_code, partner_name, partner_type, partner_logo_url, partner_denomination, onboarded_at, email_verified_at FROM users WHERE id = ? AND deleted_at IS NULL').bind(userId).first()
   if (!user) return error('User not found', 404, request)
   const purchaseData = await getUserPurchaseData(env, userId)
   const hasAdminPriv = await isAdmin(userId, user.email, env)
   return json({
     user: {
       id: user.id, email: user.email, name: user.name, picture: user.picture,
+      phone: user.phone_e164 || null, authMethods: user.auth_methods || null,
       isPartner: !!(user.is_partner), referralCode: user.referral_code || null, partnerName: user.partner_name || null,
       partnerType: user.partner_type || null, partnerLogoUrl: user.partner_logo_url || null, partnerDenomination: user.partner_denomination || null,
       isAdmin: hasAdminPriv,
@@ -3361,6 +3364,7 @@ async function handlePhoneLogin(request, env) {
   return json({
     user: {
       id: user.id, email: user.email, name: user.name, phone: user.phone_e164,
+      authMethods: user.auth_methods || 'phone-pin',
       isAdmin: hasAdminPriv,
       isSuperAdmin: isSuperAdmin(user.email),
       // Field shape matches the Google login response so the frontend
