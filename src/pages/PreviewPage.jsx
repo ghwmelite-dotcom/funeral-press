@@ -104,7 +104,7 @@ export default function PreviewPage() {
             {({ loading }) => (
               <button
                 disabled={loading}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-white text-xs font-medium rounded-md transition-colors"
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-primary-foreground text-xs font-medium rounded-md transition-colors"
                 aria-label={loading ? 'Preparing PDF download' : 'Download PDF'}
               >
                 <Download size={14} />

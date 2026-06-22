@@ -204,7 +204,7 @@ export default function InstitutionalPartnerSignup({ open, onOpenChange, onCompl
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-medium rounded-lg transition-colors text-sm"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-medium rounded-lg transition-colors text-sm"
           >
             {isSaving ? (
               <>

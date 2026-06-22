@@ -156,7 +156,7 @@ export default function MemorialCreatorPage() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
             onClick={() => navigate('/obituary-creator')}
-            className="px-8 py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2"
+            className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2"
           >
             Create Memorial Free <ArrowRight className="w-5 h-5" />
           </button>
@@ -220,7 +220,7 @@ export default function MemorialCreatorPage() {
             { step: '4', title: 'Share the Link', desc: 'Publish and share via WhatsApp or QR code.' },
           ].map(({ step, title, desc }) => (
             <div key={step} className="text-center">
-              <div className="w-12 h-12 rounded-full bg-primary text-white font-bold text-lg flex items-center justify-center mx-auto mb-4">
+              <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground font-bold text-lg flex items-center justify-center mx-auto mb-4">
                 {step}
               </div>
               <h3 className="font-semibold mb-2">{title}</h3>
@@ -258,19 +258,19 @@ export default function MemorialCreatorPage() {
               key={key}
               className={`rounded-2xl p-7 border flex flex-col items-center text-center transition-all ${
                 primary
-                  ? 'bg-primary text-white border-primary shadow-lg scale-105'
+                  ? 'bg-primary text-primary-foreground border-primary shadow-lg scale-105'
                   : 'bg-card border-border hover:shadow-md'
               }`}
             >
-              <p className={`text-sm font-medium mb-1 ${primary ? 'text-white/70' : 'text-muted-foreground'}`}>{name}</p>
-              <p className={`text-3xl font-bold mb-2 ${primary ? 'text-white' : 'text-foreground'}`}>{formatMoney(priceFor(key, currency), currency)}</p>
-              <p className={`text-sm mb-6 ${primary ? 'text-white/80' : 'text-muted-foreground'}`}>{desc}</p>
+              <p className={`text-sm font-medium mb-1 ${primary ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{name}</p>
+              <p className={`text-3xl font-bold mb-2 ${primary ? 'text-primary-foreground' : 'text-foreground'}`}>{formatMoney(priceFor(key, currency), currency)}</p>
+              <p className={`text-sm mb-6 ${primary ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>{desc}</p>
               <button
                 onClick={() => navigate('/obituary-creator')}
                 className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors ${
                   primary
                     ? 'bg-white text-primary hover:bg-white/90'
-                    : 'bg-primary text-white hover:bg-primary/90'
+                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
                 }`}
               >
                 {cta}
@@ -300,7 +300,7 @@ export default function MemorialCreatorPage() {
           </p>
           <button
             onClick={() => navigate('/obituary-creator')}
-            className="px-8 py-3 rounded-xl bg-primary text-white font-semibold text-lg hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
+            className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-lg hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
           >
             Create Memorial Now <ArrowRight className="w-5 h-5" />
           </button>

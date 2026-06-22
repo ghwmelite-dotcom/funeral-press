@@ -56,6 +56,7 @@ export function DonationAmountStep({ tipDefaultPercent = 5, fxRate = 1, onContin
         type="number"
         inputMode="decimal"
         placeholder="Custom amount"
+        aria-label="Custom amount"
         value={custom}
         onChange={(e) => handleCustom(e.target.value)}
         className="w-full px-4 py-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"

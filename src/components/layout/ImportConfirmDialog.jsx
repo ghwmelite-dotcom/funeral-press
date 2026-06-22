@@ -16,7 +16,7 @@ export default function ImportConfirmDialog({ open, onOpenChange, onConfirm }) {
         </DialogHeader>
         <DialogFooter>
           <button onClick={() => onOpenChange(false)} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground border border-input rounded-md">Cancel</button>
-          <button onClick={() => { onConfirm(); onOpenChange(false) }} className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-white rounded-md">Import</button>
+          <button onClick={() => { onConfirm(); onOpenChange(false) }} className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-md">Import</button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

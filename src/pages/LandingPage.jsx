@@ -475,7 +475,13 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <main id="main" className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:text-sm focus:font-medium"
+      >
+        Skip to content
+      </a>
       <PageMeta
         title="FuneralPress — Ghana's All-in-One Funeral Design Platform"
         description="Design funeral brochures, posters, invitations, and memorial pages online. Ghana's most trusted funeral planning platform. Start designing free today."
@@ -836,7 +842,7 @@ export default function LandingPage() {
                     events.referralLinkShared('copy')
                   }
                 }}
-                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors whitespace-nowrap"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors whitespace-nowrap"
               >
                 Copy Link
               </button>
@@ -903,6 +909,7 @@ export default function LandingPage() {
                           {!item._isCloud && (
                             <button
                               onClick={(e) => meta.del(e, item.id)}
+                              aria-label="Delete design"
                               className="p-2 text-muted-foreground/60 hover:text-red-400 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                             >
                               <Trash2 size={14} />
@@ -1576,7 +1583,7 @@ export default function LandingPage() {
                   key={tab.key}
                   onClick={() => setThemeTab(tab.key)}
                   className={`relative z-10 px-4 py-2 text-sm font-medium rounded-full transition-colors duration-300 whitespace-nowrap shrink-0 ${
-                    themeTab === tab.key ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'
+                    themeTab === tab.key ? 'bg-primary text-primary-foreground shadow-md' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {tab.label}
@@ -1803,7 +1810,7 @@ export default function LandingPage() {
             })}
           </div>
           <div className="text-center mt-10">
-            <Link to="/blog" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-medium rounded-full hover:bg-primary/90 transition-colors shadow-md">
+            <Link to="/blog" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-full hover:bg-primary/90 transition-colors shadow-md">
               View All Guides <ArrowRight size={16} />
             </Link>
           </div>
@@ -1873,6 +1880,6 @@ export default function LandingPage() {
         }}
         initialCode={shareCode}
       />
-    </div>
+    </main>
   )
 }

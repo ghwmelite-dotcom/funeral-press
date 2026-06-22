@@ -60,8 +60,8 @@ export default function LoadSharedDialog({ open, onOpenChange, initialCode = '' 
           <div className="space-y-4 mt-2">
             {/* Code input */}
             <div>
-              <label className="block text-xs text-muted-foreground mb-2">Share Code</label>
-              <div className="flex items-center justify-center gap-1">
+              <label htmlFor="share-code-input" className="block text-xs text-muted-foreground mb-2">Share Code</label>
+              <div className="flex items-center justify-center gap-1" aria-hidden="true">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <span
                     key={i}
@@ -74,6 +74,7 @@ export default function LoadSharedDialog({ open, onOpenChange, initialCode = '' 
                 ))}
               </div>
               <input
+                id="share-code-input"
                 type="text"
                 value={code}
                 onChange={handleCodeInput}
@@ -100,7 +101,7 @@ export default function LoadSharedDialog({ open, onOpenChange, initialCode = '' 
             <button
               onClick={handleLoad}
               disabled={code.length !== 6 || loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-white text-sm font-medium rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground text-sm font-medium rounded-lg transition-colors"
             >
               {loading ? (
                 <>
@@ -125,7 +126,7 @@ export default function LoadSharedDialog({ open, onOpenChange, initialCode = '' 
             </div>
             <button
               onClick={handleClose}
-              className="w-full px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors"
+              className="w-full px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition-colors"
             >
               Open Editor
             </button>

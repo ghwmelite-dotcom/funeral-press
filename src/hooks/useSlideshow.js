@@ -35,8 +35,16 @@ export function useSlideshow(slides, options = {}) {
   const pause = useCallback(() => setIsPlaying(false), [])
   const toggle = useCallback(() => setIsPlaying(p => !p), [])
 
-  // Auto-advance
+  // Auto-advance. Respect prefers-reduced-motion: vestibular-sensitive users
+  // should not have slides moving on their own — they can still advance via the
+  // manual controls. The interval is skipped entirely when reduced motion is set.
   useEffect(() => {
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion) return
+
     if (isPlaying && !transitioning) {
       timerRef.current = setTimeout(next, autoPlayInterval)
     }

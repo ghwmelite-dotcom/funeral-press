@@ -23,7 +23,7 @@ export default function BudgetExportActions() {
       <h3 className="text-sm font-semibold text-foreground mb-4">Export</h3>
       <button
         onClick={handleExportCSV}
-        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-md transition-colors"
+        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-md transition-colors"
       >
         <Download size={14} /> Export as CSV
       </button>

@@ -78,7 +78,7 @@ export default function FuneralPosterTemplatesPage() {
               </div>
               <button
                 onClick={() => navigate('/poster-editor')}
-                className="mt-4 w-full py-2.5 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                className="mt-4 w-full py-2.5 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
               >
                 Use This Style <ArrowRight className="w-4 h-4" />
               </button>
@@ -102,7 +102,7 @@ export default function FuneralPosterTemplatesPage() {
           </p>
           <button
             onClick={() => navigate('/poster-editor')}
-            className="px-8 py-3 rounded-xl bg-primary text-white font-semibold text-lg hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
+            className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-lg hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
           >
             Start Designing <ArrowRight className="w-5 h-5" />
           </button>

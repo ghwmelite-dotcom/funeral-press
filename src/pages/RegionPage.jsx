@@ -146,7 +146,7 @@ export default function RegionPage() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
             onClick={() => navigate('/themes')}
-            className="px-8 py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2"
+            className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2"
           >
             Start Designing <ArrowRight className="w-5 h-5" />
           </button>
@@ -259,7 +259,7 @@ export default function RegionPage() {
           </p>
           <button
             onClick={() => navigate('/themes')}
-            className="px-8 py-3 rounded-xl bg-primary text-white font-semibold text-lg hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
+            className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-lg hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
           >
             Browse Templates <ArrowRight className="w-5 h-5" />
           </button>

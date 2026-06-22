@@ -39,7 +39,7 @@ export default function OrdersTab() {
                 key={s}
                 onClick={() => handleFilter(setStatus)(s)}
                 className={`px-2.5 py-1 text-xs rounded-full border transition-colors capitalize ${
-                  status === s ? 'bg-primary text-white border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'
+                  status === s ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'
                 }`}
               >
                 {s}
@@ -55,7 +55,7 @@ export default function OrdersTab() {
                 key={p}
                 onClick={() => handleFilter(setPlan)(p)}
                 className={`px-2.5 py-1 text-xs rounded-full border transition-colors capitalize ${
-                  plan === p ? 'bg-primary text-white border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'
+                  plan === p ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'
                 }`}
               >
                 {p}
@@ -71,7 +71,7 @@ export default function OrdersTab() {
                 key={d.key}
                 onClick={() => handleFilter(setDays)(d.key)}
                 className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
-                  days === d.key ? 'bg-primary text-white border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'
+                  days === d.key ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'
                 }`}
               >
                 {d.label}
