@@ -51,7 +51,7 @@ export default function DiasporaPage() {
         </h1>
         <p className="text-muted-foreground text-base leading-relaxed max-w-2xl mx-auto mb-8 diaspora-intro">{page.intro}</p>
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link to={page.cta.to} className="px-6 py-3 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors">
+          <Link to={page.cta.to} className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition-colors">
             {page.cta.label}
           </Link>
           <Link to="/honour" className="px-6 py-3 border border-border text-sm text-card-foreground rounded-lg hover:border-primary/40 transition-colors">

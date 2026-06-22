@@ -33,7 +33,7 @@ export default function GatedDownloadButton({ document, fileName, designId, prod
         {({ loading }) => (
           <button
             disabled={loading}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-white text-xs font-medium rounded-md transition-colors"
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted text-primary-foreground text-xs font-medium rounded-md transition-colors"
           >
             <Download size={14} />
             {loading ? 'Preparing...' : 'Download PDF'}
@@ -51,7 +51,7 @@ export default function GatedDownloadButton({ document, fileName, designId, prod
         events.brochureCompleted(productType)
         requestDownload(designId, productType)
       }}
-      className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-medium rounded-md transition-colors"
+      className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium rounded-md transition-colors"
     >
       <Download size={14} />
       Download PDF

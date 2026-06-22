@@ -111,7 +111,7 @@ export default function HymnPage() {
         {/* CTA */}
         <Link
           to={`/editor?hymn=${hymn.slug}`}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors mb-12"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition-colors mb-12"
         >
           Add this hymn to a funeral programme
           <ArrowRight size={15} />

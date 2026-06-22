@@ -104,7 +104,7 @@ export default function PrintOrdersTab() {
                 key={s}
                 onClick={() => handleFilter(setFulfillment)(s)}
                 className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
-                  fulfillment === s ? 'bg-primary text-white border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'
+                  fulfillment === s ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'
                 }`}
               >
                 {s === 'all' ? 'All' : formatLabel(s)}
@@ -120,7 +120,7 @@ export default function PrintOrdersTab() {
                 key={s}
                 onClick={() => handleFilter(setPayment)(s)}
                 className={`px-2.5 py-1 text-xs rounded-full border transition-colors capitalize ${
-                  payment === s ? 'bg-primary text-white border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'
+                  payment === s ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'
                 }`}
               >
                 {s}
@@ -244,7 +244,7 @@ export default function PrintOrdersTab() {
                                 />
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleSaveRef(order.id) }}
-                                  className="px-2 py-1.5 text-xs bg-primary text-white rounded-lg hover:bg-primary/90"
+                                  className="px-2 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
                                 >
                                   Save
                                 </button>
@@ -262,7 +262,7 @@ export default function PrintOrdersTab() {
                                 />
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleSaveDelivery(order.id) }}
-                                  className="px-2 py-1.5 text-xs bg-primary text-white rounded-lg hover:bg-primary/90"
+                                  className="px-2 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
                                 >
                                   Save
                                 </button>
@@ -281,7 +281,7 @@ export default function PrintOrdersTab() {
                                 />
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleSaveNotes(order.id) }}
-                                  className="px-2 py-1.5 text-xs bg-primary text-white rounded-lg hover:bg-primary/90 self-end"
+                                  className="px-2 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 self-end"
                                 >
                                   Save
                                 </button>

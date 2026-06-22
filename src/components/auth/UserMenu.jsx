@@ -64,6 +64,9 @@ export default function UserMenu({ onDark = false }) {
           onClick={() => { haptic('light'); setOpen(!open) }}
           className="flex items-center gap-1.5 rounded-full hover:ring-2 hover:ring-primary/30 transition-all"
           title={user.name}
+          aria-label="Account menu"
+          aria-haspopup="menu"
+          aria-expanded={open}
         >
           {user.picture ? (
             <img src={user.picture} alt="" className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" />

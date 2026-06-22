@@ -235,7 +235,7 @@ export default function PartnerDashboardPage() {
               </div>
               <button
                 onClick={handleCopy}
-                className="shrink-0 p-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
+                className="shrink-0 p-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors"
                 title="Copy link"
               >
                 {copied ? <Check size={16} /> : <Copy size={16} />}
@@ -390,7 +390,7 @@ export default function PartnerDashboardPage() {
                           {t.name}
                         </span>
                         {isActive && (
-                          <span className="text-[9px] bg-primary text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                          <span className="text-[9px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold">
                             Current
                           </span>
                         )}
@@ -606,7 +606,7 @@ export default function PartnerDashboardPage() {
             <MessageCircle size={16} className="text-primary" />
             <h2 className="text-sm font-semibold text-foreground">Partner Support</h2>
             {profile?.partner_type && (
-              <span className="text-[9px] bg-primary text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold ml-auto">
+              <span className="text-[9px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold ml-auto">
                 Priority Support
               </span>
             )}

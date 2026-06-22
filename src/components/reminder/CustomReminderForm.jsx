@@ -51,7 +51,7 @@ export default function CustomReminderForm() {
         <button
           onClick={handleAdd}
           disabled={!label.trim() || !date}
-          className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-white text-xs font-medium rounded-md transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground text-xs font-medium rounded-md transition-colors"
         >
           <Plus size={14} /> Add Reminder
         </button>

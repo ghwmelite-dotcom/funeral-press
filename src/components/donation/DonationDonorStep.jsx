@@ -30,8 +30,9 @@ export function DonationDonorStep({ wallMode, onBack, onContinue }) {
       <h3 className="text-lg font-semibold text-foreground">How would you like to appear on the wall?</h3>
 
       <div>
-        <label className="block text-sm text-muted-foreground mb-1">Display name</label>
+        <label htmlFor="donor-display-name" className="block text-sm text-muted-foreground mb-1">Display name</label>
         <input
+          id="donor-display-name"
           type="text"
           autoFocus
           value={donor.display_name}
@@ -63,8 +64,9 @@ export function DonationDonorStep({ wallMode, onBack, onContinue }) {
       </fieldset>
 
       <div>
-        <label className="block text-sm text-muted-foreground mb-1">Email (optional)</label>
+        <label htmlFor="donor-email" className="block text-sm text-muted-foreground mb-1">Email (optional)</label>
         <input
+          id="donor-email"
           type="email"
           value={donor.email}
           onChange={(e) => setDonor({ email: e.target.value })}

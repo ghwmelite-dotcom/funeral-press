@@ -115,7 +115,7 @@ export default function UsersTab() {
               onClick={() => handleFilter(f.key)}
               className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
                 filter === f.key
-                  ? 'bg-primary text-white border-primary'
+                  ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-card text-muted-foreground border-border hover:border-primary/50'
               }`}
             >
@@ -299,7 +299,7 @@ export default function UsersTab() {
             <button
               onClick={handleGrant}
               disabled={granting}
-              className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
+              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
             >
               {granting && <Loader2 size={14} className="animate-spin" />}
               Grant {grantAmount} Credit{grantAmount !== 1 ? 's' : ''}

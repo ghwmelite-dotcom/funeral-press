@@ -21,7 +21,7 @@ export default function ExpenseTable() {
         </select>
         <button
           onClick={() => store.addExpense(selectedCategory)}
-          className="flex items-center gap-1 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-medium rounded-md transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium rounded-md transition-colors"
         >
           <Plus size={12} /> Add Expense
         </button>

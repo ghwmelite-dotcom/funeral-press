@@ -122,7 +122,7 @@ function BookletBackupReminder() {
   return (
     <div className="mb-3 px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-2 text-xs text-primary">
       <span className="flex-1">You have unsaved changes. Don't forget to save!</span>
-      <button onClick={() => { saveBooklet(); setDismissed(true) }} className="px-3 py-2 bg-primary text-white rounded text-xs hover:bg-primary/90">Save Now</button>
+      <button onClick={() => { saveBooklet(); setDismissed(true) }} className="px-3 py-2 bg-primary text-primary-foreground rounded text-xs hover:bg-primary/90">Save Now</button>
       <button onClick={() => setDismissed(true)} className="text-primary hover:text-primary/80 text-sm font-bold p-2">&times;</button>
     </div>
   )
@@ -292,7 +292,7 @@ export default function BookletEditorLayout() {
         <>
           <button
             onClick={() => setShowMobilePreview(true)}
-            className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-full shadow-lg transition-colors lg:hidden"
+            className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-full shadow-lg transition-colors lg:hidden"
             aria-label="Preview PDF"
           >
             <Eye size={18} /> Preview

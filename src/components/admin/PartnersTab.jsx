@@ -179,7 +179,7 @@ export default function PartnersTab() {
         </div>
         <button
           onClick={handleOpenPromote}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
         >
           <UserPlus size={12} />
           Promote User
@@ -306,7 +306,7 @@ export default function PartnersTab() {
             <button
               onClick={handlePromote}
               disabled={!promoteUserId || !promoteName || promoting}
-              className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
+              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
             >
               {promoting && <Loader2 size={14} className="animate-spin" />}
               Promote

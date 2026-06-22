@@ -62,7 +62,7 @@ export default function FamilyReferralCard({ surface = 'referral_dashboard', com
             <button
               type="button"
               onClick={copy}
-              className="flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-xs font-medium transition-colors whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs font-medium transition-colors whitespace-nowrap"
             >
               {copied ? <Check size={13} /> : <Copy size={13} />}
               {copied ? 'Copied' : 'Copy link'}

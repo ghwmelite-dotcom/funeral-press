@@ -149,7 +149,13 @@ export default function MemorialPage() {
   })()
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: theme.pageBg }}>
+    <main id="main" className="min-h-screen" style={{ backgroundColor: theme.pageBg }}>
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:text-sm focus:font-medium"
+      >
+        Skip to content
+      </a>
       {showQrRibbon && (
         <div
           className="sticky top-0 z-40 flex items-center justify-center gap-3 px-4 py-2 text-xs"
@@ -449,6 +455,6 @@ export default function MemorialPage() {
           </a>
         </div>
       )}
-    </div>
+    </main>
   )
 }

@@ -60,7 +60,7 @@ export default function AnniversaryTimeline() {
 
               {/* Days badge */}
               <div className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 ${
-                isToday ? 'bg-primary text-white' : isSoon ? 'bg-amber-500/20 text-amber-400' : 'bg-muted text-muted-foreground'
+                isToday ? 'bg-primary text-primary-foreground' : isSoon ? 'bg-amber-500/20 text-amber-400' : 'bg-muted text-muted-foreground'
               }`}>
                 {isToday ? 'TODAY' : `${date.daysUntil}d`}
               </div>

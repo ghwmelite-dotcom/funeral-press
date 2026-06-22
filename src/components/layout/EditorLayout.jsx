@@ -318,7 +318,7 @@ export default function EditorLayout() {
         <>
           <button
             onClick={() => setShowMobilePreview(true)}
-            className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-full shadow-lg transition-colors lg:hidden"
+            className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-full shadow-lg transition-colors lg:hidden"
             aria-label="Preview PDF"
           >
             <Eye size={18} /> Preview

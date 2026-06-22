@@ -11,6 +11,7 @@ import puppeteer from 'puppeteer'
 import blogPosts from '../src/data/blogPosts.js'
 import { REGIONS } from '../src/data/regions.js'
 import { collectPrerenderRoutes } from '../vite-plugins/prerender-routes.js'
+import { stripDuplicateShellMeta } from './stripShellMeta.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -87,7 +88,9 @@ async function renderAll(browser, routes) {
       }
       const out = outPathForRoute(route)
       mkdirSync(dirname(out), { recursive: true })
-      writeFileSync(out, html, 'utf8')
+      // Strip the static shell's duplicate title/description/og/twitter tags so
+      // only Helmet's per-page set survives (one canonical title + description).
+      writeFileSync(out, stripDuplicateShellMeta(html), 'utf8')
       log(`done ${route} -> ${out.replace(ROOT, '.')}`)
     }
     await page.close()

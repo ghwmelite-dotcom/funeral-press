@@ -86,7 +86,7 @@ export function PhonePinLoginDialog({
               </div>
 
               <div>
-                <span className="block text-sm text-foreground mb-1">PIN</span>
+                <label className="block text-sm text-foreground mb-1">PIN</label>
                 <PinInput value={pin} onChange={updatePin} disabled={loading} ariaLabel="PIN" />
               </div>
 

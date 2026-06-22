@@ -44,6 +44,7 @@ export default function SlideshowControls({
         <button
           onClick={slideshow.prev}
           disabled={slideshow.currentIndex === 0}
+          aria-label="Previous slide"
           className="p-2 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
         >
           <SkipBack size={18} />
@@ -51,7 +52,8 @@ export default function SlideshowControls({
 
         <button
           onClick={slideshow.toggle}
-          className="p-3 bg-primary hover:bg-primary/90 text-white rounded-full transition-colors"
+          aria-label={slideshow.isPlaying ? 'Pause slideshow' : 'Play slideshow'}
+          className="p-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full transition-colors"
         >
           {slideshow.isPlaying ? <Pause size={20} /> : <Play size={20} />}
         </button>
@@ -59,6 +61,7 @@ export default function SlideshowControls({
         <button
           onClick={slideshow.next}
           disabled={slideshow.currentIndex >= slideshow.totalSlides - 1}
+          aria-label="Next slide"
           className="p-2 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
         >
           <SkipForward size={18} />
@@ -71,6 +74,7 @@ export default function SlideshowControls({
           onClick={() => musicInputRef.current?.click()}
           className="p-2 text-muted-foreground hover:text-foreground transition-colors"
           title="Add background music"
+          aria-label="Add background music"
         >
           <Music size={16} />
         </button>

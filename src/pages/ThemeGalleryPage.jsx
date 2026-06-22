@@ -55,7 +55,7 @@ export default function ThemeGalleryPage() {
               onClick={() => setActiveCategory(key)}
               className={`px-4 py-2 text-sm rounded-lg transition-colors ${
                 activeCategory === key
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
             >
