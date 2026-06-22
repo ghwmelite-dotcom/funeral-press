@@ -3,7 +3,11 @@
  *
  * POST / - Save brochure, return 6-char share code
  * GET /:code - Load shared brochure
- * PUT /:code - Update shared brochure
+ *
+ * Shares are IMMUTABLE: there is intentionally no update endpoint. An
+ * unauthenticated PUT would let anyone who guesses/scrapes a 6-char code
+ * overwrite any family's shared brochure. To change a share, POST again for a
+ * fresh code.
  *
  * DEPLOYMENT:
  * 1. Create KV namespace "BROCHURE_SHARES" in Cloudflare Dashboard
@@ -38,7 +42,7 @@ function getCorsOrigin(request) {
 function makeCorsHeaders(request) {
   return {
     "Access-Control-Allow-Origin": request ? getCorsOrigin(request) : PROD_ORIGINS[0],
-    "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
   }
@@ -117,36 +121,6 @@ async function handleGet(code, env, request) {
   }
 }
 
-async function handlePut(code, request, env) {
-  try {
-    const existing = await env.BROCHURES_KV.get(code)
-    if (!existing) {
-      return new Response(JSON.stringify({ error: "Share code not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json", ...makeCorsHeaders(request) }
-      })
-    }
-
-    const body = await request.json()
-
-    // Update with fresh TTL
-    await env.BROCHURES_KV.put(code, JSON.stringify({
-      ...body,
-      updatedAt: new Date().toISOString(),
-    }), { expirationTtl: 30 * 24 * 60 * 60 })
-
-    return new Response(JSON.stringify({ code, updated: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...makeCorsHeaders(request) }
-    })
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...makeCorsHeaders(request) }
-    })
-  }
-}
-
 const handler = {
   async fetch(request, env) {
     // Stash env on request so CORS helpers can gate localhost behind ENVIRONMENT=dev
@@ -175,7 +149,7 @@ const handler = {
     const path = url.pathname.replace(/^\//, '')
 
     if (env.RATE_LIMITS) {
-      const isWrite = request.method === 'POST' || request.method === 'PUT'
+      const isWrite = request.method === 'POST'
       const limited = await checkRateLimit(
         request,
         env.RATE_LIMITS,
@@ -199,8 +173,12 @@ const handler = {
       return handleGet(path, env, request)
     }
 
-    if (request.method === "PUT" && path) {
-      return handlePut(path, request, env)
+    // Shares are immutable — PUT/PATCH/DELETE are intentionally unsupported.
+    if (request.method !== "GET" && request.method !== "POST") {
+      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+        status: 405,
+        headers: { "Content-Type": "application/json", "Allow": "GET, POST, OPTIONS", ...makeCorsHeaders(request) }
+      })
     }
 
     return new Response(JSON.stringify({ error: "Not found" }), {

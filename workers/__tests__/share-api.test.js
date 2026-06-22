@@ -116,39 +116,34 @@ describe('share-api worker', () => {
     expect(json.error).toMatch(/not found/i)
   })
 
-  it('PUT /:code returns 200 {code, updated:true} when KV has the entry and refreshes TTL', async () => {
+  it('PUT /:code is rejected (405) and never writes to KV — shares are immutable', async () => {
+    // Security: an unauthenticated PUT previously let anyone overwrite any
+    // family's shared brochure by guessing a 6-char code. The endpoint is gone.
     const env = makeEnv({ kvSeed: { ABCDEF: JSON.stringify({ fullName: 'Original' }) } })
-    const req = makeReq('PUT', '/ABCDEF', { body: { fullName: 'Updated', tribute: 'New text' } })
+    const req = makeReq('PUT', '/ABCDEF', { body: { fullName: 'Hijacked', tribute: 'defaced' } })
     const res = await worker.fetch(req, env)
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(405)
     const json = await res.json()
-    expect(json).toEqual({ code: 'ABCDEF', updated: true })
-    expect(env.BROCHURES_KV.put).toHaveBeenCalledTimes(1)
-    const [key, value, opts] = env.BROCHURES_KV.put.mock.calls[0]
-    expect(key).toBe('ABCDEF')
-    const stored = JSON.parse(value)
-    expect(stored.fullName).toBe('Updated')
-    expect(stored.tribute).toBe('New text')
-    expect(stored.updatedAt).toBeTruthy()
-    expect(opts).toEqual({ expirationTtl: 30 * 24 * 60 * 60 })
+    expect(json.error).toMatch(/method not allowed/i)
+    expect(env.BROCHURES_KV.put).not.toHaveBeenCalled()
+    // Stored brochure is untouched
+    expect(JSON.parse(env.BROCHURES_KV._map.get('ABCDEF')).fullName).toBe('Original')
   })
 
-  it('PUT /:code returns 404 when KV does not have the entry', async () => {
-    const env = makeEnv()
-    const req = makeReq('PUT', '/MISSNG', { body: { fullName: 'X' } })
-    const res = await worker.fetch(req, env)
-    expect(res.status).toBe(404)
-    const json = await res.json()
-    expect(json.error).toMatch(/not found/i)
+  it('DELETE /:code is rejected (405) and never mutates KV', async () => {
+    const env = makeEnv({ kvSeed: { ABCDEF: JSON.stringify({ fullName: 'Original' }) } })
+    const res = await worker.fetch(makeReq('DELETE', '/ABCDEF'), env)
+    expect(res.status).toBe(405)
+    expect(env.BROCHURES_KV.delete).not.toHaveBeenCalled()
     expect(env.BROCHURES_KV.put).not.toHaveBeenCalled()
   })
 
-  it('OPTIONS returns 204 with CORS headers including PUT in Allow-Methods', async () => {
+  it('OPTIONS returns 204 with CORS headers; PUT is NOT advertised in Allow-Methods', async () => {
     const env = makeEnv()
     const req = makeReq('OPTIONS', '/')
     const res = await worker.fetch(req, env)
     expect(res.status).toBe(204)
-    expect(res.headers.get('Access-Control-Allow-Methods')).toContain('PUT')
+    expect(res.headers.get('Access-Control-Allow-Methods')).not.toContain('PUT')
     expect(res.headers.get('Access-Control-Allow-Methods')).toContain('GET')
     expect(res.headers.get('Access-Control-Allow-Methods')).toContain('POST')
     expect(res.headers.get('Access-Control-Allow-Origin')).toBeTruthy()
@@ -175,7 +170,7 @@ describe('share-api worker', () => {
     expect(res.headers.get('Retry-After')).toBe('60')
   })
 
-  it('Rate limit: write group at limit returns 429 on POST and PUT', async () => {
+  it('Rate limit: write group at limit returns 429 on POST', async () => {
     const env = makeEnv({
       kvSeed: { ABCDEF: JSON.stringify({ fullName: 'X' }) },
       rateSeed: { 'rate:1.2.3.4:share:write': '10' },
@@ -185,11 +180,5 @@ describe('share-api worker', () => {
       env
     )
     expect(postRes.status).toBe(429)
-
-    const putRes = await worker.fetch(
-      makeReq('PUT', '/ABCDEF', { body: { fullName: 'Z' }, ip: '1.2.3.4' }),
-      env
-    )
-    expect(putRes.status).toBe(429)
   })
 })
