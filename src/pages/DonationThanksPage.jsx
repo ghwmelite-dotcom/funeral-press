@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { donationApi } from '../utils/donationApi.js'
+import { events } from '../utils/analytics.js'
 import { DonationThankYouCard } from '../components/donation/DonationThankYouCard.jsx'
 import { PhonePinLoginDialog } from '../components/auth/PhonePinLoginDialog.jsx'
 import GoogleLoginButton from '../components/auth/GoogleLoginButton.jsx'
@@ -27,7 +28,22 @@ export default function DonationThanksPage() {
         return r.json()
       })
       .then((data) => {
-        if (!cancelled && data) setDonation(data)
+        if (cancelled || !data) return
+        setDonation(data)
+        // This is the post-payment success page — loading the donation means a
+        // completed donation. Fire once per reference so a refresh/back doesn't
+        // double-count. Donations previously fired no conversion event at all.
+        try {
+          const key = `fp-donation-tracked-${reference}`
+          if (!sessionStorage.getItem(key)) {
+            sessionStorage.setItem(key, '1')
+            events.donationCompleted({
+              reference,
+              amount_minor: data.display_amount_minor,
+              currency: data.display_currency,
+            })
+          }
+        } catch { /* analytics best-effort */ }
       })
       .catch((err) => {
         console.error('Failed to load donation by ref:', err)

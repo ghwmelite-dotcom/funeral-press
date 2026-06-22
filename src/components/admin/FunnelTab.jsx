@@ -70,11 +70,12 @@ export default function FunnelTab() {
         })}
       </div>
 
-      {/* Note about missing stages */}
+      {/* Note about stages */}
       <p className="text-xs text-muted-foreground">
-        Funnel shows users who fired the corresponding event in the last {funnel.days} days. Visit
-        and Print stages are not yet tracked; conversion rates are stage-to-stage from Signup
-        onward. Each stage counts distinct users who fired the event in window.
+        Funnel over the last {funnel.days} days{funnel.source ? ` for source “${funnel.source}”` : ''}.
+        Visited counts distinct sessions (top of funnel); Signup onward counts distinct users who
+        fired the event. Conversion rates are stage-to-stage. Append <code>?source=</code> to segment
+        by campaign (utm_source). Print stage is not yet tracked.
       </p>
     </div>
   )

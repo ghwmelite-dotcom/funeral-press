@@ -2,8 +2,15 @@ import { useEffect } from 'react'
 import Navbar from '../components/layout/Navbar'
 import EditorLayout from '../components/layout/EditorLayout'
 import { useBrochureStore } from '../stores/brochureStore'
+import { events } from '../utils/analytics'
 
 export default function EditorPage() {
+  // Funnel stage "Started design". Previously brochure_started was defined but
+  // never emitted, so the admin funnel's middle stages always read 0.
+  useEffect(() => {
+    events.brochureStarted('brochure')
+  }, [])
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Skip when focus is in form elements

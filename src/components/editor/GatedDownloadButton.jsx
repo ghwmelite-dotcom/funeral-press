@@ -1,6 +1,7 @@
 import { PDFDownloadLink } from '@react-pdf/renderer'
 import { Download } from 'lucide-react'
 import { usePurchaseStore } from '../../stores/purchaseStore'
+import { events } from '../../utils/analytics'
 
 // Known threat model: the unlock check below reads from the client-side
 // purchaseStore, and react-pdf renders the PDF entirely in-browser, so a
@@ -44,7 +45,12 @@ export default function GatedDownloadButton({ document, fileName, designId, prod
 
   return (
     <button
-      onClick={() => requestDownload(designId, productType)}
+      onClick={() => {
+        // Funnel stage "Completed design": the user finished a design and is
+        // asking to download it (hits the paywall). Previously unemitted.
+        events.brochureCompleted(productType)
+        requestDownload(designId, productType)
+      }}
       className="flex items-center gap-1.5 px-4 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium rounded-md transition-colors"
     >
       <Download size={14} />
