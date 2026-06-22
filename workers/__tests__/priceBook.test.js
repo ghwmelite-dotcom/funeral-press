@@ -29,14 +29,15 @@ describe('currencyForCountry', () => {
       CURRENCIES.USD.enabled = false
     }
   })
-  it('prefers GBP for UK/EU when GBP is enabled', () => {
-    CURRENCIES.GBP.enabled = true
+  it('routes UK/EU diaspora to USD when enabled, else GHS (GBP was dropped)', () => {
+    expect(currencyForCountry('GB')).toBe('GHS') // USD dormant → GHS fallback
+    expect(currencyForCountry('FR')).toBe('GHS')
+    CURRENCIES.USD.enabled = true
     try {
-      expect(currencyForCountry('GB')).toBe('GBP')
-      expect(currencyForCountry('FR')).toBe('GBP')
-      expect(currencyForCountry('US')).toBe('GHS') // USD still dormant
+      expect(currencyForCountry('GB')).toBe('USD')
+      expect(currencyForCountry('FR')).toBe('USD')
     } finally {
-      CURRENCIES.GBP.enabled = false
+      CURRENCIES.USD.enabled = false
     }
   })
 })
@@ -44,11 +45,9 @@ describe('currencyForCountry', () => {
 describe('priceFor', () => {
   it('returns spec prices for single', () => {
     expect(priceFor('single', 'GHS')).toBe(3500)
-    expect(priceFor('single', 'GBP')).toBe(900)
     expect(priceFor('single', 'USD')).toBe(1200)
   })
   it('returns spec prices for memorial heritage annual', () => {
-    expect(priceFor('memorial_heritage_annual', 'GBP')).toBe(4900)
     expect(priceFor('memorial_heritage_annual', 'USD')).toBe(5900)
   })
   it('throws on unknown product or currency', () => {
@@ -63,8 +62,9 @@ describe('providerFor', () => {
     expect(providerFor('NGN')).toBe('paystack')
     expect(providerFor('USD')).toBe('paystack')
   })
-  it('keeps GBP on stripe (dormant, pending a UK entity)', () => {
-    expect(providerFor('GBP')).toBe('stripe')
+  it('GBP is no longer a known currency (dropped — no provider)', () => {
+    expect(() => providerFor('GBP')).toThrow()
+    expect(CURRENCIES.GBP).toBeUndefined()
   })
 })
 
@@ -85,7 +85,7 @@ describe('product metadata', () => {
   it('only GHS is enabled until Paystack activates USD', () => {
     expect(CURRENCIES.GHS.enabled).toBe(true)
     expect(CURRENCIES.USD.enabled).toBe(false)
-    expect(CURRENCIES.GBP.enabled).toBe(false)
+    expect(CURRENCIES.GBP).toBeUndefined()
     expect(CURRENCIES.NGN.enabled).toBe(false)
   })
 })

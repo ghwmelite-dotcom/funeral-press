@@ -11,7 +11,6 @@ import puppeteer from 'puppeteer'
 import blogPosts from '../src/data/blogPosts.js'
 import { REGIONS } from '../src/data/regions.js'
 import { collectPrerenderRoutes } from '../vite-plugins/prerender-routes.js'
-import { stripDuplicateShellMeta } from './stripShellMeta.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -62,6 +61,33 @@ async function renderRoute(page, route) {
     },
     { timeout: 15000 },
   )
+  // Collapse the duplicate shell + Helmet head tags to a single per-page set,
+  // operating on the LIVE DOM (more reliable than regex post-processing):
+  //  - <title>: react-helmet-async leaves the captured head with the per-page
+  //    title AND the stale shell default, neither marked. document.title is the
+  //    authoritative per-page value, so keep exactly the element matching it.
+  //  - description / og:* / twitter:*: keep the LAST occurrence of each key
+  //    (Helmet's per-page tag is appended after the shell default).
+  // This must never strip to zero — an earlier data-rh-based stripper deleted
+  // every title because Helmet's title carries no marker.
+  await page.evaluate(() => {
+    const head = document.head
+    const wanted = document.title
+    let keptTitle = false
+    for (const t of [...head.querySelectorAll('title')]) {
+      if (!keptTitle && t.textContent === wanted) { keptTitle = true; continue }
+      t.remove()
+    }
+    const sel = 'meta[name="description"], meta[property^="og:"], meta[name^="twitter:"]'
+    const metas = [...head.querySelectorAll(sel)]
+    const seen = new Set()
+    for (let i = metas.length - 1; i >= 0; i--) {
+      const m = metas[i]
+      const key = m.getAttribute('property') || m.getAttribute('name')
+      if (seen.has(key)) m.remove()
+      else seen.add(key)
+    }
+  })
   return page.content()
 }
 
@@ -88,9 +114,9 @@ async function renderAll(browser, routes) {
       }
       const out = outPathForRoute(route)
       mkdirSync(dirname(out), { recursive: true })
-      // Strip the static shell's duplicate title/description/og/twitter tags so
-      // only Helmet's per-page set survives (one canonical title + description).
-      writeFileSync(out, stripDuplicateShellMeta(html), 'utf8')
+      // Head was already de-duplicated in the DOM (see renderRoute): one
+      // per-page title + description + og/twitter set.
+      writeFileSync(out, html, 'utf8')
       log(`done ${route} -> ${out.replace(ROOT, '.')}`)
     }
     await page.close()

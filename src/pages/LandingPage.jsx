@@ -591,18 +591,18 @@ export default function LandingPage() {
               {/* Social proof */}
               <div className="flex items-center gap-5 sm:gap-7 mt-10 justify-center lg:justify-start">
                 <div className="text-center lg:text-left">
-                  <div className="font-semibold text-2xl tabular-nums" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: 'var(--ceremonial-ink-strong)' }}>500+</div>
-                  <div className="text-xs" style={{ color: 'var(--ceremonial-ink-muted)' }}>Families served</div>
+                  <div className="font-semibold text-2xl tabular-nums" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: 'var(--ceremonial-ink-strong)' }}>13</div>
+                  <div className="text-xs" style={{ color: 'var(--ceremonial-ink-muted)' }}>Designs, one platform</div>
                 </div>
                 <div className="w-px h-9" style={{ background: 'rgba(232,199,102,0.16)' }} />
                 <div className="text-center lg:text-left">
-                  <div className="font-semibold text-2xl tabular-nums" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: 'var(--ceremonial-ink-strong)' }}>2,000+</div>
-                  <div className="text-xs" style={{ color: 'var(--ceremonial-ink-muted)' }}>Tributes created</div>
+                  <div className="font-semibold text-2xl tabular-nums" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: 'var(--ceremonial-ink-strong)' }}>16</div>
+                  <div className="text-xs" style={{ color: 'var(--ceremonial-ink-muted)' }}>Regions of Ghana</div>
                 </div>
                 <div className="w-px h-9" style={{ background: 'rgba(232,199,102,0.16)' }} />
                 <div className="text-center lg:text-left">
-                  <div className="text-sm tracking-[3px]" style={{ color: 'var(--ceremonial-gold)' }}>★★★★★</div>
-                  <div className="text-xs" style={{ color: 'var(--ceremonial-ink-muted)' }}>Loved across Ghana</div>
+                  <div className="font-semibold text-2xl" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: 'var(--ceremonial-ink-strong)' }}>Minutes</div>
+                  <div className="text-xs" style={{ color: 'var(--ceremonial-ink-muted)' }}>To a print-ready PDF</div>
                 </div>
               </div>
 
@@ -1880,7 +1880,7 @@ export default function LandingPage() {
             <Plus size={18} />
             Start Creating
           </button>
-          <p className="mt-7 text-xs tracking-wide" style={{ color: 'var(--ceremonial-ink-muted)' }}>500+ families served &nbsp;·&nbsp; 2,000+ tributes created</p>
+          <p className="mt-7 text-xs tracking-wide" style={{ color: 'var(--ceremonial-ink-muted)' }}>Free to design &nbsp;·&nbsp; print-ready in minutes &nbsp;·&nbsp; built for every region of Ghana</p>
         </div>
       </section>
 

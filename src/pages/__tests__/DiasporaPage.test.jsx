@@ -8,7 +8,7 @@ import { DIASPORA_PAGES } from '../../data/diasporaPages.js'
 
 describe('DiasporaPage', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ country: 'GB', currency: 'GBP' }) })))
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ country: 'GB', currency: 'USD' }) })))
   })
 
   function renderSlug(slug) {
