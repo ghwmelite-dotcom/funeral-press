@@ -1,6 +1,18 @@
 // Workers-compatible JWT (HS256) — no Node libs.
 
+// Fail closed on a missing secret. If JWT_SECRET is ever unset/empty on a
+// redeploy, `secret` arrives as undefined and TextEncoder coerces it to the
+// literal string "undefined" — a known, forgeable HMAC key (incl. admin
+// tokens, since authz trusts the JWT `sub`). Reject rather than key off that.
+// (Minimum-length/strength policy belongs in deploy/CI, not the crypto path.)
+function hasSecret(secret) {
+  return typeof secret === 'string' && secret.length > 0
+}
+
 export async function signJWT(payload, secret) {
+  if (!hasSecret(secret)) {
+    throw new Error('JWT_SECRET is missing — refusing to sign a token')
+  }
   const header = { alg: 'HS256', typ: 'JWT' }
   const enc = new TextEncoder()
   const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
@@ -14,6 +26,8 @@ export async function signJWT(payload, secret) {
 
 export async function verifyJWT(token, secret) {
   try {
+    // Reject every token rather than verify against a missing key.
+    if (!hasSecret(secret)) return null
     const parts = (token || '').split('.')
     if (parts.length !== 3) return null
     const [headerB64, payloadB64, sigB64] = parts
