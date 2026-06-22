@@ -206,7 +206,7 @@ funeralpress.org
 | 23 (Tue) | IG | Cultural | Carousel | "Fantasy Coffins of Ghana: Where Art Meets the Afterlife" — 8-slide visual carousel |
 | 24 (Wed) | X | Cultural | Single image | "In Ghana, we do not just mourn the dead. We celebrate the life they lived. That philosophy is at the heart of everything we build." |
 | 24 (Wed) | IG | Product | Reel/Video | Demo: Using the AI Tribute Writer to generate a heartfelt tribute |
-| 25 (Thu) | X | Behind the Scenes | Thread | "We made FuneralPress completely free. Here is the honest reason why — and how we plan to sustain it." |
+| 25 (Thu) | X | Behind the Scenes | Thread | "Why FuneralPress lets you design for free and only charges (from GHS 35) when you download — the honest economics." |
 | 25 (Thu) | IG | Emotional | Quote card | "They may be gone from our sight, but never from our hearts. Design their tribute at funeralpress.org" |
 | 26 (Fri) | X | Product | Thread | "Thread: 10 features of FuneralPress you probably did not know about" (QR cards, wreath cards, donation receipts, flipbook, etc.) |
 | 26 (Fri) | IG | Educational | Carousel | "Documents You Need Before a Burial in Ghana" — 6-slide checklist carousel |
@@ -387,7 +387,7 @@ Funeral planning is hard enough without last-minute surprises.
 
 Bookmark this thread. Share it with someone planning a funeral.
 
-And when you are ready, funeralpress.org has every tool you need — completely free.
+And when you are ready, funeralpress.org has every tool you need — free to design, with print-ready downloads from GHS 35.
 
 ---
 
@@ -429,7 +429,7 @@ Body: "QR code cards, wreath message cards, donation receipt booklets — all de
 Visual: Grid of QR cards, wreath cards, and receipts
 
 **Slide 8 (CTA):**
-Title: "100% Free. No Watermarks. No Catch."
+Title: "Free to Design — Pay Only to Download. From GHS 35."
 Body: "Start designing now at funeralpress.org"
 Subtitle: "Built in Ghana, for Ghana and Africa."
 Visual: FuneralPress logo + URL

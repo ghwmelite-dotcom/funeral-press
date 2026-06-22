@@ -82,7 +82,7 @@
 >
 > I built FuneralPress (funeralpress.org) — a free web app where you can design your own funeral brochure, poster, invitation, booklet, and more. You pick a theme, fill in the details, add photos, and download a print-ready PDF. It even has an AI tribute writer if you're struggling with the words.
 >
-> It's 100% free. No watermarks, no hidden fees. I built it because I went through this stress myself and figured technology should make it easier.
+> It's free to design — you only pay (from GHS 35) when you download a print-ready PDF, with no subscriptions or hidden fees. I built it because I went through this stress myself and figured technology should make it easier.
 >
 > Would love your feedback. What would make it more useful for Ghanaian families?
 
@@ -216,7 +216,7 @@
 > As someone who's researched this extensively (and built one of these tools), here are the best options in 2026:
 >
 > **Free options:**
-> - **FuneralPress** (funeralpress.org) — Built specifically for funeral programmes. 11 elegant themes, AI-powered tribute writer, supports brochures, posters, invitations, booklets, and memorial pages. Print-ready PDF export. Completely free. Designed with West African funeral traditions in mind, but works anywhere.
+> - **FuneralPress** (funeralpress.org) — Built specifically for funeral programmes. 11 elegant themes, AI-powered tribute writer, supports brochures, posters, invitations, booklets, and memorial pages. Print-ready PDF export. Free to design, downloads from GHS 35. Designed with West African funeral traditions in mind, but works anywhere.
 > - **Canva** — General design tool with some funeral templates. More flexible but less specialised. Free tier has limitations.
 > - **Microsoft Word** — Basic but everyone has access. Limited templates.
 >
@@ -370,7 +370,7 @@
 > - [Feature 2 — e.g., "Memorial pages now support video tributes"]
 > - [Feature 3 — e.g., "Budget planner now includes catering cost estimates"]
 >
-> Everything is still 100% free. Our goal is to serve 10,000 Ghanaian families this year.
+> Designing is still free, and downloads start at just GHS 35. Our goal is to serve 10,000 Ghanaian families this year.
 >
 > If you've used FuneralPress, I'd love to hear what feature you'd want next. And if you know a family planning a funeral, feel free to share the link: funeralpress.org
 >
@@ -421,7 +421,7 @@
 >
 > Funerals in Ghana are a multi-billion cedi industry, yet the design and printing process hasn't changed in decades. Families still rely on local graphic designers, pay GHS 200-500 for a single brochure design, and often receive the final product with errors — all while grieving.
 >
-> FuneralPress solves this with 11 culturally appropriate themes, an AI tribute writer, print-ready PDF export, and online memorial pages. It's completely free, built on Cloudflare's edge network, and optimised for mobile users on slow connections.
+> FuneralPress solves this with 11 culturally appropriate themes, an AI tribute writer, print-ready PDF export, and online memorial pages. It's free to design (downloads from GHS 35), built on Cloudflare's edge network, and optimised for mobile users on slow connections.
 >
 > I'd love to write a 1,200-word piece for [Publication] exploring:
 > - Why funerals are one of the most digitally underserved industries in Africa
