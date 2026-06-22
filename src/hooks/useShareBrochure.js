@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react'
 
-const SHARE_API_URL = 'https://brochure-share-api.ghwmelite.workers.dev'
+// The worker is served on its custom route; the *.workers.dev preview subdomain
+// is disabled (returns Cloudflare error 1042), so pointing here is required for
+// sharing to work in production.
+const SHARE_API_URL = 'https://share-api.funeralpress.org'
 
 export function useShareBrochure() {
   const [loading, setLoading] = useState(false)
