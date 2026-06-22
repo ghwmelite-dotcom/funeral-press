@@ -214,15 +214,21 @@ export default function CheckoutDialog() {
             </div>
           )}
 
-          {/* Not logged in */}
+          {/* Not logged in — show the price up front so it's never hidden
+              behind the sign-in step (a grieving buyer shouldn't have to log in
+              to discover what it costs). */}
           {stage === 'not-logged-in' && (
-            <div className="flex flex-col items-center py-6 gap-4">
+            <div className="flex flex-col items-center py-6 gap-3">
+              <p className="text-base text-card-foreground text-center font-semibold">
+                Designs from {formatMoney(priceFor('single', currency), currency)}
+              </p>
               <p className="text-sm text-muted-foreground text-center">
-                You need to sign in with Google before purchasing.
+                Build for free — sign in only to purchase and download. Signing in
+                also keeps your designs synced across devices.
               </p>
               <button
                 onClick={handleGoogleSignIn}
-                className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition-colors"
+                className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition-colors mt-1"
               >
                 Sign in with Google
               </button>

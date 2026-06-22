@@ -468,10 +468,9 @@ export default function LandingPage() {
   }
 
   const handleOpenMemorial = () => {
-    if (!hasBrochureData && brochures.length > 0) {
-      store.loadBrochure(brochures[0].id)
-    }
-    navigate('/editor')
+    // An online memorial is its own flow — route to the memorial creator, not
+    // the brochure editor. (Previously dumped memorial-seekers into /editor.)
+    navigate('/memorial-page-creator')
   }
 
   return (
