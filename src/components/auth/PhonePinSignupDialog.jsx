@@ -3,6 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { PhoneInput } from './PhoneInput.jsx'
 import { PinInput } from './PinInput.jsx'
 import { phonePinApi } from '../../utils/phonePinApi.js'
+import { events } from '../../utils/analytics.js'
 
 const PIN_LENGTH = 4
 
@@ -58,6 +59,9 @@ export function PhonePinSignupDialog({ open, onOpenChange, onSwitchToLogin }) {
     setLoading(true); setError(null)
     try {
       await phonePinApi.signup({ phone, email, pin, name: name.trim() })
+      // Phone+PIN is the primary local signup path; without this it was
+      // invisible to both GA4 and the funnel.
+      events.signupCompleted('phone')
       setSuccess(true)
     } catch (err) {
       if (err.status === 409) {

@@ -46,27 +46,9 @@ export function useShareBrochure() {
     }
   }, [])
 
-  const updateShared = useCallback(async (code, data) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await fetch(`${SHARE_API_URL}/${code}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'Failed' }))
-        throw new Error(err.error || 'Failed to update shared brochure')
-      }
-      return response.json()
-    } catch (err) {
-      setError(err.message)
-      throw err
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  // Note: shares are immutable by design (the server has no update endpoint —
+  // an unauthenticated PUT would let anyone overwrite a shared brochure). To
+  // change a share, call shareBrochure again for a fresh code.
 
-  return { shareBrochure, loadShared, updateShared, loading, error }
+  return { shareBrochure, loadShared, loading, error }
 }
