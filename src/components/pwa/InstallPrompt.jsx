@@ -42,7 +42,7 @@ export default function InstallPrompt() {
   if (!visible) return null
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 z-50 animate-slide-up sm:left-auto sm:right-4 sm:max-w-sm">
+    <div className="fixed bottom-24 left-4 z-50 animate-slide-up max-w-[calc(100vw-6rem)] sm:bottom-6 sm:left-6 sm:max-w-sm">
       <div className="bg-card border border-primary/30 rounded-xl shadow-lg p-4 flex items-center gap-4">
         <div className="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
           <span className="text-primary text-xl leading-none">&#10013;</span>

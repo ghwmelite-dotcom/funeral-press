@@ -18,6 +18,7 @@ import InstallPrompt from './components/pwa/InstallPrompt'
 import RouteProgressBar from './components/pwa/RouteProgressBar'
 import PageTransition from './components/layout/PageTransition'
 import TelegramHelp from './components/layout/TelegramHelp'
+import BackToTop from './components/layout/BackToTop'
 import SiteHeader from './components/layout/SiteHeader'
 
 const EditorPage = lazy(() => import('./pages/EditorPage'))
@@ -208,6 +209,7 @@ export default function App() {
           </Suspense>
           <InstallPrompt />
           <TelegramHelp />
+          <BackToTop />
           <BottomNav />
           <Suspense fallback={null}>
             <OnboardingTour />
