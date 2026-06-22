@@ -20,7 +20,7 @@
 | **Hook (0-3s)** | "Stop paying GHS 1,000 for funeral brochures." (Text on screen: bold white on black) |
 | **Body (3-45s)** | Screen recording: Open FuneralPress.org > Click "Create Brochure" > Choose a theme > Type in the name, dates, photo > Watch the brochure build itself. Voiceover: "Pick a theme. Add the name. Upload the photo. Done. Professional brochure in under 5 minutes. Download it. Print it. Share it on WhatsApp. Zero cedis." |
 | **CTA (45-55s)** | "Link in bio. Your family deserves better than rushed designs." |
-| **On-Screen Text** | 0s: "GHS 1,000 for a brochure?" / 5s: "Try this instead..." / 15s: "Choose a theme" / 25s: "Add details" / 35s: "Download & print" / 45s: "funeralpress.org — 100% FREE" |
+| **On-Screen Text** | 0s: "GHS 1,000 for a brochure?" / 5s: "Try this instead..." / 15s: "Choose a theme" / 25s: "Add details" / 35s: "Download & print" / 45s: "funeralpress.org — design free, download from GHS 35" |
 | **Music** | Soft, reflective lo-fi or gentle piano |
 
 ---
@@ -547,7 +547,7 @@ Everything we make is free. Everything on this channel is useful.
 
 | Colour | Hex Code | Usage |
 |--------|----------|-------|
-| **Gold** | `#C5A55A` | Primary accent, headlines, icons, borders |
+| **Gold** | `#D4AF37` | Primary accent, headlines, icons, borders — canonical gold (see `handoff/01-brand-and-voice-guardrails.md`; older drafts used `#C5A55A`) |
 | **Black** | `#1A1A1A` | Backgrounds, body text, primary cards |
 | **White** | `#FFFFFF` | Text on dark backgrounds, clean space |
 | **Deep Green** | `#1B4332` | Secondary accent, trust signals, buttons |
@@ -700,7 +700,7 @@ Free funeral design platform for Ghana & Africa. Brochures, memorial pages, budg
 
 **YouTube About:**
 ```
-FuneralPress helps families create beautiful funeral brochures, memorial pages, and more — completely free. No graphic designer needed.
+FuneralPress helps families create beautiful funeral brochures, memorial pages, and more — free to design, with print-ready downloads from GHS 35. No graphic designer needed.
 
 We believe every life deserves a dignified tribute. This channel shares funeral planning guides, design tutorials, and insights into Ghanaian funeral culture.
 

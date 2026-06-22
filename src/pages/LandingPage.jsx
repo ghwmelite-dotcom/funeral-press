@@ -87,6 +87,8 @@ import PartnerBanner from '../components/landing/PartnerBanner'
 import FAQSection from '../components/seo/FAQSection'
 import { captureReferralCode } from '../utils/referralTracker'
 import { useThemeStore } from '../stores/themeStore'
+import { useCurrencyStore } from '../stores/currencyStore'
+import { priceFor, formatMoney } from '../config/priceBook'
 import { AuroraField, AdinkraMark } from '../components/ceremonial'
 
 const FEATURES = [
@@ -172,6 +174,7 @@ const LANDING_FAQS = [
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const currency = useCurrencyStore((s) => s.currency)
   const [searchParams] = useSearchParams()
   const user = useAuthStore((s) => s.user)
   const { theme } = useThemeStore()
@@ -555,9 +558,15 @@ export default function LandingPage() {
                 </span>
               </h1>
 
-              <p className="text-lg max-w-2xl mb-9 leading-relaxed font-light mx-auto lg:mx-0" style={{ color: 'var(--ceremonial-ink-muted)' }}>
+              <p className="text-lg max-w-2xl mb-5 leading-relaxed font-light mx-auto lg:mx-0" style={{ color: 'var(--ceremonial-ink-muted)' }}>
                 Design premium funeral brochures, posters, invitations, booklets, collages, and more
                 with our elegant editor. Choose from professional themes — then download as a print-ready PDF.
+              </p>
+
+              {/* Honest freemium framing — build free, pay only to download. */}
+              <p className="text-sm font-medium mb-9 mx-auto lg:mx-0" style={{ color: 'var(--ceremonial-ink-muted)' }}>
+                Build for free — download any design from{' '}
+                <span style={{ color: 'var(--ceremonial-gold)' }}>{formatMoney(priceFor('single', currency), currency)}</span>. No subscriptions.
               </p>
 
               <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start">
@@ -661,162 +670,9 @@ export default function LandingPage() {
       {/* ═══ Page body ═══ */}
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-12 sm:pt-16 pb-10 sm:pb-16">
 
-        {/* ═══ Partner Program — Premium Section ═══ */}
-        <div className="relative mb-12 lg:mb-20">
-          {/* Animated border glow */}
-          <div className="absolute -inset-[1px] rounded-3xl bg-gradient-to-r from-primary via-amber-400 to-primary bg-[length:200%_100%] animate-shimmer opacity-60" />
-
-          <div className="relative overflow-hidden rounded-3xl bg-card animate-glow-breathe">
-            {/* Layered background atmosphere */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.07] via-transparent to-amber-500/[0.05]" />
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-primary/10 via-primary/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/4" />
-            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-amber-500/8 via-amber-500/3 to-transparent rounded-full translate-y-1/2 -translate-x-1/4" />
-
-            {/* Shimmer sweep overlay */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent animate-shimmer-sweep" />
-            </div>
-
-            {/* Diamond pattern */}
-            <div className="absolute inset-0 opacity-[0.025]" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0L40 20L20 40L0 20z' fill='%23fff' fill-opacity='0.4'/%3E%3C/svg%3E")`,
-              backgroundSize: '40px 40px',
-            }} />
-
-            <div className="relative px-4 py-8 sm:px-8 sm:py-12 md:px-14 md:py-16">
-              {/* Top badge row */}
-              <div className="flex items-center justify-center lg:justify-start gap-3 mb-8 animate-float-up">
-                <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-gradient-to-r from-primary/15 via-amber-500/10 to-primary/15 border border-primary/25 rounded-full backdrop-blur-sm">
-                  <div className="relative w-2 h-2">
-                    <div className="absolute inset-0 rounded-full bg-emerald-400 animate-pulse" />
-                    <div className="absolute inset-0 rounded-full bg-emerald-400/50 animate-ping" />
-                  </div>
-                  <span className="text-[11px] text-primary uppercase tracking-[0.2em] font-bold">Partner Program</span>
-                  <span className="text-[9px] text-emerald-400 font-semibold px-1.5 py-0.5 bg-emerald-400/10 rounded-full">LIVE</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-12">
-                {/* Left: headline + text + CTA */}
-                <div className="flex-1 text-center lg:text-left">
-                  <h2
-                    className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-5 leading-[1.15] animate-float-up"
-                    style={{ fontFamily: "'Playfair Display', Georgia, serif", animationDelay: '100ms' }}
-                  >
-                    Refer Families,{' '}
-                    <span className="relative inline-block">
-                      <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-400 to-primary bg-[length:200%_100%] animate-shimmer">
-                        Earn 40%
-                      </span>
-                    </span>
-                    <br className="hidden sm:block" />
-                    <span className="text-muted-foreground text-[0.6em] font-normal">on every design they purchase</span>
-                  </h2>
-
-                  <p className="text-muted-foreground text-sm sm:text-base max-w-lg mb-10 leading-relaxed animate-float-up" style={{ animationDelay: '200ms' }}>
-                    Funeral homes, event planners, and community leaders — share your unique link and earn tiered commissions
-                    with monthly payouts to your mobile money.
-                  </p>
-
-                  {/* Big stats row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10 animate-float-up" style={{ animationDelay: '300ms' }}>
-                    {[
-                      { value: '40%', label: 'Max Commission', icon: TrendingUp, color: 'text-primary', glow: 'shadow-primary/20' },
-                      { value: 'GHS 19+', label: 'Per Referral', icon: Banknote, color: 'text-emerald-400', glow: 'shadow-emerald-400/20' },
-                      { value: '4 Tiers', label: 'To Climb', icon: Users, color: 'text-amber-400', glow: 'shadow-amber-400/20' },
-                    ].map((stat) => {
-                      const StatIcon = stat.icon
-                      return (
-                        <div key={stat.label} className={`relative group/stat flex flex-col items-center lg:items-start gap-1 p-4 rounded-2xl border border-border/60 bg-background/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 hover:shadow-lg ${stat.glow}`}>
-                          <StatIcon size={18} className={`${stat.color} mb-1`} />
-                          <p className="text-xl sm:text-2xl font-bold text-foreground leading-none">{stat.value}</p>
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* CTA area */}
-                  <div className="animate-float-up" style={{ animationDelay: '400ms' }}>
-                    {user?.isPartner ? (
-                      <button
-                        onClick={() => navigate('/partner-dashboard')}
-                        className="group/btn relative inline-flex items-center gap-2.5 px-8 py-3.5 bg-gradient-to-r from-primary to-amber-600 hover:from-primary/90 hover:to-amber-600/90 text-white font-semibold rounded-xl transition-all text-sm shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5"
-                      >
-                        <Users size={16} />
-                        View Partner Dashboard
-                        <ChevronRight size={14} className="group-hover/btn:translate-x-0.5 transition-transform" />
-                      </button>
-                    ) : user ? (
-                      <p className="text-sm text-muted-foreground">
-                        Interested in becoming a partner?{' '}
-                        <a href="https://chat.whatsapp.com/EbJjUflYBNUKDvkgqLiey8" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Contact us on WhatsApp</a>
-                      </p>
-                    ) : (
-                      <div className="flex flex-col items-center lg:items-start gap-3">
-                        <p className="text-xs text-muted-foreground">Sign in to apply as a partner</p>
-                        <SignInPopover />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right: Premium tier card stack */}
-                <div className="shrink-0 w-full max-w-xs lg:w-64">
-                  <div className="space-y-3">
-                    {[
-                      { name: 'Starter', emoji: '', range: '0–5 referrals', rate: '30%', gradient: 'from-zinc-500 to-zinc-400', ring: 'ring-zinc-400/20', barW: '60%', delay: '200ms' },
-                      { name: 'Growing', emoji: '', range: '6–20 referrals', rate: '33%', gradient: 'from-blue-500 to-blue-400', ring: 'ring-blue-400/20', barW: '72%', delay: '300ms' },
-                      { name: 'Pro', emoji: '', range: '21–50 referrals', rate: '37%', gradient: 'from-amber-500 to-amber-400', ring: 'ring-amber-400/20', barW: '86%', delay: '400ms' },
-                      { name: 'Elite', emoji: '', range: '51+ referrals', rate: '40%', gradient: 'from-purple-500 via-pink-500 to-amber-400', ring: 'ring-purple-400/30', barW: '100%', delay: '500ms' },
-                    ].map((tier) => (
-                      <div
-                        key={tier.name}
-                        className={`group/tier relative flex items-center gap-4 px-5 py-4 rounded-2xl border border-border/50 bg-background/40 backdrop-blur-sm ring-1 ${tier.ring} hover:ring-2 transition-all duration-300 animate-float-up hover:-translate-y-0.5 hover:shadow-lg`}
-                        style={{ animationDelay: tier.delay }}
-                      >
-                        {/* Tier icon */}
-                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tier.gradient} flex items-center justify-center text-white text-sm shadow-lg shrink-0`}>
-                          {tier.emoji}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-bold text-foreground">{tier.name}</span>
-                            <span className={`text-sm font-extrabold text-transparent bg-clip-text bg-gradient-to-r ${tier.gradient}`}>{tier.rate}</span>
-                          </div>
-                          {/* Progress bar */}
-                          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full bg-gradient-to-r ${tier.gradient} transition-all duration-1000 ease-out`}
-                              style={{ width: tier.barW }}
-                            />
-                          </div>
-                          <p className="text-[10px] text-muted-foreground mt-1.5">{tier.range}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom perks bar */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mt-10 pt-7 border-t border-border/30 animate-float-up" style={{ animationDelay: '500ms' }}>
-                {[
-                  { icon: Share2, text: 'Unique referral link' },
-                  { icon: Eye, text: 'Real-time tracking dashboard' },
-                  { icon: Banknote, text: 'Monthly MoMo payouts' },
-                  { icon: Shield, text: 'Dedicated partner support' },
-                ].map(({ icon: PerkIcon, text }) => (
-                  <span key={text} className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 border border-border/40 rounded-full px-3.5 py-1.5">
-                    <PerkIcon size={12} className="text-primary/70" />
-                    {text}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Partner Program relocated below the FAQ (see PartnerProgramSection)
+            so the first folds stay focused on grieving families, not a 40%
+            commission pitch. */}
 
         {user && (
           <div className="bg-card border border-border rounded-xl p-6 mb-12 text-center max-w-xl mx-auto">
@@ -1828,6 +1684,167 @@ export default function LandingPage() {
             <p className="text-base text-muted-foreground mt-3 max-w-xl mx-auto">Everything you need to know about designing funeral materials with FuneralPress</p>
           </div>
           <FAQSection faqs={LANDING_FAQS} />
+        </div>
+      </div>
+
+      {/* ═══ Partner Program — moved here (below the FAQ) so grieving families
+          see grief-first content in the early folds; B2B/partner audiences read
+          to the bottom. ═══ */}
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pb-16 sm:pb-20">
+        <div className="relative mb-12 lg:mb-20">
+          {/* Animated border glow */}
+          <div className="absolute -inset-[1px] rounded-3xl bg-gradient-to-r from-primary via-amber-400 to-primary bg-[length:200%_100%] animate-shimmer opacity-60" />
+
+          <div className="relative overflow-hidden rounded-3xl bg-card animate-glow-breathe">
+            {/* Layered background atmosphere */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.07] via-transparent to-amber-500/[0.05]" />
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-primary/10 via-primary/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/4" />
+            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-amber-500/8 via-amber-500/3 to-transparent rounded-full translate-y-1/2 -translate-x-1/4" />
+
+            {/* Shimmer sweep overlay */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent animate-shimmer-sweep" />
+            </div>
+
+            {/* Diamond pattern */}
+            <div className="absolute inset-0 opacity-[0.025]" style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0L40 20L20 40L0 20z' fill='%23fff' fill-opacity='0.4'/%3E%3C/svg%3E")`,
+              backgroundSize: '40px 40px',
+            }} />
+
+            <div className="relative px-4 py-8 sm:px-8 sm:py-12 md:px-14 md:py-16">
+              {/* Top badge row */}
+              <div className="flex items-center justify-center lg:justify-start gap-3 mb-8 animate-float-up">
+                <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-gradient-to-r from-primary/15 via-amber-500/10 to-primary/15 border border-primary/25 rounded-full backdrop-blur-sm">
+                  <div className="relative w-2 h-2">
+                    <div className="absolute inset-0 rounded-full bg-emerald-400 animate-pulse" />
+                    <div className="absolute inset-0 rounded-full bg-emerald-400/50 animate-ping" />
+                  </div>
+                  <span className="text-[11px] text-primary uppercase tracking-[0.2em] font-bold">Partner Program</span>
+                  <span className="text-[9px] text-emerald-400 font-semibold px-1.5 py-0.5 bg-emerald-400/10 rounded-full">LIVE</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-12">
+                {/* Left: headline + text + CTA */}
+                <div className="flex-1 text-center lg:text-left">
+                  <h2
+                    className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-5 leading-[1.15] animate-float-up"
+                    style={{ fontFamily: "'Playfair Display', Georgia, serif", animationDelay: '100ms' }}
+                  >
+                    Refer Families,{' '}
+                    <span className="relative inline-block">
+                      <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-400 to-primary bg-[length:200%_100%] animate-shimmer">
+                        Earn 40%
+                      </span>
+                    </span>
+                    <br className="hidden sm:block" />
+                    <span className="text-muted-foreground text-[0.6em] font-normal">on every design they purchase</span>
+                  </h2>
+
+                  <p className="text-muted-foreground text-sm sm:text-base max-w-lg mb-10 leading-relaxed animate-float-up" style={{ animationDelay: '200ms' }}>
+                    Funeral homes, event planners, and community leaders — share your unique link and earn tiered commissions
+                    with monthly payouts to your mobile money.
+                  </p>
+
+                  {/* Big stats row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10 animate-float-up" style={{ animationDelay: '300ms' }}>
+                    {[
+                      { value: '40%', label: 'Max Commission', icon: TrendingUp, color: 'text-primary', glow: 'shadow-primary/20' },
+                      { value: 'GHS 19+', label: 'Per Referral', icon: Banknote, color: 'text-emerald-400', glow: 'shadow-emerald-400/20' },
+                      { value: '4 Tiers', label: 'To Climb', icon: Users, color: 'text-amber-400', glow: 'shadow-amber-400/20' },
+                    ].map((stat) => {
+                      const StatIcon = stat.icon
+                      return (
+                        <div key={stat.label} className={`relative group/stat flex flex-col items-center lg:items-start gap-1 p-4 rounded-2xl border border-border/60 bg-background/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 hover:shadow-lg ${stat.glow}`}>
+                          <StatIcon size={18} className={`${stat.color} mb-1`} />
+                          <p className="text-xl sm:text-2xl font-bold text-foreground leading-none">{stat.value}</p>
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* CTA area */}
+                  <div className="animate-float-up" style={{ animationDelay: '400ms' }}>
+                    {user?.isPartner ? (
+                      <button
+                        onClick={() => navigate('/partner-dashboard')}
+                        className="group/btn relative inline-flex items-center gap-2.5 px-8 py-3.5 bg-gradient-to-r from-primary to-amber-600 hover:from-primary/90 hover:to-amber-600/90 text-white font-semibold rounded-xl transition-all text-sm shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5"
+                      >
+                        <Users size={16} />
+                        View Partner Dashboard
+                        <ChevronRight size={14} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                      </button>
+                    ) : user ? (
+                      <p className="text-sm text-muted-foreground">
+                        Interested in becoming a partner?{' '}
+                        <a href="https://chat.whatsapp.com/EbJjUflYBNUKDvkgqLiey8" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Contact us on WhatsApp</a>
+                      </p>
+                    ) : (
+                      <div className="flex flex-col items-center lg:items-start gap-3">
+                        <p className="text-xs text-muted-foreground">Sign in to apply as a partner</p>
+                        <SignInPopover />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: Premium tier card stack */}
+                <div className="shrink-0 w-full max-w-xs lg:w-64">
+                  <div className="space-y-3">
+                    {[
+                      { name: 'Starter', emoji: '', range: '0–5 referrals', rate: '30%', gradient: 'from-zinc-500 to-zinc-400', ring: 'ring-zinc-400/20', barW: '60%', delay: '200ms' },
+                      { name: 'Growing', emoji: '', range: '6–20 referrals', rate: '33%', gradient: 'from-blue-500 to-blue-400', ring: 'ring-blue-400/20', barW: '72%', delay: '300ms' },
+                      { name: 'Pro', emoji: '', range: '21–50 referrals', rate: '37%', gradient: 'from-amber-500 to-amber-400', ring: 'ring-amber-400/20', barW: '86%', delay: '400ms' },
+                      { name: 'Elite', emoji: '', range: '51+ referrals', rate: '40%', gradient: 'from-purple-500 via-pink-500 to-amber-400', ring: 'ring-purple-400/30', barW: '100%', delay: '500ms' },
+                    ].map((tier) => (
+                      <div
+                        key={tier.name}
+                        className={`group/tier relative flex items-center gap-4 px-5 py-4 rounded-2xl border border-border/50 bg-background/40 backdrop-blur-sm ring-1 ${tier.ring} hover:ring-2 transition-all duration-300 animate-float-up hover:-translate-y-0.5 hover:shadow-lg`}
+                        style={{ animationDelay: tier.delay }}
+                      >
+                        {/* Tier icon */}
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tier.gradient} flex items-center justify-center text-white text-sm shadow-lg shrink-0`}>
+                          {tier.emoji}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-bold text-foreground">{tier.name}</span>
+                            <span className={`text-sm font-extrabold text-transparent bg-clip-text bg-gradient-to-r ${tier.gradient}`}>{tier.rate}</span>
+                          </div>
+                          {/* Progress bar */}
+                          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full bg-gradient-to-r ${tier.gradient} transition-all duration-1000 ease-out`}
+                              style={{ width: tier.barW }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1.5">{tier.range}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom perks bar */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mt-10 pt-7 border-t border-border/30 animate-float-up" style={{ animationDelay: '500ms' }}>
+                {[
+                  { icon: Share2, text: 'Unique referral link' },
+                  { icon: Eye, text: 'Real-time tracking dashboard' },
+                  { icon: Banknote, text: 'Monthly MoMo payouts' },
+                  { icon: Shield, text: 'Dedicated partner support' },
+                ].map(({ icon: PerkIcon, text }) => (
+                  <span key={text} className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 border border-border/40 rounded-full px-3.5 py-1.5">
+                    <PerkIcon size={12} className="text-primary/70" />
+                    {text}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
