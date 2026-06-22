@@ -2373,21 +2373,32 @@ async function handleAdminFunnel(request, env) {
   const url = new URL(request.url)
   const days = Math.min(365, Math.max(1, parseInt(url.searchParams.get('days')) || 30))
   const cutoff = new Date(Date.now() - days * 86400000).toISOString()
+  // Optional channel filter so the marketer can see the funnel for one source
+  // (e.g. ?source=facebook). Matches last-touch utm_source captured in metadata.
+  const source = (url.searchParams.get('source') || '').trim().slice(0, 100) || null
 
   const stages = [
-    { key: 'signup', label: 'Signed up', event_types: ['signup_completed'] },
-    { key: 'start_design', label: 'Started design', event_types: ['brochure_started'] },
-    { key: 'complete_design', label: 'Completed design', event_types: ['brochure_completed'] },
-    { key: 'paid', label: 'Paid', event_types: ['payment_completed'] },
+    // Top of funnel: anonymous visits, counted by session (no user_id yet).
+    { key: 'visited', label: 'Visited', event_types: ['session_started'], distinct: 'session_id' },
+    { key: 'signup', label: 'Signed up', event_types: ['signup_completed'], distinct: 'user_id' },
+    { key: 'start_design', label: 'Started design', event_types: ['brochure_started'], distinct: 'user_id' },
+    { key: 'complete_design', label: 'Completed design', event_types: ['brochure_completed'], distinct: 'user_id' },
+    { key: 'paid', label: 'Paid', event_types: ['payment_completed'], distinct: 'user_id' },
   ]
 
   const data = []
   for (const stage of stages) {
     const placeholders = stage.event_types.map(() => '?').join(',')
+    const binds = [...stage.event_types, cutoff]
+    let sourceClause = ''
+    if (source) {
+      sourceClause = " AND json_extract(metadata, '$.utm_source') = ?"
+      binds.push(source)
+    }
     const row = await env.DB.prepare(
-      `SELECT COUNT(DISTINCT user_id) as count FROM analytics_events
-       WHERE event_type IN (${placeholders}) AND created_at >= ?`
-    ).bind(...stage.event_types, cutoff).first()
+      `SELECT COUNT(DISTINCT ${stage.distinct}) as count FROM analytics_events
+       WHERE event_type IN (${placeholders}) AND created_at >= ?${sourceClause}`
+    ).bind(...binds).first()
     data.push({ key: stage.key, label: stage.label, count: row?.count || 0 })
   }
 
@@ -2399,7 +2410,7 @@ async function handleAdminFunnel(request, env) {
     return { ...stage, conversion_pct }
   })
 
-  return json({ stages: enriched, days, cutoff }, 200, request)
+  return json({ stages: enriched, days, cutoff, source }, 200, request)
 }
 
 // ─── Guest Book handlers ────────────────────────────────────────────────────
